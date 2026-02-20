@@ -1,0 +1,14 @@
+{
+  "required": false,
+  "package": "com.mechanicalskies.vsshields.fabric.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "VS2ShipRenderMixin"
+  ],
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

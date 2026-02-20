@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "vs_shields:block/shield_emitter" },
+    "facing=south": { "model": "vs_shields:block/shield_emitter" },
+    "facing=west": { "model": "vs_shields:block/shield_emitter" },
+    "facing=east": { "model": "vs_shields:block/shield_emitter" },
+    "facing=up": { "model": "vs_shields:block/shield_emitter" },
+    "facing=down": { "model": "vs_shields:block/shield_emitter" }
+  }
+}

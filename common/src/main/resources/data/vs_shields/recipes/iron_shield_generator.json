@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IRI",
+    "IGI",
+    "IRI"
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_block" },
+    "R": { "item": "minecraft:redstone" },
+    "G": { "item": "minecraft:glass" }
+  },
+  "result": {
+    "item": "vs_shields:iron_shield_generator",
+    "count": 1
+  }
+}

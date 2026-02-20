@@ -1,0 +1,30 @@
+# Gradle
+
+.gradle/
+build/
+out/
+run/
+runs/
+
+# IntelliJ
+
+.idea/
+*.iml
+
+# Minecraft
+
+logs/
+crash-reports/
+*.log
+runClient/
+runServer/
+
+# Forge/Fabric caches
+
+/.classpath
+/.project
+
+# OS
+
+Thumbs.db
+.DS_Store

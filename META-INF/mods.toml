@@ -1,0 +1,37 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="Academic Free License v3.0"
+
+[[mods]]
+modId="alexscaves_torpedoes"
+version="1.0.4"
+displayName="Alex's Caves: Stuff & Torpedoes"
+displayURL="https://mcreator.net"
+credits="Created using mod maker MCreator - https://mcreator.net/about"
+authors="Furti_Two"
+description="Adds items, armor and torpedoes to assault water monsters"
+
+# Start of user code block mod configuration
+# End of user code block mod configuration
+
+[[dependencies.alexscaves_torpedoes]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1]"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.alexscaves_torpedoes]]
+    modId="alexscaves"
+    mandatory=true
+    versionRange="[0,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.alexscaves_torpedoes]]
+    modId="jei"
+    mandatory=false
+    versionRange="[0,)"
+    ordering="NONE"
+    side="BOTH"
+

@@ -1,0 +1,200 @@
+package com.mechanicalskies.vsshields.blockentity;
+
+import com.mechanicalskies.vsshields.block.ShieldGeneratorBlock;
+import com.mechanicalskies.vsshields.menu.ShieldGeneratorMenu;
+import com.mechanicalskies.vsshields.registry.ModBlockEntities;
+import com.mechanicalskies.vsshields.shield.ShieldInstance;
+import com.mechanicalskies.vsshields.shield.ShieldManager;
+import com.mechanicalskies.vsshields.shield.ShieldTier;
+import dev.architectury.registry.menu.ExtendedMenuProvider;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
+import org.valkyrienskies.core.api.ships.Ship;
+import org.valkyrienskies.mod.common.VSGameUtilsKt;
+
+public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedMenuProvider {
+    public interface EnergyInputHook {
+        void tick(Level level, BlockPos pos, ShieldGeneratorBlockEntity be);
+    }
+
+    private static EnergyInputHook energyInputHook = null;
+
+    public static void setEnergyInputHook(EnergyInputHook hook) {
+        energyInputHook = hook;
+    }
+
+    private long trackedShipId = -1;
+    private boolean duplicate = false;
+
+    private int energyStored = 0;
+    private int maxEnergy = 50000;
+    private int energyPerTick = 20;
+    private boolean hasPower = false;
+
+    private final ContainerData dataAccess = new ContainerData() {
+        @Override
+        public int get(int index) {
+            if (duplicate) {
+                return index == 2 ? -1 : 0;
+            }
+            ShieldInstance shield = trackedShipId != -1
+                    ? ShieldManager.getInstance().getShield(trackedShipId)
+                    : null;
+            return switch (index) {
+                case 0 -> shield != null ? (int) (shield.getCurrentHP() * 10) : 0;
+                case 1 -> shield != null ? (int) (shield.getMaxHP() * 10) : 0;
+                case 2 -> shield != null ? (shield.isActive() ? 1 : 0) : 0;
+                case 3 -> energyStored & 0xFFFF;
+                case 4 -> (energyStored >> 16) & 0xFFFF;
+                case 5 -> maxEnergy & 0xFFFF;
+                case 6 -> (maxEnergy >> 16) & 0xFFFF;
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {}
+
+        @Override
+        public int getCount() {
+            return 7;
+        }
+    };
+
+    public ShieldGeneratorBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.SHIELD_GENERATOR.get(), pos, state);
+    }
+
+    private void initEnergyFromTier() {
+        ShieldTier tier = getShieldTier();
+        this.maxEnergy = tier.getMaxEnergy();
+        this.energyPerTick = tier.getEnergyPerTick();
+    }
+
+    public void serverTick(Level level, BlockPos pos, BlockState state) {
+        if (level.isClientSide()) return;
+
+        if (maxEnergy == 50000 && getShieldTier() != ShieldTier.IRON) {
+            initEnergyFromTier();
+        }
+
+        Ship ship = VSGameUtilsKt.getShipManagingPos(level, pos);
+        if (ship == null) {
+            if (trackedShipId != -1) {
+                ShieldManager.getInstance().unregisterShield(trackedShipId, pos);
+                trackedShipId = -1;
+                duplicate = false;
+            }
+            return;
+        }
+
+        long shipId = ship.getId();
+        ShieldTier tier = getShieldTier();
+
+        if (trackedShipId != shipId) {
+            if (trackedShipId != -1) {
+                ShieldManager.getInstance().unregisterShield(trackedShipId, pos);
+            }
+            boolean isOwner = ShieldManager.getInstance().registerShield(shipId, tier, pos);
+            trackedShipId = shipId;
+            duplicate = !isOwner;
+        }
+
+        if (duplicate) return;
+
+        if (energyInputHook != null) {
+            energyInputHook.tick(level, pos, this);
+        }
+
+        ShieldInstance shield = ShieldManager.getInstance().getShield(shipId);
+        if (shield != null) {
+            if (shield.isActive()) {
+                if (energyStored >= energyPerTick) {
+                    energyStored -= energyPerTick;
+                    hasPower = true;
+                } else {
+                    hasPower = false;
+                    shield.setActive(false);
+                }
+            } else {
+                hasPower = energyStored >= energyPerTick;
+            }
+
+            com.mechanicalskies.vsshields.config.ShieldConfig.GeneralConfig gen = com.mechanicalskies.vsshields.config.ShieldConfig.get().getGeneral();
+            double energyPercent = maxEnergy > 0 ? (double) energyStored / maxEnergy : 0;
+            double hpScale = gen.hpScaleMin + (gen.hpScaleMax - gen.hpScaleMin) * energyPercent;
+            shield.setHPScale(hpScale);
+        }
+    }
+
+    public int getEnergyStored() { return energyStored; }
+    public int getMaxEnergy() { return maxEnergy; }
+    public boolean hasPower() { return hasPower; }
+
+    public int receiveEnergy(int amount, boolean simulate) {
+        int accepted = Math.min(amount, maxEnergy - energyStored);
+        if (!simulate) {
+            energyStored += accepted;
+            setChanged();
+        }
+        return accepted;
+    }
+
+    public long getTrackedShipId() { return trackedShipId; }
+    public boolean isDuplicate() { return duplicate; }
+
+    public void onRemoved() {
+        if (trackedShipId != -1) {
+            ShieldManager.getInstance().unregisterShield(trackedShipId, getBlockPos());
+            trackedShipId = -1;
+            duplicate = false;
+        }
+    }
+
+    private ShieldTier getShieldTier() {
+        if (getBlockState().getBlock() instanceof ShieldGeneratorBlock generator) {
+            return generator.getTier();
+        }
+        return ShieldTier.IRON;
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        tag.putInt("Energy", energyStored);
+    }
+
+    @Override
+    public void load(CompoundTag tag) {
+        super.load(tag);
+        initEnergyFromTier();
+        energyStored = Math.min(tag.getInt("Energy"), maxEnergy);
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("container.vs_shields.shield_generator");
+    }
+
+    @Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, Inventory playerInv, Player player) {
+        return new ShieldGeneratorMenu(containerId, playerInv, this, dataAccess);
+    }
+
+    @Override
+    public void saveExtraData(FriendlyByteBuf buf) {
+        buf.writeBlockPos(getBlockPos());
+        buf.writeLong(trackedShipId);
+    }
+}

@@ -1,0 +1,62 @@
+apply plugin: 'com.gradleup.shadow'
+
+architectury {
+    platformSetupLoomIde()
+    fabric()
+}
+
+configurations {
+    common
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+}
+
+dependencies {
+    modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+
+    common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
+    shadowCommon(project(path: ':common', configuration: 'transformProductionFabric')) { transitive = false }
+
+    // --- ONLY FOR COMPILATION ---
+    modCompileOnly("dev.architectury:architectury-fabric:${rootProject.architectury_api_version}") { transitive = false }
+    modCompileOnly("org.valkyrienskies:valkyrienskies-120-fabric:${rootProject.vs2_version}") { transitive = false }
+
+    compileOnly("io.github.llamalad7:mixinextras-fabric:0.4.1")
+    compileOnly("org.valkyrienskies.core:api:${rootProject.vscore_version}")
+    compileOnly("org.valkyrienskies.core:util:${rootProject.vscore_version}")
+
+    // --- ONLY FOR IDE runClient ---
+    modLocalRuntime("dev.architectury:architectury-fabric:${rootProject.architectury_api_version}") { transitive = false }
+    modLocalRuntime("org.valkyrienskies:valkyrienskies-120-fabric:${rootProject.vs2_version}") { transitive = false }
+
+    modImplementation("net.fabricmc:fabric-language-kotlin:${rootProject.kotlin_fabric}")
+}
+
+processResources {
+    Map<String, String> properties = Map.of(
+            "vs2_version", vs2_version,
+            "version", version,
+            "fabric_loader_version", fabric_loader_version,
+            "fabric_api_version", fabric_api_version,
+            "minecraft_version", minecraft_version
+    )
+    properties.forEach((k, v) -> inputs.property(k, v))
+
+    filesMatching("fabric.mod.json") {
+        expand properties
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadowCommon]
+    archiveClassifier = 'dev-shadow'
+    exclude "architectury.common.json"
+}
+
+remapJar {
+    injectAccessWidener = true
+    inputFile.set shadowJar.archiveFile
+}

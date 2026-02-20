@@ -1,0 +1,7 @@
+{
+    "variants": {
+        "": {
+            "model": "name:block/shield_capacitor"
+        }
+    }
+}

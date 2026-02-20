@@ -1,0 +1,7 @@
+{
+    "variants": {
+        "": {
+            "model": "name:block/iron_shield_generator"
+        }
+    }
+}

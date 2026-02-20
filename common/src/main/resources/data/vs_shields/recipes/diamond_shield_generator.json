@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DED",
+    "DGD",
+    "DED"
+  ],
+  "key": {
+    "D": { "item": "minecraft:diamond" },
+    "E": { "item": "minecraft:ender_pearl" },
+    "G": { "item": "vs_shields:iron_shield_generator" }
+  },
+  "result": {
+    "item": "vs_shields:diamond_shield_generator",
+    "count": 1
+  }
+}
