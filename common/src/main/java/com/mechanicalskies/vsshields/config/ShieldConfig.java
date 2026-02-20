@@ -31,9 +31,11 @@ public class ShieldConfig {
         public int energyPerTick;
         public int depletionCooldown;
 
-        public TierConfig() {}
+        public TierConfig() {
+        }
 
-        public TierConfig(int maxHp, double rechargeRate, int rechargeCooldown, int maxEnergy, int energyPerTick, int depletionCooldown) {
+        public TierConfig(int maxHp, double rechargeRate, int rechargeCooldown, int maxEnergy, int energyPerTick,
+                int depletionCooldown) {
             this.maxHp = maxHp;
             this.rechargeRate = rechargeRate;
             this.rechargeCooldown = rechargeCooldown;
@@ -69,6 +71,7 @@ public class ShieldConfig {
         public double hpScaleMin = 0.5;
         public double hpScaleMax = 1.0;
         public int syncIntervalTicks = 10;
+        public double shieldPadding = 10.0;
     }
 
     public static class BatteryConfig {
@@ -84,7 +87,8 @@ public class ShieldConfig {
         public int energyPerTick = 30;
     }
 
-    private ShieldConfig() {}
+    private ShieldConfig() {
+    }
 
     private static ShieldConfig createDefault() {
         ShieldConfig cfg = new ShieldConfig();
@@ -172,11 +176,26 @@ public class ShieldConfig {
 
     private static boolean merge(ShieldConfig loaded, ShieldConfig defaults) {
         boolean changed = false;
-        if (loaded.tiers == null) { loaded.tiers = defaults.tiers; changed = true; }
-        if (loaded.bonuses == null) { loaded.bonuses = defaults.bonuses; changed = true; }
-        if (loaded.damage == null) { loaded.damage = defaults.damage; changed = true; }
-        if (loaded.general == null) { loaded.general = defaults.general; changed = true; }
-        if (loaded.cloak == null) { loaded.cloak = defaults.cloak; changed = true; }
+        if (loaded.tiers == null) {
+            loaded.tiers = defaults.tiers;
+            changed = true;
+        }
+        if (loaded.bonuses == null) {
+            loaded.bonuses = defaults.bonuses;
+            changed = true;
+        }
+        if (loaded.damage == null) {
+            loaded.damage = defaults.damage;
+            changed = true;
+        }
+        if (loaded.general == null) {
+            loaded.general = defaults.general;
+            changed = true;
+        }
+        if (loaded.cloak == null) {
+            loaded.cloak = defaults.cloak;
+            changed = true;
+        }
         return changed;
     }
 
@@ -192,8 +211,19 @@ public class ShieldConfig {
         return tc != null ? tc : tiers.getOrDefault("iron", new TierConfig(100, 0.5, 100, 50000, 20, 200));
     }
 
-    public BonusConfig getBonuses() { return bonuses; }
-    public DamageConfig getDamage() { return damage; }
-    public GeneralConfig getGeneral() { return general; }
-    public CloakConfig getCloak() { return cloak != null ? cloak : new CloakConfig(); }
+    public BonusConfig getBonuses() {
+        return bonuses;
+    }
+
+    public DamageConfig getDamage() {
+        return damage;
+    }
+
+    public GeneralConfig getGeneral() {
+        return general;
+    }
+
+    public CloakConfig getCloak() {
+        return cloak != null ? cloak : new CloakConfig();
+    }
 }

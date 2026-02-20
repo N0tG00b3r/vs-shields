@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "vs_shields",
+  "version": "${version}",
+  "name": "VS Energy Shields",
+  "description": "Energy shield systems for Valkyrien Skies 2 ships.",
+  "authors": [
+    "LennyPane"
+  ],
+  "license": "All Rights Reserved",
+  "icon": "assets/vs_shields/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.mechanicalskies.vsshields.fabric.VSShieldsModFabric"
+    ],
+    "client": [
+      "com.mechanicalskies.vsshields.fabric.client.VSShieldsModFabricClient"
+    ]
+  },
+  "mixins": [
+    "vs_shields-common.mixins.json",
+    "vs_shields.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.24",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "architectury": ">=9.1.12",
+    "fabric-api": "*",
+    "valkyrienskies": ">=2.4.0"
+  }
+}

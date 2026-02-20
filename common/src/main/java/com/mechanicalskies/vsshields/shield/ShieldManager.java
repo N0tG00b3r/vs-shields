@@ -14,6 +14,7 @@ import java.util.Map;
  */
 public class ShieldManager {
     private static final ShieldManager INSTANCE = new ShieldManager();
+
     private static int getSyncInterval() {
         return ShieldConfig.get().getGeneral().syncIntervalTicks;
     }
@@ -23,7 +24,8 @@ public class ShieldManager {
     private long currentTick = 0;
     private MinecraftServer server;
 
-    private ShieldManager() {}
+    private ShieldManager() {
+    }
 
     public static ShieldManager getInstance() {
         return INSTANCE;
@@ -66,6 +68,10 @@ public class ShieldManager {
 
     public ShieldInstance getShield(long shipId) {
         return shields.get(shipId);
+    }
+
+    public BlockPos getShieldOwnerPos(long shipId) {
+        return shieldOwners.get(shipId);
     }
 
     public Map<Long, ShieldInstance> getAllShields() {

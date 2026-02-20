@@ -20,8 +20,9 @@ public class VSShieldsModClient {
     public static void initClient() {
         registerPackets();
         BlockEntityRendererRegistry.register(ModBlockEntities.SHIELD_GENERATOR.get(), ShieldRenderer::new);
-        BlockEntityRendererRegistry.register(ModBlockEntities.CLOAKING_FIELD_GENERATOR.get(), CloakShimmerRenderer::new);
-        
+        BlockEntityRendererRegistry.register(ModBlockEntities.CLOAKING_FIELD_GENERATOR.get(),
+                CloakShimmerRenderer::new);
+
         MenuRegistry.registerScreenFactory(ModMenus.SHIELD_GENERATOR_MENU.get(), ShieldGeneratorScreen::new);
         MenuRegistry.registerScreenFactory(ModMenus.SHIELD_BATTERY_MENU.get(), ShieldBatteryScreen::new);
         MenuRegistry.registerScreenFactory(ModMenus.CLOAK_GENERATOR_MENU.get(), CloakGeneratorScreen::new);
@@ -38,21 +39,34 @@ public class VSShieldsModClient {
                     double[] currentHPs = new double[count];
                     double[] maxHPs = new double[count];
                     boolean[] actives = new boolean[count];
+                    double[] minXs = new double[count], minYs = new double[count], minZs = new double[count];
+                    double[] maxXs = new double[count], maxYs = new double[count], maxZs = new double[count];
+                    boolean[] hasAABB = new boolean[count];
                     for (int i = 0; i < count; i++) {
                         shipIds[i] = buf.readLong();
                         currentHPs[i] = buf.readDouble();
                         maxHPs[i] = buf.readDouble();
                         actives[i] = buf.readBoolean();
+                        hasAABB[i] = buf.readBoolean();
+                        if (hasAABB[i]) {
+                            minXs[i] = buf.readDouble();
+                            minYs[i] = buf.readDouble();
+                            minZs[i] = buf.readDouble();
+                            maxXs[i] = buf.readDouble();
+                            maxYs[i] = buf.readDouble();
+                            maxZs[i] = buf.readDouble();
+                        }
                     }
                     context.queue(() -> {
                         ClientShieldManager csm = ClientShieldManager.getInstance();
                         csm.clear();
                         for (int i = 0; i < count; i++) {
-                            csm.updateShield(shipIds[i], currentHPs[i], maxHPs[i], actives[i]);
+                            csm.updateShield(shipIds[i], currentHPs[i], maxHPs[i], actives[i],
+                                    minXs[i], minYs[i], minZs[i],
+                                    maxXs[i], maxYs[i], maxZs[i]);
                         }
                     });
-                }
-        );
+                });
 
         NetworkManager.registerReceiver(
                 NetworkManager.Side.S2C,
@@ -65,17 +79,19 @@ public class VSShieldsModClient {
                         try {
                             ResourceLocation nukeId = new ResourceLocation("alexscaves", "nuclear_explosion");
                             Optional<EntityType<?>> opt = BuiltInRegistries.ENTITY_TYPE.getOptional(nukeId);
-                            if (opt.isEmpty()) return;
+                            if (opt.isEmpty())
+                                return;
                             Minecraft mc = Minecraft.getInstance();
-                            if (mc.level == null) return;
+                            if (mc.level == null)
+                                return;
                             Entity nukeEntity = opt.get().create(mc.level);
-                            if (nukeEntity == null) return;
+                            if (nukeEntity == null)
+                                return;
                             nukeEntity.setPos(x, y, z);
                             mc.level.putNonPlayerEntity(nukeEntity.getId(), nukeEntity);
                         } catch (Exception ignored) {
                         }
                     });
-                }
-        );
+                });
     }
 }

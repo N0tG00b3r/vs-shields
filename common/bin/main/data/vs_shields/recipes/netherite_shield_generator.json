@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NNN",
+    "NGN",
+    "NNN"
+  ],
+  "key": {
+    "N": { "item": "minecraft:netherite_ingot" },
+    "G": { "item": "vs_shields:diamond_shield_generator" }
+  },
+  "result": {
+    "item": "vs_shields:netherite_shield_generator",
+    "count": 1
+  }
+}

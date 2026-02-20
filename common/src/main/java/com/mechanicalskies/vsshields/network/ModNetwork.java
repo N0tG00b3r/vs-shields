@@ -6,11 +6,16 @@ import com.mechanicalskies.vsshields.shield.ShieldInstance;
 import com.mechanicalskies.vsshields.shield.ShieldManager;
 import dev.architectury.networking.NetworkManager;
 import io.netty.buffer.Unpooled;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import org.joml.primitives.AABBdc;
+import org.valkyrienskies.core.api.ships.Ship;
+import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.Map;
 
@@ -18,14 +23,10 @@ import java.util.Map;
  * Cross-platform network registration using Architectury NetworkManager.
  */
 public class ModNetwork {
-    public static final ResourceLocation SHIELD_SYNC_ID =
-            new ResourceLocation(VSShieldsMod.MOD_ID, "shield_sync");
-    public static final ResourceLocation SHIELD_TOGGLE_ID =
-            new ResourceLocation(VSShieldsMod.MOD_ID, "shield_toggle");
-    public static final ResourceLocation NUKE_VISUAL_ID =
-            new ResourceLocation(VSShieldsMod.MOD_ID, "nuke_visual");
-    public static final ResourceLocation CLOAK_TOGGLE_ID =
-            new ResourceLocation(VSShieldsMod.MOD_ID, "cloak_toggle");
+    public static final ResourceLocation SHIELD_SYNC_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "shield_sync");
+    public static final ResourceLocation SHIELD_TOGGLE_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "shield_toggle");
+    public static final ResourceLocation NUKE_VISUAL_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "nuke_visual");
+    public static final ResourceLocation CLOAK_TOGGLE_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "cloak_toggle");
 
     public static void init() {
         NetworkManager.registerReceiver(
@@ -35,8 +36,7 @@ public class ModNetwork {
                     long shipId = buf.readLong();
                     boolean active = buf.readBoolean();
                     context.queue(() -> handleToggle(context.getPlayer(), shipId, active));
-                }
-        );
+                });
 
         NetworkManager.registerReceiver(
                 NetworkManager.Side.C2S,
@@ -45,8 +45,7 @@ public class ModNetwork {
                     long shipId = buf.readLong();
                     boolean active = buf.readBoolean();
                     context.queue(() -> CloakManager.getInstance().toggleCloak(shipId, active));
-                }
-        );
+                });
 
         VSShieldsNetworking.register();
     }
@@ -60,21 +59,17 @@ public class ModNetwork {
     }
 
     public static void sendSyncToPlayer(ServerPlayer player) {
-        Map<Long, ShieldInstance> shields = ShieldManager.getInstance().getAllShields();
-
-        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-        buf.writeVarInt(shields.size());
-        for (ShieldInstance shield : shields.values()) {
-            buf.writeLong(shield.getShipId());
-            buf.writeDouble(shield.getCurrentHP());
-            buf.writeDouble(shield.getMaxHP());
-            buf.writeBoolean(shield.isActive());
-        }
-        NetworkManager.sendToPlayer(player, SHIELD_SYNC_ID, buf);
+        writeAndSendSync(player.server, buf -> NetworkManager.sendToPlayer(player, SHIELD_SYNC_ID, buf));
     }
 
     public static void sendSyncToAll(MinecraftServer server) {
-        Map<Long, ShieldInstance> shields = ShieldManager.getInstance().getAllShields();
+        writeAndSendSync(server,
+                buf -> NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), SHIELD_SYNC_ID, buf));
+    }
+
+    private static void writeAndSendSync(MinecraftServer server, java.util.function.Consumer<FriendlyByteBuf> sender) {
+        ShieldManager mgr = ShieldManager.getInstance();
+        Map<Long, ShieldInstance> shields = mgr.getAllShields();
 
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         buf.writeVarInt(shields.size());
@@ -83,8 +78,32 @@ public class ModNetwork {
             buf.writeDouble(shield.getCurrentHP());
             buf.writeDouble(shield.getMaxHP());
             buf.writeBoolean(shield.isActive());
+
+            // Include ship world-space AABB for client-side proximity checks
+            BlockPos ownerPos = mgr.getShieldOwnerPos(shield.getShipId());
+            AABBdc worldAABB = null;
+            if (ownerPos != null) {
+                for (ServerLevel level : server.getAllLevels()) {
+                    Ship ship = VSGameUtilsKt.getShipManagingPos(level, ownerPos);
+                    if (ship != null) {
+                        worldAABB = ship.getWorldAABB();
+                        break;
+                    }
+                }
+            }
+            if (worldAABB != null) {
+                buf.writeBoolean(true);
+                buf.writeDouble(worldAABB.minX());
+                buf.writeDouble(worldAABB.minY());
+                buf.writeDouble(worldAABB.minZ());
+                buf.writeDouble(worldAABB.maxX());
+                buf.writeDouble(worldAABB.maxY());
+                buf.writeDouble(worldAABB.maxZ());
+            } else {
+                buf.writeBoolean(false);
+            }
         }
-        NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), SHIELD_SYNC_ID, buf);
+        sender.accept(buf);
     }
 
     public static void sendToggleToServer(long shipId, boolean active) {
