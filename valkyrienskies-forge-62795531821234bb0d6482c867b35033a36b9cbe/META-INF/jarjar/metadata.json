@@ -1,0 +1,246 @@
+{
+  "jars": [
+    {
+      "identifier": {
+        "group": "io.github.llamalad7",
+        "artifact": "mixinextras-forge"
+      },
+      "version": {
+        "range": "[0.4.1,)",
+        "artifactVersion": "0.4.1"
+      },
+      "path": "META-INF/jars/mixinextras-forge-0.4.1.jar"
+    },
+    {
+      "identifier": {
+        "group": "me.shedaniel.cloth",
+        "artifact": "cloth-config-forge"
+      },
+      "version": {
+        "range": "[11.1.106,)",
+        "artifactVersion": "11.1.106"
+      },
+      "path": "META-INF/jars/cloth-config-forge-11.1.106.jar"
+    },
+    {
+      "identifier": {
+        "group": "org.valkyrienskies.core",
+        "artifact": "api"
+      },
+      "version": {
+        "range": "[1.1.0+1d4a7373e9,)",
+        "artifactVersion": "1.1.0+1d4a7373e9"
+      },
+      "path": "META-INF/jars/api-1.1.0+1d4a7373e9.jar"
+    },
+    {
+      "identifier": {
+        "group": "org.valkyrienskies.core",
+        "artifact": "util"
+      },
+      "version": {
+        "range": "[1.1.0+1d4a7373e9,)",
+        "artifactVersion": "1.1.0+1d4a7373e9"
+      },
+      "path": "META-INF/jars/util-1.1.0+1d4a7373e9.jar"
+    },
+    {
+      "identifier": {
+        "group": "javax.inject",
+        "artifact": "javax.inject"
+      },
+      "version": {
+        "range": "[1,)",
+        "artifactVersion": "1"
+      },
+      "path": "META-INF/jars/javax.inject-1.jar"
+    },
+    {
+      "identifier": {
+        "group": "org.joml",
+        "artifact": "joml-primitives"
+      },
+      "version": {
+        "range": "[1.10.0,)",
+        "artifactVersion": "1.10.0"
+      },
+      "path": "META-INF/jars/joml-primitives-1.10.0.jar"
+    },
+    {
+      "identifier": {
+        "group": "org.apache.commons",
+        "artifact": "commons-math3"
+      },
+      "version": {
+        "range": "[3.6.1,)",
+        "artifactVersion": "3.6.1"
+      },
+      "path": "META-INF/jars/commons-math3-3.6.1.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.fasterxml.jackson.module",
+        "artifact": "jackson-module-kotlin"
+      },
+      "version": {
+        "range": "[2.14.0-rubyfork,)",
+        "artifactVersion": "2.14.0-rubyfork"
+      },
+      "path": "META-INF/jars/jackson-module-kotlin-2.14.0-rubyfork.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.fasterxml.jackson.module",
+        "artifact": "jackson-module-parameter-names"
+      },
+      "version": {
+        "range": "[2.14.0,)",
+        "artifactVersion": "2.14.0"
+      },
+      "path": "META-INF/jars/jackson-module-parameter-names-2.14.0.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.fasterxml.jackson.dataformat",
+        "artifact": "jackson-dataformat-cbor"
+      },
+      "version": {
+        "range": "[2.14.0,)",
+        "artifactVersion": "2.14.0"
+      },
+      "path": "META-INF/jars/jackson-dataformat-cbor-2.14.0.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.fasterxml.jackson.core",
+        "artifact": "jackson-databind"
+      },
+      "version": {
+        "range": "[2.14.0,)",
+        "artifactVersion": "2.14.0"
+      },
+      "path": "META-INF/jars/jackson-databind-2.14.0.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.fasterxml.jackson.core",
+        "artifact": "jackson-annotations"
+      },
+      "version": {
+        "range": "[2.14.0,)",
+        "artifactVersion": "2.14.0"
+      },
+      "path": "META-INF/jars/jackson-annotations-2.14.0.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.fasterxml.jackson.core",
+        "artifact": "jackson-core"
+      },
+      "version": {
+        "range": "[2.14.0,)",
+        "artifactVersion": "2.14.0"
+      },
+      "path": "META-INF/jars/jackson-core-2.14.0.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.github.Rubydesic",
+        "artifact": "jackson-kotlin-dsl"
+      },
+      "version": {
+        "range": "[1.2.0,)",
+        "artifactVersion": "1.2.0"
+      },
+      "path": "META-INF/jars/jackson-kotlin-dsl-1.2.0.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.networknt",
+        "artifact": "json-schema-validator"
+      },
+      "version": {
+        "range": "[1.0.71,)",
+        "artifactVersion": "1.0.71"
+      },
+      "path": "META-INF/jars/json-schema-validator-1.0.71.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.ethlo.time",
+        "artifact": "itu"
+      },
+      "version": {
+        "range": "[1.7.0,)",
+        "artifactVersion": "1.7.0"
+      },
+      "path": "META-INF/jars/itu-1.7.0.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.github.victools",
+        "artifact": "jsonschema-module-jackson"
+      },
+      "version": {
+        "range": "[4.25.0,)",
+        "artifactVersion": "4.25.0"
+      },
+      "path": "META-INF/jars/jsonschema-module-jackson-4.25.0.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.github.victools",
+        "artifact": "jsonschema-generator"
+      },
+      "version": {
+        "range": "[4.25.0,)",
+        "artifactVersion": "4.25.0"
+      },
+      "path": "META-INF/jars/jsonschema-generator-4.25.0.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.fasterxml",
+        "artifact": "classmate"
+      },
+      "version": {
+        "range": "[1.5.1,)",
+        "artifactVersion": "1.5.1"
+      },
+      "path": "META-INF/jars/classmate-1.5.1.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.flipkart.zjsonpatch",
+        "artifact": "zjsonpatch"
+      },
+      "version": {
+        "range": "[0.4.11,)",
+        "artifactVersion": "0.4.11"
+      },
+      "path": "META-INF/jars/zjsonpatch-0.4.11.jar"
+    },
+    {
+      "identifier": {
+        "group": "org.apache.commons",
+        "artifact": "commons-collections4"
+      },
+      "version": {
+        "range": "[4.3,)",
+        "artifactVersion": "4.3"
+      },
+      "path": "META-INF/jars/commons-collections4-4.3.jar"
+    },
+    {
+      "identifier": {
+        "group": "com.google.dagger",
+        "artifact": "dagger"
+      },
+      "version": {
+        "range": "[2.43.2,)",
+        "artifactVersion": "2.43.2"
+      },
+      "path": "META-INF/jars/dagger-2.43.2.jar"
+    }
+  ]
+}

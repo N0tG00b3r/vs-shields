@@ -27,6 +27,10 @@ public class VSShieldsModClient {
         MenuRegistry.registerScreenFactory(ModMenus.SHIELD_BATTERY_MENU.get(), ShieldBatteryScreen::new);
         MenuRegistry.registerScreenFactory(ModMenus.CLOAK_GENERATOR_MENU.get(), CloakGeneratorScreen::new);
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> ShieldHudOverlay.render(graphics, delta));
+
+        // Cloaking: use VS2's public render events to track which ship is being
+        // rendered
+        registerCloakRenderHook();
     }
 
     private static void registerPackets() {
@@ -39,6 +43,7 @@ public class VSShieldsModClient {
                     double[] currentHPs = new double[count];
                     double[] maxHPs = new double[count];
                     boolean[] actives = new boolean[count];
+                    double[] energyPercents = new double[count];
                     double[] minXs = new double[count], minYs = new double[count], minZs = new double[count];
                     double[] maxXs = new double[count], maxYs = new double[count], maxZs = new double[count];
                     boolean[] hasAABB = new boolean[count];
@@ -47,6 +52,7 @@ public class VSShieldsModClient {
                         currentHPs[i] = buf.readDouble();
                         maxHPs[i] = buf.readDouble();
                         actives[i] = buf.readBoolean();
+                        energyPercents[i] = buf.readDouble();
                         hasAABB[i] = buf.readBoolean();
                         if (hasAABB[i]) {
                             minXs[i] = buf.readDouble();
@@ -62,6 +68,7 @@ public class VSShieldsModClient {
                         csm.clear();
                         for (int i = 0; i < count; i++) {
                             csm.updateShield(shipIds[i], currentHPs[i], maxHPs[i], actives[i],
+                                    energyPercents[i],
                                     minXs[i], minYs[i], minZs[i],
                                     maxXs[i], maxYs[i], maxZs[i]);
                         }
@@ -93,5 +100,44 @@ public class VSShieldsModClient {
                         }
                     });
                 });
+    }
+
+    /**
+     * Hooks into VS2's public render events to enable cloaking without fragile
+     * lambda mixins.
+     * VSGameEvents.getRenderShip() fires BEFORE each ship's chunks render.
+     * VSGameEvents.getPostRenderShip() fires AFTER.
+     * We set a flag in CloakRenderState that CloakChunkLayerMixin reads.
+     */
+    private static void registerCloakRenderHook() {
+        try {
+            org.valkyrienskies.mod.common.hooks.VSGameEvents.INSTANCE.getRenderShip().on(event -> {
+                org.valkyrienskies.core.api.ships.ClientShip ship = event.getShip();
+                if (!ClientCloakManager.getInstance().isCloaked(ship.getId())) {
+                    CloakRenderState.beginShipRender(ship.getId(), false);
+                    return;
+                }
+
+                // Don't cloak if the local player is aboard this ship
+                Minecraft mc = Minecraft.getInstance();
+                boolean shouldSkip = true;
+                if (mc.player != null) {
+                    org.valkyrienskies.core.api.ships.ClientShip playerShip = org.valkyrienskies.mod.common.VSClientGameUtils
+                            .getClientShip(
+                                    mc.player.getX(), mc.player.getY(), mc.player.getZ());
+                    if (playerShip != null && playerShip.getId() == ship.getId()) {
+                        shouldSkip = false;
+                    }
+                }
+                CloakRenderState.beginShipRender(ship.getId(), shouldSkip);
+            });
+
+            org.valkyrienskies.mod.common.hooks.VSGameEvents.INSTANCE.getPostRenderShip().on(event -> {
+                CloakRenderState.endShipRender();
+            });
+        } catch (Exception e) {
+            // VS2 API not available or changed — cloaking degrades gracefully
+            System.err.println("[vs-shields] Failed to register VS2 render events for cloaking: " + e.getMessage());
+        }
     }
 }

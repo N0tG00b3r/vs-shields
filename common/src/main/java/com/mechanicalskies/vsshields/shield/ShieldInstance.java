@@ -22,6 +22,7 @@ public class ShieldInstance {
     private long depletionTick; // Tick when shield hit 0 HP
     private boolean active;
     private double hpScale = 1.0; // Energy-based HP scaling (0.5 to 1.0)
+    private double energyPercent = 1.0; // Current energy level as 0.0–1.0
     private DamageListener damageListener;
 
     public ShieldInstance(long shipId, ShieldTier tier) {
@@ -38,21 +39,44 @@ public class ShieldInstance {
         this.active = true;
     }
 
-    public long getShipId() { return shipId; }
-    public double getCurrentHP() { return currentHP; }
-    public double getMaxHP() { return (baseMaxHP + bonusMaxHP) * hpScale; }
-    public double getRechargeRate() { return baseRechargeRate + bonusRechargeRate; }
-    public int getRechargeCooldown() { return rechargeCooldown; }
-    public long getLastHitTick() { return lastHitTick; }
-    public boolean isActive() { return active; }
+    public long getShipId() {
+        return shipId;
+    }
 
-    public void setActive(boolean active) { this.active = active; }
+    public double getCurrentHP() {
+        return currentHP;
+    }
+
+    public double getMaxHP() {
+        return (baseMaxHP + bonusMaxHP) * hpScale;
+    }
+
+    public double getRechargeRate() {
+        return baseRechargeRate + bonusRechargeRate;
+    }
+
+    public int getRechargeCooldown() {
+        return rechargeCooldown;
+    }
+
+    public long getLastHitTick() {
+        return lastHitTick;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 
     /**
      * Apply damage to the shield. Returns the amount of damage that was absorbed.
      */
     public double damage(double amount, long currentTick) {
-        if (!active || currentHP <= 0) return 0;
+        if (!active || currentHP <= 0)
+            return 0;
         double absorbed = Math.min(currentHP, amount);
         currentHP -= absorbed;
         lastHitTick = currentTick;
@@ -83,9 +107,11 @@ public class ShieldInstance {
      * Tick the shield: recharge HP if cooldown has passed.
      */
     public void tick(long currentTick) {
-        if (!active) return;
+        if (!active)
+            return;
         double max = getMaxHP();
-        if (currentHP >= max) return;
+        if (currentHP >= max)
+            return;
 
         if (currentHP <= 0) {
             if (currentTick - depletionTick >= depletionCooldown) {
@@ -105,7 +131,8 @@ public class ShieldInstance {
     public void removeBonusMaxHP(double amount) {
         this.bonusMaxHP = Math.max(0, this.bonusMaxHP - amount);
         double max = getMaxHP();
-        if (currentHP > max) currentHP = max;
+        if (currentHP > max)
+            currentHP = max;
     }
 
     public void addBonusRechargeRate(double amount) {
@@ -117,14 +144,24 @@ public class ShieldInstance {
     }
 
     public void setHPScale(double scale) {
-        com.mechanicalskies.vsshields.config.ShieldConfig.GeneralConfig gen = com.mechanicalskies.vsshields.config.ShieldConfig.get().getGeneral();
+        com.mechanicalskies.vsshields.config.ShieldConfig.GeneralConfig gen = com.mechanicalskies.vsshields.config.ShieldConfig
+                .get().getGeneral();
         this.hpScale = Math.max(gen.hpScaleMin, Math.min(gen.hpScaleMax, scale));
         double max = getMaxHP();
-        if (currentHP > max) currentHP = max;
+        if (currentHP > max)
+            currentHP = max;
     }
 
     public double getHPPercent() {
         double max = getMaxHP();
         return max > 0 ? currentHP / max : 0;
+    }
+
+    public double getEnergyPercent() {
+        return energyPercent;
+    }
+
+    public void setEnergyPercent(double percent) {
+        this.energyPercent = Math.max(0.0, Math.min(1.0, percent));
     }
 }

@@ -22,61 +22,99 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
     private static final float ALPHA = 0.35f;
     private static final float PULSE_SPEED = 0.03f;
     private static final float PULSE_AMPLITUDE = 0.05f;
-    private static final float VERTICAL_PADDING = 5.0f;
 
     public ShieldRenderer(BlockEntityRendererProvider.Context context) {
     }
 
     @Override
     public void render(ShieldGeneratorBlockEntity be, float partialTick, PoseStack poseStack,
-                       MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
-        if (be.getLevel() == null) return;
+            MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+        if (be.getLevel() == null)
+            return;
         Ship ship = VSGameUtilsKt.getShipManagingPos(be.getLevel(), be.getBlockPos());
-        if (ship == null) return;
+        if (ship == null)
+            return;
 
         ClientShieldManager.ClientShieldData data = ClientShieldManager.getInstance().getShield(ship.getId());
-        if (data == null || !data.active || data.currentHP <= 0) return;
+        if (data == null || !data.active || data.currentHP <= 0)
+            return;
 
         AABBic shipAABB = ship.getShipAABB();
-        if (shipAABB == null) return;
+        if (shipAABB == null)
+            return;
 
-        // AABBic is a JOML interface with minX()/minY()/minZ()/maxX()/maxY()/maxZ() methods.
+        // AABBic is a JOML interface with minX()/minY()/minZ()/maxX()/maxY()/maxZ()
+        // methods.
         // These are shipyard-space coordinates, matching the BER's coordinate space.
         AABB renderBounds = new AABB(
-            shipAABB.minX(), shipAABB.minY(), shipAABB.minZ(),
-            shipAABB.maxX(), shipAABB.maxY(), shipAABB.maxZ()
-        );
+                shipAABB.minX(), shipAABB.minY(), shipAABB.minZ(),
+                shipAABB.maxX(), shipAABB.maxY(), shipAABB.maxZ());
 
         double hpPercent = data.getHPPercent();
         float r, g, b;
         if (hpPercent > 0.5) {
-            r = 0.2f; g = 0.4f; b = 1.0f;
+            r = 0.2f;
+            g = 0.4f;
+            b = 1.0f;
         } else if (hpPercent > 0.25) {
-            r = 1.0f; g = 0.8f; b = 0.2f;
+            r = 1.0f;
+            g = 0.8f;
+            b = 0.2f;
         } else {
-            r = 1.0f; g = 0.2f; b = 0.2f;
+            r = 1.0f;
+            g = 0.2f;
+            b = 0.2f;
         }
 
         float time = (System.currentTimeMillis() % 10000) / 1000f;
         float alpha = ALPHA + (float) Math.sin(time * Math.PI * 2 * PULSE_SPEED * 10) * PULSE_AMPLITUDE;
         alpha = Math.max(0.15f, Math.min(0.5f, alpha));
 
-        if (hpPercent < 0.25) {
+        // --- Low-energy flicker effect (FE < 20%) ---
+        double energyPct = data.energyPercent;
+        if (energyPct < 0.20) {
+            // Intensity ramps from 0 at 20% to 1 at 0%
+            float intensity = (float) (1.0 - energyPct / 0.20);
+
+            // Multi-frequency distortion: overlay fast + slow oscillations
+            float fastFlicker = (float) Math.sin(time * 47.3) * 0.5f + 0.5f;
+            float slowFlicker = (float) Math.sin(time * 7.1) * 0.5f + 0.5f;
+            float combined = fastFlicker * 0.6f + slowFlicker * 0.4f;
+
+            // Random dropout: brief moments where shield almost disappears
+            float hash = (float) Math.abs(Math.sin(time * 113.7 + 7.3));
+            boolean dropout = hash < 0.08f * intensity;
+
+            if (dropout) {
+                alpha *= 0.05f; // near-invisible flash
+            } else {
+                alpha *= (1.0f - intensity * 0.7f) + combined * intensity * 0.5f;
+            }
+
+            // Color shifts toward orange/red as energy drains
+            r = r + (1.0f - r) * intensity * 0.5f;
+            g = g * (1.0f - intensity * 0.4f);
+            b = b * (1.0f - intensity * 0.7f);
+        } else if (hpPercent < 0.25) {
+            // Low HP flicker (but energy is fine): mild warning
             float flicker = (float) Math.sin(time * 37.0) * 0.5f + 0.5f;
             alpha *= 0.5f + flicker * 0.5f;
         }
 
         poseStack.pushPose();
 
-        Vector3f center = new Vector3f((float)renderBounds.getCenter().x, (float)renderBounds.getCenter().y, (float)renderBounds.getCenter().z);
-        Vector3f blockPosInShipyard = new Vector3f(be.getBlockPos().getX(), be.getBlockPos().getY(), be.getBlockPos().getZ());
+        Vector3f center = new Vector3f((float) renderBounds.getCenter().x, (float) renderBounds.getCenter().y,
+                (float) renderBounds.getCenter().z);
+        Vector3f blockPosInShipyard = new Vector3f(be.getBlockPos().getX(), be.getBlockPos().getY(),
+                be.getBlockPos().getZ());
         center.sub(blockPosInShipyard);
 
         poseStack.translate(center.x(), center.y(), center.z());
 
-        float sizeX = (float) (renderBounds.getXsize() / 2.0);
-        float sizeY = (float) (renderBounds.getYsize() / 2.0) + VERTICAL_PADDING;
-        float sizeZ = (float) (renderBounds.getZsize() / 2.0);
+        float padding = (float) com.mechanicalskies.vsshields.config.ShieldConfig.get().getGeneral().shieldPadding;
+        float sizeX = (float) (renderBounds.getXsize() / 2.0) + padding;
+        float sizeY = (float) (renderBounds.getYsize() / 2.0) + padding;
+        float sizeZ = (float) (renderBounds.getZsize() / 2.0) + padding;
         poseStack.scale(sizeX, sizeY, sizeZ);
 
         renderSphere(poseStack, 1.0f, r, g, b, alpha);

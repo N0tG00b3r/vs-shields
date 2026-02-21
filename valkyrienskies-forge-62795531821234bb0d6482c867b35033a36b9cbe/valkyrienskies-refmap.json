@@ -1,0 +1,156 @@
+{
+  "mappings": {
+    "org/valkyrienskies/mod/forge/mixin/client/render/MixinLevelRenderer": {
+      "Lnet/minecraft/client/renderer/culling/Frustum;isVisible(Lnet/minecraft/world/phys/AABB;)Z": "Lnet/minecraft/client/renderer/culling/Frustum;m_113029_(Lnet/minecraft/world/phys/AABB;)Z",
+      "renderLevel": "Lnet/minecraft/client/renderer/LevelRenderer;m_109599_(Lcom/mojang/blaze3d/vertex/PoseStack;FJZLnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;)V"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/connectiblechains/MixinChainCollisionEntity": {
+      "canBeCollidedWith": "Lcom/lilypuree/connectiblechains/entity/ChainCollisionEntity;m_5829_()Z"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/connectiblechains/client/MixinChainKnotEntityRenderer": {
+      "Lnet/minecraft/world/entity/Entity;shouldRender(DDD)Z": "Lnet/minecraft/world/entity/Entity;m_6000_(DDD)Z"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/create/client/MixinContraptionHandlerClient": {
+      "Lcom/simibubi/create/content/contraptions/AbstractContraptionEntity;getBoundingBox()Lnet/minecraft/world/phys/AABB;": "Lcom/simibubi/create/content/contraptions/AbstractContraptionEntity;m_20191_()Lnet/minecraft/world/phys/AABB;"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/create/client/MixinSuperGlueSelectionHandler67": {
+      "Lnet/minecraft/client/player/LocalPlayer;getEyePosition()Lnet/minecraft/world/phys/Vec3;": "Lnet/minecraft/client/player/LocalPlayer;m_146892_()Lnet/minecraft/world/phys/Vec3;"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/create_stuff_additions/MixinGrapplinWhiskChainsLineProcedure": {
+      "Lnet/minecraft/nbt/CompoundTag;getDouble(Ljava/lang/String;)D": "Lnet/minecraft/nbt/CompoundTag;m_128459_(Ljava/lang/String;)D",
+      "Lnet/minecraft/world/level/LevelAccessor;isEmptyBlock(Lnet/minecraft/core/BlockPos;)Z": "Lnet/minecraft/world/level/LevelAccessor;m_46859_(Lnet/minecraft/core/BlockPos;)Z",
+      "execute(Lnet/minecraftforge/eventbus/api/Event;Lnet/minecraft/world/level/LevelAccessor;D)V": "execute(Lnet/minecraftforge/eventbus/api/Event;Lnet/minecraft/world/level/LevelAccessor;D)V"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/create_stuff_additions/MixinGrapplinWhiskItemInHandTickProcedure": {
+      "Lnet/minecraft/nbt/CompoundTag;getDouble(Ljava/lang/String;)D": "Lnet/minecraft/nbt/CompoundTag;m_128459_(Ljava/lang/String;)D",
+      "Lnet/minecraft/world/level/LevelAccessor;isEmptyBlock(Lnet/minecraft/core/BlockPos;)Z": "Lnet/minecraft/world/level/LevelAccessor;m_46859_(Lnet/minecraft/core/BlockPos;)Z"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/immersivengineering/MixinBlockEntityInventory": {
+      "Lnet/minecraft/world/phys/Vec3;distanceToSqr(Lnet/minecraft/world/phys/Vec3;)D": "Lnet/minecraft/world/phys/Vec3;m_82557_(Lnet/minecraft/world/phys/Vec3;)D"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/mekanism/MixinTileEntityMultiblock": {
+      "Lnet/minecraft/core/BlockPos;distSqr(Lnet/minecraft/core/Vec3i;)D": "Lnet/minecraft/core/BlockPos;m_123331_(Lnet/minecraft/core/Vec3i;)D"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/mffs/MixinClientPacketHandler": {
+      "Lnet/minecraft/client/multiplayer/ClientLevel;addParticle(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)V": "Lnet/minecraft/client/multiplayer/ClientLevel;m_7106_(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)V"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/mffs/MixinFrequencyGrid": {
+      "Lnet/minecraft/core/Vec3i;closerThan(Lnet/minecraft/core/Vec3i;D)Z": "Lnet/minecraft/core/Vec3i;m_123314_(Lnet/minecraft/core/Vec3i;D)Z"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/mixinbooster/MixinIForgePlayer": {
+      "Lnet/minecraft/world/phys/Vec3;atCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;": "Lnet/minecraft/world/phys/Vec3;m_82512_(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/modular_routers/MixinRouterMenu": {
+      "Lnet/minecraft/world/phys/Vec3;distanceToSqr(Lnet/minecraft/world/phys/Vec3;)D": "Lnet/minecraft/world/phys/Vec3;m_82557_(Lnet/minecraft/world/phys/Vec3;)D",
+      "stillValid": "Lme/desht/modularrouters/container/RouterMenu;m_6875_(Lnet/minecraft/world/entity/player/Player;)Z"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/oc2r/MixinComputerRenderer": {
+      "Lnet/minecraft/world/entity/Entity;getEyePosition(F)Lnet/minecraft/world/phys/Vec3;": "Lnet/minecraft/world/entity/Entity;m_20299_(F)Lnet/minecraft/world/phys/Vec3;",
+      "Lnet/minecraft/world/phys/Vec3;closerThan(Lnet/minecraft/core/Position;D)Z": "Lnet/minecraft/world/phys/Vec3;m_82509_(Lnet/minecraft/core/Position;D)Z"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/oc2r/MixinMonitorRenderer": {
+      "Lnet/minecraft/world/entity/Entity;getEyePosition(F)Lnet/minecraft/world/phys/Vec3;": "Lnet/minecraft/world/entity/Entity;m_20299_(F)Lnet/minecraft/world/phys/Vec3;",
+      "Lnet/minecraft/world/phys/Vec3;closerThan(Lnet/minecraft/core/Position;D)Z": "Lnet/minecraft/world/phys/Vec3;m_82509_(Lnet/minecraft/core/Position;D)Z"
+    },
+    "org/valkyrienskies/mod/forge/mixin/compat/twilightforest/ChunkGeneratorTwilightMixin": {
+      "findNearestMapStructure": "Ltwilightforest/world/components/chunkgenerators/ChunkGeneratorTwilight;m_223037_(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/HolderSet;Lnet/minecraft/core/BlockPos;IZ)Lcom/mojang/datafixers/util/Pair;"
+    },
+    "org/valkyrienskies/mod/forge/mixin/feature/enchanting_table/MixinEnchantmentMenu": {
+      "Lnet/minecraft/core/BlockPos;offset(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/core/BlockPos;": "Lnet/minecraft/core/BlockPos;m_121955_(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/core/BlockPos;",
+      "method_17411": "Lnet/minecraft/world/inventory/EnchantmentMenu;m_39483_(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)V"
+    },
+    "org/valkyrienskies/mod/forge/mixin/feature/fix_tp_ships_cross_dimension/MixinLevelChunk": {
+      "clearAllBlockEntities": "Lnet/minecraft/world/level/chunk/LevelChunk;m_187957_()V"
+    },
+    "org/valkyrienskies/mod/forge/mixin/feature/shipyard_entities/MixinPersistentEntitySectionManager": {
+      "processUnloads": "Lnet/minecraft/world/level/entity/PersistentEntitySectionManager;m_157577_()V"
+    },
+    "org/valkyrienskies/mod/forge/mixin/feature/water_in_ships_entity/MixinEntity": {
+      "Lnet/minecraft/world/level/Level;getFluidState(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/material/FluidState;": "Lnet/minecraft/world/level/Level;m_6425_(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/material/FluidState;",
+      "Lnet/minecraft/world/level/material/FluidState;getHeight(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)F": "Lnet/minecraft/world/level/material/FluidState;m_76155_(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)F",
+      "updateFluidOnEyes": "Lnet/minecraft/world/entity/Entity;m_20323_()V"
+    },
+    "org/valkyrienskies/mod/forge/mixin/world/level/block/FireMixin": {
+      "onPlace": "Lnet/minecraft/world/level/block/FireBlock;m_6807_(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)V",
+      "tick": "Lnet/minecraft/world/level/block/FireBlock;m_213897_(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;)V"
+    }
+  },
+  "data": {
+    "named:intermediary": {
+      "org/valkyrienskies/mod/forge/mixin/client/render/MixinLevelRenderer": {
+        "Lnet/minecraft/client/renderer/culling/Frustum;isVisible(Lnet/minecraft/world/phys/AABB;)Z": "Lnet/minecraft/client/renderer/culling/Frustum;m_113029_(Lnet/minecraft/world/phys/AABB;)Z",
+        "renderLevel": "Lnet/minecraft/client/renderer/LevelRenderer;m_109599_(Lcom/mojang/blaze3d/vertex/PoseStack;FJZLnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;)V"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/connectiblechains/MixinChainCollisionEntity": {
+        "canBeCollidedWith": "Lcom/lilypuree/connectiblechains/entity/ChainCollisionEntity;m_5829_()Z"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/connectiblechains/client/MixinChainKnotEntityRenderer": {
+        "Lnet/minecraft/world/entity/Entity;shouldRender(DDD)Z": "Lnet/minecraft/world/entity/Entity;m_6000_(DDD)Z"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/create/client/MixinContraptionHandlerClient": {
+        "Lcom/simibubi/create/content/contraptions/AbstractContraptionEntity;getBoundingBox()Lnet/minecraft/world/phys/AABB;": "Lcom/simibubi/create/content/contraptions/AbstractContraptionEntity;m_20191_()Lnet/minecraft/world/phys/AABB;"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/create/client/MixinSuperGlueSelectionHandler67": {
+        "Lnet/minecraft/client/player/LocalPlayer;getEyePosition()Lnet/minecraft/world/phys/Vec3;": "Lnet/minecraft/client/player/LocalPlayer;m_146892_()Lnet/minecraft/world/phys/Vec3;"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/create_stuff_additions/MixinGrapplinWhiskChainsLineProcedure": {
+        "Lnet/minecraft/nbt/CompoundTag;getDouble(Ljava/lang/String;)D": "Lnet/minecraft/nbt/CompoundTag;m_128459_(Ljava/lang/String;)D",
+        "Lnet/minecraft/world/level/LevelAccessor;isEmptyBlock(Lnet/minecraft/core/BlockPos;)Z": "Lnet/minecraft/world/level/LevelAccessor;m_46859_(Lnet/minecraft/core/BlockPos;)Z",
+        "execute(Lnet/minecraftforge/eventbus/api/Event;Lnet/minecraft/world/level/LevelAccessor;D)V": "execute(Lnet/minecraftforge/eventbus/api/Event;Lnet/minecraft/world/level/LevelAccessor;D)V"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/create_stuff_additions/MixinGrapplinWhiskItemInHandTickProcedure": {
+        "Lnet/minecraft/nbt/CompoundTag;getDouble(Ljava/lang/String;)D": "Lnet/minecraft/nbt/CompoundTag;m_128459_(Ljava/lang/String;)D",
+        "Lnet/minecraft/world/level/LevelAccessor;isEmptyBlock(Lnet/minecraft/core/BlockPos;)Z": "Lnet/minecraft/world/level/LevelAccessor;m_46859_(Lnet/minecraft/core/BlockPos;)Z"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/immersivengineering/MixinBlockEntityInventory": {
+        "Lnet/minecraft/world/phys/Vec3;distanceToSqr(Lnet/minecraft/world/phys/Vec3;)D": "Lnet/minecraft/world/phys/Vec3;m_82557_(Lnet/minecraft/world/phys/Vec3;)D"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/mekanism/MixinTileEntityMultiblock": {
+        "Lnet/minecraft/core/BlockPos;distSqr(Lnet/minecraft/core/Vec3i;)D": "Lnet/minecraft/core/BlockPos;m_123331_(Lnet/minecraft/core/Vec3i;)D"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/mffs/MixinClientPacketHandler": {
+        "Lnet/minecraft/client/multiplayer/ClientLevel;addParticle(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)V": "Lnet/minecraft/client/multiplayer/ClientLevel;m_7106_(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)V"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/mffs/MixinFrequencyGrid": {
+        "Lnet/minecraft/core/Vec3i;closerThan(Lnet/minecraft/core/Vec3i;D)Z": "Lnet/minecraft/core/Vec3i;m_123314_(Lnet/minecraft/core/Vec3i;D)Z"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/mixinbooster/MixinIForgePlayer": {
+        "Lnet/minecraft/world/phys/Vec3;atCenterOf(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;": "Lnet/minecraft/world/phys/Vec3;m_82512_(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/world/phys/Vec3;"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/modular_routers/MixinRouterMenu": {
+        "Lnet/minecraft/world/phys/Vec3;distanceToSqr(Lnet/minecraft/world/phys/Vec3;)D": "Lnet/minecraft/world/phys/Vec3;m_82557_(Lnet/minecraft/world/phys/Vec3;)D",
+        "stillValid": "Lme/desht/modularrouters/container/RouterMenu;m_6875_(Lnet/minecraft/world/entity/player/Player;)Z"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/oc2r/MixinComputerRenderer": {
+        "Lnet/minecraft/world/entity/Entity;getEyePosition(F)Lnet/minecraft/world/phys/Vec3;": "Lnet/minecraft/world/entity/Entity;m_20299_(F)Lnet/minecraft/world/phys/Vec3;",
+        "Lnet/minecraft/world/phys/Vec3;closerThan(Lnet/minecraft/core/Position;D)Z": "Lnet/minecraft/world/phys/Vec3;m_82509_(Lnet/minecraft/core/Position;D)Z"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/oc2r/MixinMonitorRenderer": {
+        "Lnet/minecraft/world/entity/Entity;getEyePosition(F)Lnet/minecraft/world/phys/Vec3;": "Lnet/minecraft/world/entity/Entity;m_20299_(F)Lnet/minecraft/world/phys/Vec3;",
+        "Lnet/minecraft/world/phys/Vec3;closerThan(Lnet/minecraft/core/Position;D)Z": "Lnet/minecraft/world/phys/Vec3;m_82509_(Lnet/minecraft/core/Position;D)Z"
+      },
+      "org/valkyrienskies/mod/forge/mixin/compat/twilightforest/ChunkGeneratorTwilightMixin": {
+        "findNearestMapStructure": "Ltwilightforest/world/components/chunkgenerators/ChunkGeneratorTwilight;m_223037_(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/HolderSet;Lnet/minecraft/core/BlockPos;IZ)Lcom/mojang/datafixers/util/Pair;"
+      },
+      "org/valkyrienskies/mod/forge/mixin/feature/enchanting_table/MixinEnchantmentMenu": {
+        "Lnet/minecraft/core/BlockPos;offset(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/core/BlockPos;": "Lnet/minecraft/core/BlockPos;m_121955_(Lnet/minecraft/core/Vec3i;)Lnet/minecraft/core/BlockPos;",
+        "method_17411": "Lnet/minecraft/world/inventory/EnchantmentMenu;m_39483_(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)V"
+      },
+      "org/valkyrienskies/mod/forge/mixin/feature/fix_tp_ships_cross_dimension/MixinLevelChunk": {
+        "clearAllBlockEntities": "Lnet/minecraft/world/level/chunk/LevelChunk;m_187957_()V"
+      },
+      "org/valkyrienskies/mod/forge/mixin/feature/shipyard_entities/MixinPersistentEntitySectionManager": {
+        "processUnloads": "Lnet/minecraft/world/level/entity/PersistentEntitySectionManager;m_157577_()V"
+      },
+      "org/valkyrienskies/mod/forge/mixin/feature/water_in_ships_entity/MixinEntity": {
+        "Lnet/minecraft/world/level/Level;getFluidState(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/material/FluidState;": "Lnet/minecraft/world/level/Level;m_6425_(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/material/FluidState;",
+        "Lnet/minecraft/world/level/material/FluidState;getHeight(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)F": "Lnet/minecraft/world/level/material/FluidState;m_76155_(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)F",
+        "updateFluidOnEyes": "Lnet/minecraft/world/entity/Entity;m_20323_()V"
+      },
+      "org/valkyrienskies/mod/forge/mixin/world/level/block/FireMixin": {
+        "onPlace": "Lnet/minecraft/world/level/block/FireBlock;m_6807_(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)V",
+        "tick": "Lnet/minecraft/world/level/block/FireBlock;m_213897_(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;)V"
+      }
+    }
+  }
+}

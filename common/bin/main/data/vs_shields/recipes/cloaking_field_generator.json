@@ -1,14 +1,17 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "OEO",
-    "EDE",
-    "OEO"
+    "BBB",
+    "BXB",
+    "BBB"
   ],
   "key": {
-    "O": { "item": "minecraft:obsidian" },
-    "E": { "item": "minecraft:ender_pearl" },
-    "D": { "item": "minecraft:diamond_block" }
+    "B": {
+      "item": "minecraft:barrier"
+    },
+    "X": {
+      "item": "minecraft:barrier"
+    }
   },
   "result": {
     "item": "vs_shields:cloaking_field_generator",

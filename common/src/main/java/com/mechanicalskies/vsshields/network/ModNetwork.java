@@ -78,6 +78,7 @@ public class ModNetwork {
             buf.writeDouble(shield.getCurrentHP());
             buf.writeDouble(shield.getMaxHP());
             buf.writeBoolean(shield.isActive());
+            buf.writeDouble(shield.getEnergyPercent());
 
             // Include ship world-space AABB for client-side proximity checks
             BlockPos ownerPos = mgr.getShieldOwnerPos(shield.getShipId());

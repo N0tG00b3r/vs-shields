@@ -63,7 +63,8 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
         }
 
         @Override
-        public void set(int index, int value) {}
+        public void set(int index, int value) {
+        }
 
         @Override
         public int getCount() {
@@ -82,7 +83,8 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
     }
 
     public void serverTick(Level level, BlockPos pos, BlockState state) {
-        if (level.isClientSide()) return;
+        if (level.isClientSide())
+            return;
 
         if (maxEnergy == 50000 && getShieldTier() != ShieldTier.IRON) {
             initEnergyFromTier();
@@ -110,7 +112,8 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
             duplicate = !isOwner;
         }
 
-        if (duplicate) return;
+        if (duplicate)
+            return;
 
         if (energyInputHook != null) {
             energyInputHook.tick(level, pos, this);
@@ -130,16 +133,26 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
                 hasPower = energyStored >= energyPerTick;
             }
 
-            com.mechanicalskies.vsshields.config.ShieldConfig.GeneralConfig gen = com.mechanicalskies.vsshields.config.ShieldConfig.get().getGeneral();
+            com.mechanicalskies.vsshields.config.ShieldConfig.GeneralConfig gen = com.mechanicalskies.vsshields.config.ShieldConfig
+                    .get().getGeneral();
             double energyPercent = maxEnergy > 0 ? (double) energyStored / maxEnergy : 0;
             double hpScale = gen.hpScaleMin + (gen.hpScaleMax - gen.hpScaleMin) * energyPercent;
             shield.setHPScale(hpScale);
+            shield.setEnergyPercent(energyPercent);
         }
     }
 
-    public int getEnergyStored() { return energyStored; }
-    public int getMaxEnergy() { return maxEnergy; }
-    public boolean hasPower() { return hasPower; }
+    public int getEnergyStored() {
+        return energyStored;
+    }
+
+    public int getMaxEnergy() {
+        return maxEnergy;
+    }
+
+    public boolean hasPower() {
+        return hasPower;
+    }
 
     public int receiveEnergy(int amount, boolean simulate) {
         int accepted = Math.min(amount, maxEnergy - energyStored);
@@ -150,8 +163,13 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
         return accepted;
     }
 
-    public long getTrackedShipId() { return trackedShipId; }
-    public boolean isDuplicate() { return duplicate; }
+    public long getTrackedShipId() {
+        return trackedShipId;
+    }
+
+    public boolean isDuplicate() {
+        return duplicate;
+    }
 
     public void onRemoved() {
         if (trackedShipId != -1) {
