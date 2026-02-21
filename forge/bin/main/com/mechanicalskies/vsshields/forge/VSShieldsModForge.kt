@@ -34,6 +34,7 @@ class VSShieldsModForge {
 
         MinecraftForge.EVENT_BUS.register(this)
         MinecraftForge.EVENT_BUS.register(ShieldDamageHandler())
+        MinecraftForge.EVENT_BUS.register(ShieldBarrierHandler())
         MinecraftForge.EVENT_BUS.register(ShieldEnergyCapability())
         MinecraftForge.EVENT_BUS.register(BatteryInputEnergyCapability())
         MinecraftForge.EVENT_BUS.register(CloakEnergyCapability())

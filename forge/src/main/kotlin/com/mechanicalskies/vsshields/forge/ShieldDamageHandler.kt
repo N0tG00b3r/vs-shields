@@ -93,6 +93,9 @@ class ShieldDamageHandler {
             }
             return null
         }
+
+        /** Public accessor for ShieldBarrierHandler */
+        fun getProjectileDamagePublic(entity: Entity): Double = getProjectileDamage(entity)
     }
 
     @SubscribeEvent
@@ -121,6 +124,16 @@ class ShieldDamageHandler {
             val power = explosion.radius.toDouble()
             val explosionDamage = power * power * ShieldConfig.get().damage.explosionPowerFactor
             shield.damage(explosionDamage, manager.currentTick)
+
+            val server = level.server
+            if (server != null) {
+                ModNetwork.sendShieldHit(server, shield.shipId,
+                    explosionPos.x, explosionPos.y, explosionPos.z,
+                    explosionDamage.toFloat())
+                if (shield.currentHP <= 0) {
+                    ModNetwork.sendShieldBreak(server, shield.shipId)
+                }
+            }
 
             event.isCanceled = true
         }
@@ -153,6 +166,17 @@ class ShieldDamageHandler {
             if (damage <= 0.0) return
 
             shield.damage(damage, manager.currentTick)
+
+            val server = level.server
+            if (server != null) {
+                ModNetwork.sendShieldHit(server, shield.shipId,
+                    hitPos.x, hitPos.y, hitPos.z,
+                    damage.toFloat())
+                if (shield.currentHP <= 0) {
+                    ModNetwork.sendShieldBreak(server, shield.shipId)
+                }
+            }
+
             event.isCanceled = true
         }
     }
@@ -196,9 +220,15 @@ class ShieldDamageHandler {
             val nukeDamage = ShieldConfig.get().damage.alexsCavesNukeDamage
             shield.damage(nukeDamage, manager.currentTick)
 
-            // Send visual effect to clients (uses existing nuke_visual packet)
+            // Send visual effects to clients
             val server = level.server
             if (server != null) {
+                ModNetwork.sendShieldHit(server, shield.shipId,
+                    entity.x, entity.y, entity.z,
+                    nukeDamage.toFloat())
+                if (shield.currentHP <= 0) {
+                    ModNetwork.sendShieldBreak(server, shield.shipId)
+                }
                 ModNetwork.sendNukeVisual(server, entity.x, entity.y, entity.z)
             }
 

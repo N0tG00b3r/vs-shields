@@ -25,6 +25,8 @@ import java.util.Map;
 public class ModNetwork {
     public static final ResourceLocation SHIELD_SYNC_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "shield_sync");
     public static final ResourceLocation SHIELD_TOGGLE_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "shield_toggle");
+    public static final ResourceLocation SHIELD_HIT_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "shield_hit");
+    public static final ResourceLocation SHIELD_BREAK_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "shield_break");
     public static final ResourceLocation NUKE_VISUAL_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "nuke_visual");
     public static final ResourceLocation CLOAK_TOGGLE_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "cloak_toggle");
 
@@ -56,6 +58,32 @@ public class ModNetwork {
         buf.writeDouble(y);
         buf.writeDouble(z);
         NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), NUKE_VISUAL_ID, buf);
+    }
+
+    /**
+     * Send a shield hit effect to all clients.
+     * 
+     * @param shipId the ship that was hit
+     * @param x,y,z  world-space hit position
+     * @param damage amount of damage dealt (used to scale particle intensity)
+     */
+    public static void sendShieldHit(MinecraftServer server, long shipId, double x, double y, double z, float damage) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeLong(shipId);
+        buf.writeDouble(x);
+        buf.writeDouble(y);
+        buf.writeDouble(z);
+        buf.writeFloat(damage);
+        NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), SHIELD_HIT_ID, buf);
+    }
+
+    /**
+     * Send a shield break effect to all clients.
+     */
+    public static void sendShieldBreak(MinecraftServer server, long shipId) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeLong(shipId);
+        NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), SHIELD_BREAK_ID, buf);
     }
 
     public static void sendSyncToPlayer(ServerPlayer player) {

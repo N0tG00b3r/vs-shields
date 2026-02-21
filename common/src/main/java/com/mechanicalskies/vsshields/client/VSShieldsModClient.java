@@ -28,6 +28,12 @@ public class VSShieldsModClient {
         MenuRegistry.registerScreenFactory(ModMenus.CLOAK_GENERATOR_MENU.get(), CloakGeneratorScreen::new);
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> ShieldHudOverlay.render(graphics, delta));
 
+        // Ambient shield hum sound + shield break animations
+        dev.architectury.event.events.client.ClientTickEvent.CLIENT_POST.register(instance -> {
+            ShieldAmbientSoundHandler.tick();
+            ShieldEffectHandler.tick();
+        });
+
         // Cloaking: use VS2's public render events to track which ship is being
         // rendered
         registerCloakRenderHook();
@@ -99,6 +105,28 @@ public class VSShieldsModClient {
                         } catch (Exception ignored) {
                         }
                     });
+                });
+
+        // Shield hit effect (particles at impact point)
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.S2C,
+                ModNetwork.SHIELD_HIT_ID,
+                (buf, context) -> {
+                    long shipId = buf.readLong();
+                    double x = buf.readDouble();
+                    double y = buf.readDouble();
+                    double z = buf.readDouble();
+                    float damage = buf.readFloat();
+                    context.queue(() -> ShieldEffectHandler.onShieldHit(shipId, x, y, z, damage));
+                });
+
+        // Shield break effect (shatter animation)
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.S2C,
+                ModNetwork.SHIELD_BREAK_ID,
+                (buf, context) -> {
+                    long shipId = buf.readLong();
+                    context.queue(() -> ShieldEffectHandler.onShieldBreak(shipId));
                 });
     }
 

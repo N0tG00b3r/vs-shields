@@ -1,0 +1,11 @@
+{
+    "shield_hum": {
+        "category": "blocks",
+        "sounds": [
+            {
+                "name": "vs_shields:shield_hum",
+                "stream": true
+            }
+        ]
+    }
+}

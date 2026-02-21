@@ -17,8 +17,8 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockEntity> {
 
-    private static final int SPHERE_STACKS = 16;
-    private static final int SPHERE_SLICES = 24;
+    private static final int SPHERE_STACKS = 32;
+    private static final int SPHERE_SLICES = 48;
     private static final float ALPHA = 0.35f;
     private static final float PULSE_SPEED = 0.03f;
     private static final float PULSE_AMPLITUDE = 0.05f;
@@ -122,6 +122,12 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
         poseStack.popPose();
     }
 
+    // Honeycomb grid parameters
+    private static final float HEX_SCALE = 8.0f; // How many hex cells across the sphere
+    private static final float EDGE_WIDTH = 0.12f; // Width of hex edges (0-1, fraction of cell)
+    private static final float EDGE_BRIGHTNESS = 1.8f; // How bright edges are vs fill
+    private static final float FILL_ALPHA_MULT = 0.4f; // Alpha multiplier for hex cell interiors
+
     private void renderSphere(PoseStack poseStack, float radius, float r, float g, float b, float alpha) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -132,6 +138,9 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder builder = tesselator.getBuilder();
         Matrix4f matrix = poseStack.last().pose();
+
+        float time = (System.currentTimeMillis() % 60000) / 60000f; // slow rotation
+        float rotOffset = time * (float) Math.PI * 2.0f;
 
         builder.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
 
@@ -151,29 +160,24 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
                 float sinTheta2 = (float) Math.sin(theta2);
                 float cosTheta2 = (float) Math.cos(theta2);
 
-                float x1 = radius * sinPhi1 * cosTheta1;
-                float y1 = radius * cosPhi1;
-                float z1 = radius * sinPhi1 * sinTheta1;
+                float x1 = radius * sinPhi1 * cosTheta1, y1 = radius * cosPhi1, z1 = radius * sinPhi1 * sinTheta1;
+                float x2 = radius * sinPhi1 * cosTheta2, y2 = radius * cosPhi1, z2 = radius * sinPhi1 * sinTheta2;
+                float x3 = radius * sinPhi2 * cosTheta2, y3 = radius * cosPhi2, z3 = radius * sinPhi2 * sinTheta2;
+                float x4 = radius * sinPhi2 * cosTheta1, y4 = radius * cosPhi2, z4 = radius * sinPhi2 * sinTheta1;
 
-                float x2 = radius * sinPhi1 * cosTheta2;
-                float y2 = radius * cosPhi1;
-                float z2 = radius * sinPhi1 * sinTheta2;
+                // Compute per-vertex honeycomb modulation
+                float[] c1 = hexColor(phi1, theta1 + rotOffset, r, g, b, alpha);
+                float[] c2 = hexColor(phi1, theta2 + rotOffset, r, g, b, alpha);
+                float[] c3 = hexColor(phi2, theta2 + rotOffset, r, g, b, alpha);
+                float[] c4 = hexColor(phi2, theta1 + rotOffset, r, g, b, alpha);
 
-                float x3 = radius * sinPhi2 * cosTheta2;
-                float y3 = radius * cosPhi2;
-                float z3 = radius * sinPhi2 * sinTheta2;
+                builder.vertex(matrix, x1, y1, z1).color(c1[0], c1[1], c1[2], c1[3]).endVertex();
+                builder.vertex(matrix, x2, y2, z2).color(c2[0], c2[1], c2[2], c2[3]).endVertex();
+                builder.vertex(matrix, x3, y3, z3).color(c3[0], c3[1], c3[2], c3[3]).endVertex();
 
-                float x4 = radius * sinPhi2 * cosTheta1;
-                float y4 = radius * cosPhi2;
-                float z4 = radius * sinPhi2 * sinTheta1;
-
-                builder.vertex(matrix, x1, y1, z1).color(r, g, b, alpha).endVertex();
-                builder.vertex(matrix, x2, y2, z2).color(r, g, b, alpha).endVertex();
-                builder.vertex(matrix, x3, y3, z3).color(r, g, b, alpha).endVertex();
-
-                builder.vertex(matrix, x1, y1, z1).color(r, g, b, alpha).endVertex();
-                builder.vertex(matrix, x3, y3, z3).color(r, g, b, alpha).endVertex();
-                builder.vertex(matrix, x4, y4, z4).color(r, g, b, alpha).endVertex();
+                builder.vertex(matrix, x1, y1, z1).color(c1[0], c1[1], c1[2], c1[3]).endVertex();
+                builder.vertex(matrix, x3, y3, z3).color(c3[0], c3[1], c3[2], c3[3]).endVertex();
+                builder.vertex(matrix, x4, y4, z4).color(c4[0], c4[1], c4[2], c4[3]).endVertex();
             }
         }
 
@@ -182,6 +186,74 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
         RenderSystem.depthMask(true);
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
+    }
+
+    /**
+     * Compute RGBA for a point on the sphere based on its distance to the nearest
+     * hexagonal grid edge. Points on edges are brighter; cell interiors are dimmer.
+     */
+    private float[] hexColor(double phi, double theta, float r, float g, float b, float baseAlpha) {
+        // Map spherical coords to 2D plane for hex grid
+        // Use equirectangular projection, scaled by HEX_SCALE
+        float u = (float) (theta / (2.0 * Math.PI)) * HEX_SCALE * 2.0f;
+        float v = (float) (phi / Math.PI) * HEX_SCALE;
+
+        // Convert to axial hex coordinates
+        // Hex grid: pointy-top orientation
+        float sqrt3 = 1.7320508f;
+        float q = (sqrt3 / 3.0f * u - 1.0f / 3.0f * v);
+        float rr = (2.0f / 3.0f * v);
+
+        // Round to nearest hex center (cube coordinate rounding)
+        float s = -q - rr;
+        int qi = Math.round(q);
+        int ri = Math.round(rr);
+        int si = Math.round(s);
+
+        // Fix rounding so q+r+s == 0
+        float qDiff = Math.abs(qi - q);
+        float rDiff = Math.abs(ri - rr);
+        float sDiff = Math.abs(si - s);
+        if (qDiff > rDiff && qDiff > sDiff) {
+            qi = -ri - si;
+        } else if (rDiff > sDiff) {
+            ri = -qi - si;
+        }
+
+        // Distance from the point to the nearest hex center (in hex space)
+        float dq = q - qi;
+        float dr = rr - ri;
+
+        // Convert back to cartesian distance for edge detection
+        float dx = sqrt3 * dq + sqrt3 / 2.0f * dr;
+        float dy = 1.5f * dr;
+        float dist = (float) Math.sqrt(dx * dx + dy * dy);
+
+        // Hex cell has circumradius 1.0 in this space; edge is at ~1.0
+        // Use smoothstep to blend between edge and fill
+        float edgeDist = 1.0f - dist; // 0 at edge, 1 at center
+        float edgeFactor = smoothstep(0.0f, EDGE_WIDTH, edgeDist);
+
+        // Edge: bright, full alpha. Fill: dimmer, lower alpha.
+        float fillAlpha = baseAlpha * FILL_ALPHA_MULT;
+        float edgeAlpha = Math.min(baseAlpha * EDGE_BRIGHTNESS, 0.9f);
+        float finalAlpha = lerp(edgeAlpha, fillAlpha, edgeFactor);
+
+        float edgeBright = Math.min(1.0f, EDGE_BRIGHTNESS);
+        float finalR = lerp(Math.min(1.0f, r * edgeBright), r * 0.6f, edgeFactor);
+        float finalG = lerp(Math.min(1.0f, g * edgeBright), g * 0.6f, edgeFactor);
+        float finalB = lerp(Math.min(1.0f, b * edgeBright), b * 0.6f, edgeFactor);
+
+        return new float[] { finalR, finalG, finalB, finalAlpha };
+    }
+
+    private static float smoothstep(float edge0, float edge1, float x) {
+        float t = Math.max(0.0f, Math.min(1.0f, (x - edge0) / (edge1 - edge0)));
+        return t * t * (3.0f - 2.0f * t);
+    }
+
+    private static float lerp(float a, float b, float t) {
+        return a + (b - a) * t;
     }
 
     @Override

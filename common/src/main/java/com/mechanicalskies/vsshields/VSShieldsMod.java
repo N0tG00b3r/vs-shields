@@ -7,6 +7,7 @@ import com.mechanicalskies.vsshields.registry.ModBlocks;
 import com.mechanicalskies.vsshields.registry.ModCreativeTabs;
 import com.mechanicalskies.vsshields.registry.ModItems;
 import com.mechanicalskies.vsshields.registry.ModMenus;
+import com.mechanicalskies.vsshields.registry.ModSounds;
 
 import java.nio.file.Path;
 
@@ -19,6 +20,7 @@ public class VSShieldsMod {
         ModBlockEntities.register();
         ModCreativeTabs.register();
         ModMenus.register();
+        ModSounds.register();
         ModNetwork.init();
     }
 
