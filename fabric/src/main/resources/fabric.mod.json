@@ -8,7 +8,7 @@
     "LennyPane"
   ],
   "license": "All Rights Reserved",
-  "icon": "assets/vs_shields/icon.png",
+  "icon": "icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [

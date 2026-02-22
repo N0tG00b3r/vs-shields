@@ -56,7 +56,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(3.0f, 6.0f)
                                                         .sound(SoundType.METAL)
-                                                        .requiresCorrectToolForDrops()));
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
 
         public static final RegistrySupplier<Block> SHIELD_EMITTER = BLOCKS.register(
                         "shield_emitter",
