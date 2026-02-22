@@ -26,7 +26,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(3.0f, 6.0f)
                                                         .sound(SoundType.METAL)
-                                                        .requiresCorrectToolForDrops(),
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion(),
                                         ShieldTier.IRON));
 
         public static final RegistrySupplier<Block> DIAMOND_SHIELD_GENERATOR = BLOCKS.register(
@@ -35,7 +36,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(5.0f, 8.0f)
                                                         .sound(SoundType.METAL)
-                                                        .requiresCorrectToolForDrops(),
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion(),
                                         ShieldTier.DIAMOND));
 
         public static final RegistrySupplier<Block> NETHERITE_SHIELD_GENERATOR = BLOCKS.register(
@@ -44,7 +46,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(8.0f, 12.0f)
                                                         .sound(SoundType.NETHERITE_BLOCK)
-                                                        .requiresCorrectToolForDrops(),
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion(),
                                         ShieldTier.NETHERITE));
 
         public static final RegistrySupplier<Block> SHIELD_CAPACITOR = BLOCKS.register(

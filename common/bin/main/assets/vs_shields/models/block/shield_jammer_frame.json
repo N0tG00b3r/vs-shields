@@ -1,6 +1,6 @@
 {
     "parent": "minecraft:block/cube_all",
     "textures": {
-        "all": "vs_shields:block/kinetic_ram_part"
+        "all": "vs_shields:block/shield_jammer_frame"
     }
 }
