@@ -131,30 +131,24 @@ public class VSShieldsModClient {
     }
 
     /**
-     * Hooks into VS2's public render events to enable cloaking without fragile
-     * lambda mixins.
-     * VSGameEvents.getRenderShip() fires BEFORE each ship's chunks render.
-     * VSGameEvents.getPostRenderShip() fires AFTER.
-     * We set a flag in CloakRenderState that CloakChunkLayerMixin reads.
+     * Hooks into VS2's public render events for cloaking (currently dormant).
+     * Waiting for VS2 developers to provide a stable per-ship render suppression
+     * API.
+     * The CloakRenderState tracking is kept for future use.
      */
     private static void registerCloakRenderHook() {
         try {
             org.valkyrienskies.mod.common.hooks.VSGameEvents.INSTANCE.getRenderShip().on(event -> {
                 org.valkyrienskies.core.api.ships.ClientShip ship = event.getShip();
-                if (!ClientCloakManager.getInstance().isCloaked(ship.getId())) {
-                    CloakRenderState.beginShipRender(ship.getId(), false);
-                    return;
-                }
-
-                // Don't cloak if the local player is aboard this ship
-                Minecraft mc = Minecraft.getInstance();
-                boolean shouldSkip = true;
-                if (mc.player != null) {
-                    org.valkyrienskies.core.api.ships.ClientShip playerShip = org.valkyrienskies.mod.common.VSClientGameUtils
-                            .getClientShip(
-                                    mc.player.getX(), mc.player.getY(), mc.player.getZ());
-                    if (playerShip != null && playerShip.getId() == ship.getId()) {
-                        shouldSkip = false;
+                boolean shouldSkip = ClientCloakManager.getInstance().isCloaked(ship.getId());
+                if (shouldSkip) {
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.player != null) {
+                        org.valkyrienskies.core.api.ships.ClientShip playerShip = org.valkyrienskies.mod.common.VSClientGameUtils
+                                .getClientShip(mc.player.getX(), mc.player.getY(), mc.player.getZ());
+                        if (playerShip != null && playerShip.getId() == ship.getId()) {
+                            shouldSkip = false;
+                        }
                     }
                 }
                 CloakRenderState.beginShipRender(ship.getId(), shouldSkip);
@@ -164,8 +158,7 @@ public class VSShieldsModClient {
                 CloakRenderState.endShipRender();
             });
         } catch (Exception e) {
-            // VS2 API not available or changed — cloaking degrades gracefully
-            System.err.println("[vs-shields] Failed to register VS2 render events for cloaking: " + e.getMessage());
+            System.err.println("[vs-shields] Failed to register VS2 render events: " + e.getMessage());
         }
     }
 }
