@@ -70,6 +70,14 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
         float alpha = ALPHA + (float) Math.sin(time * Math.PI * 2 * PULSE_SPEED * 10) * PULSE_AMPLITUDE;
         alpha = Math.max(0.15f, Math.min(0.5f, alpha));
 
+        // --- Cloaking override ---
+        if (CloakedShipsRegistry.getInstance().isCloaked(ship.getId())) {
+            r = 1.0f;
+            g = 0.3f;
+            b = 0.8f;
+            alpha = 0.08f;
+        }
+
         // --- Low-energy flicker effect (FE < 20%) ---
         double energyPct = data.energyPercent;
         if (energyPct < 0.20) {
@@ -117,7 +125,8 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
         float sizeZ = (float) (renderBounds.getZsize() / 2.0) + padding;
         poseStack.scale(sizeX, sizeY, sizeZ);
 
-        renderSphere(poseStack, 1.0f, r, g, b, alpha);
+        boolean isCloaked = CloakedShipsRegistry.getInstance().isCloaked(ship.getId());
+        renderSphere(poseStack, 1.0f, r, g, b, alpha, isCloaked);
 
         poseStack.popPose();
     }
@@ -128,7 +137,8 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
     private static final float EDGE_BRIGHTNESS = 1.8f; // How bright edges are vs fill
     private static final float FILL_ALPHA_MULT = 0.4f; // Alpha multiplier for hex cell interiors
 
-    private void renderSphere(PoseStack poseStack, float radius, float r, float g, float b, float alpha) {
+    private void renderSphere(PoseStack poseStack, float radius, float r, float g, float b, float alpha,
+            boolean isCloaked) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();

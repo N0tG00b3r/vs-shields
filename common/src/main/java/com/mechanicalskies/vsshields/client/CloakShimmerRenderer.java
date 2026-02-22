@@ -16,8 +16,9 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
  * Renders a subtle translucent shimmer shell around a cloaked ship.
- * Only visible to players who are ON the cloaked ship (they see the cloak is active).
- * For players NOT on the ship, the ship is hidden by VS2ShipRenderMixin.
+ * Only visible to players who are ON the cloaked ship (they see the cloak is
+ * active).
+ * For players NOT on the ship, the ship is hidden by LevelRendererCloakMixin.
  */
 public class CloakShimmerRenderer implements BlockEntityRenderer<CloakingFieldGeneratorBlockEntity> {
 
@@ -29,25 +30,32 @@ public class CloakShimmerRenderer implements BlockEntityRenderer<CloakingFieldGe
 
     @Override
     public void render(CloakingFieldGeneratorBlockEntity be, float partialTick, PoseStack poseStack,
-                       MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
-        if (be.getLevel() == null) return;
+            MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+        if (be.getLevel() == null)
+            return;
 
         Ship ship = VSGameUtilsKt.getShipManagingPos(be.getLevel(), be.getBlockPos());
-        if (ship == null) return;
+        if (ship == null)
+            return;
 
         // Only show shimmer if the ship is actively cloaked on the client
-        if (!ClientCloakManager.getInstance().isCloaked(ship.getId())) return;
+        if (!CloakedShipsRegistry.getInstance().isCloaked(ship.getId()))
+            return;
 
-        // Only show shimmer to a player who is ON this ship (they can see their own cloak)
+        // Only show shimmer to a player who is ON this ship (they can see their own
+        // cloak)
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
+        if (mc.player == null)
+            return;
 
-        org.valkyrienskies.core.api.ships.ClientShip playerShip =
-            VSClientGameUtils.getClientShip(mc.player.getX(), mc.player.getY(), mc.player.getZ());
-        if (playerShip == null || playerShip.getId() != ship.getId()) return;
+        org.valkyrienskies.core.api.ships.ClientShip playerShip = VSClientGameUtils.getClientShip(mc.player.getX(),
+                mc.player.getY(), mc.player.getZ());
+        if (playerShip == null || playerShip.getId() != ship.getId())
+            return;
 
         AABBic shipAABB = ship.getShipAABB();
-        if (shipAABB == null) return;
+        if (shipAABB == null)
+            return;
 
         // BER coordinate space is shipyard-space relative to the block's position.
         // Compute offset from the generator block to the AABB center.

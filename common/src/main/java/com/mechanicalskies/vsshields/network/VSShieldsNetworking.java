@@ -8,11 +8,8 @@ import io.netty.buffer.Unpooled;
 
 public class VSShieldsNetworking {
     public static void register() {
-        // Register CloakStatusPacket
-        NetworkManager.registerReceiver(NetworkManager.Side.S2C, CloakStatusPacket.ID, (buf, context) -> {
-            CloakStatusPacket packet = new CloakStatusPacket(buf);
-            packet.handle(context);
-        });
+        // S2C receivers MUST be registered in client init only!
+        // Moved to VSShieldsModClient.registerPackets()
     }
 
     public static void sendToClient(ServerPlayer player, CloakStatusPacket packet) {

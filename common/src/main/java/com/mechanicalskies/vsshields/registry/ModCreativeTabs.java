@@ -9,8 +9,8 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 
 public class ModCreativeTabs {
-    public static final DeferredRegister<CreativeModeTab> TABS =
-            DeferredRegister.create(VSShieldsMod.MOD_ID, Registries.CREATIVE_MODE_TAB);
+    public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(VSShieldsMod.MOD_ID,
+            Registries.CREATIVE_MODE_TAB);
 
     public static final RegistrySupplier<CreativeModeTab> VS_SHIELDS_TAB = TABS.register(
             "vs_shields_tab",
@@ -26,10 +26,10 @@ public class ModCreativeTabs {
                         output.accept(ModItems.SHIELD_BATTERY_CONTROLLER.get());
                         output.accept(ModItems.SHIELD_BATTERY_CELL.get());
                         output.accept(ModItems.SHIELD_BATTERY_INPUT.get());
-                        output.accept(ModItems.CLOAKING_FIELD_GENERATOR.get());
+                        // output.accept(ModItems.CLOAKING_FIELD_GENERATOR.get()); // WIP - Temporarily
+                        // Disabled
                     })
-                    .build()
-    );
+                    .build());
 
     public static void register() {
         TABS.register();

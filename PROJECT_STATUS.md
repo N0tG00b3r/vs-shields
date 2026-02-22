@@ -160,7 +160,6 @@ in net.minecraft.client.renderer.LevelRenderer
 ## Известные проблемы / TODO
 1. **Нет Fabric damage handler** — на Fabric щит не защищает (нет Forge events, нужны миксины)
 2. **CGS hitscan пули** — обычные пули CGS (из gun library ntgl) могут не файрить `ProjectileImpactEvent`, если используют hitscan. Может понадобиться подписка на кастомный ивент gun library
-3. **Клоакинг lambda-target хрупкий** — `lambda$redirectRenderChunkLayer$3` — compiler-generated имя, специфичное для VS2 2.4.10. При обновлении VS2 может сломаться. `require=0` защищает от краша, но маскировка перестанет работать молча. Нужно мониторить при апдейте VS2.
 
 ## Структура файлов (ключевые изменения)
 
@@ -169,16 +168,11 @@ common/src/main/java/com/mechanicalskies/vsshields/
 ├── shield/
 │   └── ShieldInstance.java          # Логика щита без радиуса
 ├── client/
-│   └── ShieldRenderer.java          # Рендер по AABB корабля (AABBic.minX() etc.)
-└── ...
-
-forge/src/main/java/.../forge/mixin/
-├── VS2ShipRenderMixin.java          # @Pseudo мixin → MixinLevelRendererVanilla (VS2)
-└── (LevelRendererMixin.java удалён)
-
-fabric/src/main/java/.../fabric/mixin/
-├── VS2ShipRenderMixin.java          # то же, для Fabric
-└── (LevelRendererMixin.java удалён)
+│   ├── ShieldRenderer.java          # Рендер по AABB корабля
+│   ├── CloakShimmerRenderer.java    # Эффект мерцания внутри маскировки
+│   └── CloakedShipsRegistry.java    # Менеджер списка скрытых кораблей
+└── mixin/
+    └── LevelRendererCloakMixin.java # Chunk Culling миксин (Priority 2000, Reflection)
 
 forge/src/main/kotlin/.../forge/
 ├── ShieldDamageHandler.kt             # Упрощённая логика урона без координат
@@ -204,7 +198,18 @@ forge/src/main/kotlin/.../forge/
 
 **Текущее состояние**:
 - Защита и HUD работают корректно.
-- Маскировка требует перехода на более стабильный подход (например, ASM или хуки на ванильном `LevelRenderer`).
+
+---
+
+### Сессия 12 — Тестирование маскировки (Chunk Culling & Reflection) ❌
+
+**Проблема:**
+- После реализации метода Chunk Culling через Reflection (инъекция в словарь `shipRenderChunks`), корабли всё равно не пропадают из прямой видимости. Метод оказался нерабочим.
+
+**Решение:**
+- Разработка маскировки **снова поставлена на паузу** и перенесена в низкий приоритет до появления официального API или ответа от разработчиков Valkyrien Skies 2.
+- Блок генератора маскировочного поля убран из творческой вкладки, а рецепт крафта отключен.
+- Классы (`LevelRendererCloakMixin`, `CloakedShipsRegistry`, и т.д.) оставлены в кодовой базе как задел на будущее, но фактически выведены из активной игры.
 
 ---
 

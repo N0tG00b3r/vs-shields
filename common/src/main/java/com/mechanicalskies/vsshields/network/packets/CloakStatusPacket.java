@@ -1,6 +1,6 @@
 package com.mechanicalskies.vsshields.network.packets;
 
-import com.mechanicalskies.vsshields.client.ClientCloakManager;
+import com.mechanicalskies.vsshields.client.CloakedShipsRegistry;
 import dev.architectury.networking.NetworkManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -33,7 +33,11 @@ public class CloakStatusPacket {
     public void handle(NetworkManager.PacketContext context) {
         context.queue(() -> {
             EnvExecutor.runInEnv(Env.CLIENT, () -> () -> {
-                ClientCloakManager.getInstance().updateCloakingStatus(shipId, isCloaked);
+                if (isCloaked) {
+                    CloakedShipsRegistry.getInstance().addShip(shipId);
+                } else {
+                    CloakedShipsRegistry.getInstance().removeShip(shipId);
+                }
             });
         });
     }

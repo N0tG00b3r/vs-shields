@@ -19,6 +19,9 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.Map;
 
+import dev.architectury.utils.Env;
+import dev.architectury.utils.EnvExecutor;
+
 /**
  * Cross-platform network registration using Architectury NetworkManager.
  */
@@ -49,7 +52,10 @@ public class ModNetwork {
                     context.queue(() -> CloakManager.getInstance().toggleCloak(shipId, active));
                 });
 
-        VSShieldsNetworking.register();
+        // Register S2C Receivers (Client Only)
+        EnvExecutor.runInEnv(Env.CLIENT, () -> () -> {
+            ClientNetworkHandler.registerS2C();
+        });
     }
 
     public static void sendNukeVisual(MinecraftServer server, double x, double y, double z) {

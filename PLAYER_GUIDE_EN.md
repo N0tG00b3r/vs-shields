@@ -85,11 +85,19 @@ Front face (controller side):      Middle layer:      Back layer:
 
 ---
 
-## Cloaking Field
+## Cloaking Field (WIP - Temporarily Disabled)
 
-**This feature is temporarily removed from the mod due to technical issues. Cloaking-related blocks are not craftable.**
+*Note: The cloaking field generator is temporarily disabled due to stability issues with other mods.*
 
----
+The **Cloaking Field Generator** module hides your ship from other players.
+
+1. Place the cloaking generator on your ship (it doesn't need physical cables, it draws power wirelessly from the main shield generator).
+2. Open its GUI and activate it.
+3. Your ship will become completely invisible to everyone except the owner (or players currently standing on the ship).
+
+**Features:**
+- Cloaking consumes a **massive amount of FE/tick** from the main shield generator. Without enough energy, the cloak turns off.
+- The cloak only works while the main shield generator is active.
 
 ## Crafting Recipes
 
@@ -139,6 +147,15 @@ Front face (controller side):      Middle layer:      Back layer:
 [Echo Shard] [Battery Input] [Echo Shard]
 ```
 
+### Cloaking
+
+**Cloaking Field Generator**
+```
+[Phantom Membrane] [Echo Shard]       [Phantom Membrane]
+[Netherite Ingot]  [Shield Capacitor] [Netherite Ingot]
+[Phantom Membrane] [Echo Shard]       [Phantom Membrane]
+```
+
 ---
 
 ## Energy
@@ -162,20 +179,32 @@ Place a **Create rotation shaft** next to a generator or battery input. Rotation
 
 ## Damage Mechanics
 
-- **Projectiles (Arrows, Fireballs):** The shield acts as an impenetrable wall. Any projectile that hits the shield is destroyed, dealing its damage to the shield.
+- **Projectile Barrier (Force Field):** The shield acts as a physical force field against projectiles (arrows, cannonballs). 
+  - **External Threats:** Any projectile striking the shield from the outside is intercepted and destroyed at the shield's boundary.
+  - **Friendly Fire Protection:** Projectiles fired from *inside* the shield can freely exit. However, if an internal projectile attempts to strike the ship's own blocks, the shield intercepts it at the hull, preventing friendly fire damage.
 - **Explosions (TNT, Creepers, Nukes):** If the center of an explosion is inside an active shield, the explosion is **completely absorbed**. The shield takes damage, but all blocks and entities are protected.
 
 ---
 
-## Visual Indicators
+## Visual & Audio Effects
 
-### Shield Color
-- **Blue** — HP > 50% (healthy)
-- **Yellow** — HP 25–50% (damaged)
-- **Red** — HP < 25% (critical, flickering)
+### Shield Appearance
+- **Honeycomb Pattern:** The shield renders as a sci-fi hexagonal energy grid that slowly rotates around the ship.
+- **Color Scales with HP:**
+  - **Blue** — HP > 50% (healthy)
+  - **Yellow** — HP 25–50% (damaged)
+  - **Red** — HP < 25% (critical)
+- **Low Energy Distortions:** If the generator's internal energy (FE) drops below 20%, the shield will begin to violently flicker, glitch, and shift to a red-orange hue, warning you that the power supply is failing.
 
-### HUD
-When you are on a ship with an active shield, an HP bar will appear on your screen.
+### Impact & Destruction
+- **Hit Sparks:** Striking the shield (with a projectile or explosion) creates a burst of electrical sparks exactly at the point of impact on the shield's surface. Heavier damage causes larger bursts.
+- **Shield Break:** When HP reaches 0, the shield shatters in a dramatic 1-second animation with sparks flying outward, accompanied by a loud electrical discharge sound.
+
+### Sounds
+- Active shields emit a low, vibrating **ambient hum** that can be heard up to 48 blocks away. The sound fades smoothly as you move away from the ship.
+
+### HUD Integration
+When you are near a ship with an active shield, an HP bar will appear at the top of your screen.
 
 ### Generator GUI
 Right-click the generator to see:
