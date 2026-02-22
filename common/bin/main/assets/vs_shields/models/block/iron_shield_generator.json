@@ -1,6 +1,10 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "loader": "forge:obj",
+  "model": "vs_shields:models/block/iron_shield_generator_model.obj",
+  "render_type": "minecraft:cutout",
   "textures": {
-    "all": "vs_shields:block/iron_shield_generator"
-  }
+    "particle": "vs_shields:block/iron_plus",
+    "m_23dbe3e9-f66e-682a-3691-cf49958b5367": "vs_shields:block/iron_plus"
+  },
+  "flip_v": true
 }

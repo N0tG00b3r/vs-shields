@@ -47,9 +47,7 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
             if (duplicate) {
                 return index == 2 ? -1 : 0;
             }
-            ShieldInstance shield = trackedShipId != -1
-                    ? ShieldManager.getInstance().getShield(trackedShipId)
-                    : null;
+            ShieldInstance shield = trackedShipId != -1 ? ShieldManager.getInstance().getShield(trackedShipId) : null;
             return switch (index) {
                 case 0 -> shield != null ? (int) (shield.getCurrentHP() * 10) : 0;
                 case 1 -> shield != null ? (int) (shield.getMaxHP() * 10) : 0;
@@ -139,6 +137,15 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
             double hpScale = gen.hpScaleMin + (gen.hpScaleMax - gen.hpScaleMin) * energyPercent;
             shield.setHPScale(hpScale);
             shield.setEnergyPercent(energyPercent);
+
+        }
+    }
+
+    public void drainEnergyFromJammer(int amount) {
+        this.energyStored = Math.max(0, this.energyStored - amount);
+        this.setChanged();
+        if (this.energyStored <= 0) {
+            this.hasPower = false;
         }
     }
 

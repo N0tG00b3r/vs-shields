@@ -20,7 +20,12 @@
   "block.vs_shields.shield_battery_controller": "Shield Battery Controller",
   "block.vs_shields.shield_battery_cell": "Shield Battery Cell",
   "block.vs_shields.shield_battery_input": "Shield Battery Input",
+  "block.vs_shields.shield_jammer_controller": "Shield Jammer Controller",
+  "block.vs_shields.shield_jammer_frame": "Shield Jammer Frame",
+  "block.vs_shields.shield_jammer_input": "Shield Jammer Input",
   "container.vs_shields.shield_battery": "Shield Battery",
+  "container.vs_shields.shield_jammer": "Shield Jammer",
+  "gui.vs_shields.shield_jammer.reload": "Reload Jammer",
   "message.vs_shields.duplicate_generator": "This ship already has an active shield generator!",
   "message.vs_shields.duplicate_cloak": "This ship already has an active cloaking generator!"
 }

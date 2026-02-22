@@ -40,6 +40,7 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
     private int cellCount = 0;
     private int storageCellCount = 0;
     private boolean formed = false;
+    private boolean duplicate = false;
     private long lastEmergencyTick = -99999;
     private int status = STATUS_INCOMPLETE;
 
@@ -58,7 +59,8 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
         }
 
         @Override
-        public void set(int index, int value) {}
+        public void set(int index, int value) {
+        }
 
         @Override
         public int getCount() {
@@ -70,8 +72,23 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
         super(ModBlockEntities.SHIELD_BATTERY_CONTROLLER.get(), pos, state);
     }
 
+    public void onLoad() {
+        if (level != null && !level.isClientSide()) {
+            ShieldBatteryTracker.addBattery(this);
+        }
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        if (level != null && !level.isClientSide()) {
+            ShieldBatteryTracker.removeBattery(this);
+        }
+    }
+
     public void serverTick(Level level, BlockPos pos, BlockState state) {
-        if (level.isClientSide()) return;
+        if (level.isClientSide())
+            return;
 
         scanCells(level, pos, state);
         formed = (cellCount == 26);
@@ -92,9 +109,22 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
 
         long shipId = ship.getId();
 
+        // Check for duplicates globally
         if (trackedShipId != shipId) {
             unregisterListener();
+            duplicate = false;
+            for (ShieldBatteryControllerBlockEntity other : ShieldBatteryTracker.getLoadedBatteries()) {
+                if (other != this && other.trackedShipId == shipId && other.isFormed() && !other.isRemoved()) {
+                    duplicate = true;
+                    break;
+                }
+            }
             trackedShipId = shipId;
+        }
+
+        if (duplicate || !formed) {
+            status = STATUS_INCOMPLETE; // or another duplicate status
+            return;
         }
 
         ShieldInstance shield = ShieldManager.getInstance().getShield(shipId);
@@ -124,7 +154,8 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
         for (int depth = 0; depth < 3; depth++) {
             for (int side = -1; side <= 1; side++) {
                 for (int up = -1; up <= 1; up++) {
-                    if (depth == 0 && side == 0 && up == 0) continue;
+                    if (depth == 0 && side == 0 && up == 0)
+                        continue;
 
                     BlockPos checkPos = pos
                             .relative(behind, depth)
@@ -147,15 +178,25 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
 
     @Override
     public void onShieldDamaged(ShieldInstance shield, double absorbed, long tick) {
-        if (!formed || energyStored <= 0) return;
+        if (!formed || energyStored <= 0)
+            return;
     }
 
-    public int getEnergyStored() { return energyStored; }
-    public int getMaxEnergy() { return maxEnergy; }
-    public boolean isFormed() { return formed; }
+    public int getEnergyStored() {
+        return energyStored;
+    }
+
+    public int getMaxEnergy() {
+        return maxEnergy;
+    }
+
+    public boolean isFormed() {
+        return formed;
+    }
 
     public int receiveEnergy(int amount, boolean simulate) {
-        if (!formed) return 0;
+        if (!formed)
+            return 0;
         int accepted = Math.min(amount, maxEnergy - energyStored);
         if (!simulate) {
             energyStored += accepted;
@@ -164,7 +205,9 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
         return accepted;
     }
 
-    public long getTrackedShipId() { return trackedShipId; }
+    public long getTrackedShipId() {
+        return trackedShipId;
+    }
 
     public void onRemoved() {
         unregisterListener();

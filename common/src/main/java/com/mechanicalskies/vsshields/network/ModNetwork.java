@@ -32,6 +32,7 @@ public class ModNetwork {
     public static final ResourceLocation SHIELD_BREAK_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "shield_break");
     public static final ResourceLocation NUKE_VISUAL_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "nuke_visual");
     public static final ResourceLocation CLOAK_TOGGLE_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "cloak_toggle");
+    public static final ResourceLocation JAMMER_RELOAD_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "jammer_reload");
 
     public static void init() {
         NetworkManager.registerReceiver(
@@ -50,6 +51,14 @@ public class ModNetwork {
                     long shipId = buf.readLong();
                     boolean active = buf.readBoolean();
                     context.queue(() -> CloakManager.getInstance().toggleCloak(shipId, active));
+                });
+
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.C2S,
+                JAMMER_RELOAD_ID,
+                (buf, context) -> {
+                    BlockPos pos = buf.readBlockPos();
+                    context.queue(() -> handleJammerReload(context.getPlayer(), pos));
                 });
 
         // Register S2C Receivers (Client Only)
@@ -159,6 +168,21 @@ public class ModNetwork {
         ShieldInstance shield = ShieldManager.getInstance().getShield(shipId);
         if (shield != null) {
             shield.setActive(active);
+        }
+    }
+
+    public static void sendJammerReloadToServer(BlockPos pos) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeBlockPos(pos);
+        NetworkManager.sendToServer(JAMMER_RELOAD_ID, buf);
+    }
+
+    private static void handleJammerReload(Player player, BlockPos pos) {
+        if (player.level() instanceof ServerLevel serverLevel) {
+            if (serverLevel.getBlockEntity(
+                    pos) instanceof com.mechanicalskies.vsshields.blockentity.ShieldJammerControllerBlockEntity be) {
+                be.forceCooldown();
+            }
         }
     }
 }

@@ -121,6 +121,34 @@ object CreateCompat {
         }
     }
 
+    /**
+     * Same as tickKineticInput but for ShieldJammerInputBlockEntity.
+     */
+    fun tickShieldJammerInput(level: Level, pos: BlockPos, ram: com.mechanicalskies.vsshields.blockentity.ShieldJammerInputBlockEntity) {
+        init()
+        if (!available) return
+
+        var totalFE = 0.0
+
+        for (dir in Direction.values()) {
+            val adjPos = pos.relative(dir)
+            val adjBE = level.getBlockEntity(adjPos) ?: continue
+
+            if (!kineticBEClass!!.isInstance(adjBE)) continue
+
+            try {
+                val speed = getSpeedMethod!!.invoke(adjBE) as Float
+                totalFE += Math.abs(speed.toDouble()) * SU_TO_FE_RATE
+            } catch (_: Exception) {
+                // Reflection failed — skip
+            }
+        }
+
+        if (totalFE > 0) {
+            ram.receiveEnergy(totalFE.toInt(), false)
+        }
+    }
+
     fun isAvailable(): Boolean {
         init()
         return available

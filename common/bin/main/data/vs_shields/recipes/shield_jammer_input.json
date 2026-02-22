@@ -1,0 +1,23 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        " I ",
+        "OFO",
+        " I "
+    ],
+    "key": {
+        "I": {
+            "item": "minecraft:iron_block"
+        },
+        "F": {
+            "item": "vs_shields:shield_jammer_frame"
+        },
+        "O": {
+            "item": "minecraft:obsidian"
+        }
+    },
+    "result": {
+        "item": "vs_shields:shield_jammer_input",
+        "count": 1
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "parent": "minecraft:block/orientable",
+    "textures": {
+        "top": "vs_shields:block/kinetic_ram_part",
+        "bottom": "vs_shields:block/kinetic_ram_part",
+        "front": "vs_shields:block/kinetic_ram_controller",
+        "side": "vs_shields:block/kinetic_ram_part"
+    }
+}

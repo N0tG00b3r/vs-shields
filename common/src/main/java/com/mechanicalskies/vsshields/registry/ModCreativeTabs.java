@@ -26,6 +26,9 @@ public class ModCreativeTabs {
                         output.accept(ModItems.SHIELD_BATTERY_CONTROLLER.get());
                         output.accept(ModItems.SHIELD_BATTERY_CELL.get());
                         output.accept(ModItems.SHIELD_BATTERY_INPUT.get());
+                        output.accept(ModItems.shield_jammer_CONTROLLER.get());
+                        output.accept(ModItems.shield_jammer_frame.get());
+                        output.accept(ModItems.shield_jammer_INPUT.get());
                         // output.accept(ModItems.CLOAKING_FIELD_GENERATOR.get()); // WIP - Temporarily
                         // Disabled
                     })

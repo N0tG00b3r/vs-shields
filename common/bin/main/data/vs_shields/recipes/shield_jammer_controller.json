@@ -1,0 +1,29 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "DED",
+        "RNR",
+        "DOD"
+    ],
+    "key": {
+        "D": {
+            "item": "minecraft:diamond_block"
+        },
+        "E": {
+            "item": "minecraft:end_crystal"
+        },
+        "R": {
+            "item": "minecraft:redstone_block"
+        },
+        "N": {
+            "item": "minecraft:netherite_block"
+        },
+        "O": {
+            "item": "minecraft:obsidian"
+        }
+    },
+    "result": {
+        "item": "vs_shields:shield_jammer_controller",
+        "count": 1
+    }
+}

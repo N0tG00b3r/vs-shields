@@ -1,0 +1,19 @@
+{
+    "variants": {
+        "facing=north": {
+            "model": "vs_shields:block/shield_jammer_input"
+        },
+        "facing=east": {
+            "model": "vs_shields:block/shield_jammer_input",
+            "y": 90
+        },
+        "facing=south": {
+            "model": "vs_shields:block/shield_jammer_input",
+            "y": 180
+        },
+        "facing=west": {
+            "model": "vs_shields:block/shield_jammer_input",
+            "y": 270
+        }
+    }
+}

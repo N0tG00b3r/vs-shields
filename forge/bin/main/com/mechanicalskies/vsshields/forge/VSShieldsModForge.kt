@@ -38,6 +38,7 @@ class VSShieldsModForge {
         MinecraftForge.EVENT_BUS.register(ShieldEnergyCapability())
         MinecraftForge.EVENT_BUS.register(BatteryInputEnergyCapability())
         MinecraftForge.EVENT_BUS.register(CloakEnergyCapability())
+        MinecraftForge.EVENT_BUS.register(ShieldJammerEnergyCapability())
 
         ShieldGeneratorBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickKineticInput(level, pos, be)
@@ -49,6 +50,10 @@ class VSShieldsModForge {
 
         CloakingFieldGeneratorBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickCloakKineticInput(level, pos, be)
+        }
+
+        com.mechanicalskies.vsshields.blockentity.ShieldJammerInputBlockEntity.setEnergyInputHook { level, pos, be ->
+            CreateCompat.tickShieldJammerInput(level, pos, be)
         }
     }
 

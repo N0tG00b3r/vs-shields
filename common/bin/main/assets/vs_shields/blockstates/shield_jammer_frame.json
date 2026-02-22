@@ -1,0 +1,7 @@
+{
+    "variants": {
+        "": {
+            "model": "vs_shields:block/shield_jammer_frame"
+        }
+    }
+}
