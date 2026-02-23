@@ -1,8 +1,12 @@
 {
   "variants": {
-    "facing=north": { "model": "vs_shields:block/netherite_shield_generator" },
-    "facing=south": { "model": "vs_shields:block/netherite_shield_generator", "y": 180 },
-    "facing=west": { "model": "vs_shields:block/netherite_shield_generator", "y": 270 },
-    "facing=east": { "model": "vs_shields:block/netherite_shield_generator", "y": 90 }
+    "facing=north,powered=false": { "model": "vs_shields:block/netherite_shield_generator" },
+    "facing=north,powered=true":  { "model": "vs_shields:block/netherite_shield_generator" },
+    "facing=south,powered=false": { "model": "vs_shields:block/netherite_shield_generator", "y": 180 },
+    "facing=south,powered=true":  { "model": "vs_shields:block/netherite_shield_generator", "y": 180 },
+    "facing=west,powered=false":  { "model": "vs_shields:block/netherite_shield_generator", "y": 270 },
+    "facing=west,powered=true":   { "model": "vs_shields:block/netherite_shield_generator", "y": 270 },
+    "facing=east,powered=false":  { "model": "vs_shields:block/netherite_shield_generator", "y": 90 },
+    "facing=east,powered=true":   { "model": "vs_shields:block/netherite_shield_generator", "y": 90 }
   }
 }

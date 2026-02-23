@@ -33,8 +33,12 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
         energyInputHook = hook;
     }
 
+    private static final int REDSTONE_SIGNAL_DURATION = 20; // ticks (1 second)
+
     private long trackedShipId = -1;
     private boolean duplicate = false;
+    private long lastKnownHitTick = 0;  // mirrors ShieldInstance.lastHitTick
+    private long damageSignalTick = -1; // level.getGameTime() when last hit detected
 
     private int energyStored = 0;
     private int maxEnergy = 50000;
@@ -108,6 +112,7 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
             boolean isOwner = ShieldManager.getInstance().registerShield(shipId, tier, pos);
             trackedShipId = shipId;
             duplicate = !isOwner;
+            lastKnownHitTick = 0; // reset for the new shield instance
         }
 
         if (duplicate)
@@ -138,6 +143,20 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
             shield.setHPScale(hpScale);
             shield.setEnergyPercent(energyPercent);
 
+            // Detect new damage by watching lastHitTick change
+            long hitTick = shield.getLastHitTick();
+            if (hitTick > lastKnownHitTick) {
+                lastKnownHitTick = hitTick;
+                damageSignalTick = level.getGameTime();
+            }
+        }
+
+        // Update POWERED blockstate for redstone output
+        long now = level.getGameTime();
+        boolean shouldSignal = damageSignalTick >= 0 && (now - damageSignalTick) < REDSTONE_SIGNAL_DURATION;
+        boolean currentPowered = state.getValue(com.mechanicalskies.vsshields.block.ShieldGeneratorBlock.POWERED);
+        if (shouldSignal != currentPowered) {
+            level.setBlock(pos, state.setValue(com.mechanicalskies.vsshields.block.ShieldGeneratorBlock.POWERED, shouldSignal), 3);
         }
     }
 

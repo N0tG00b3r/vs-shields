@@ -49,6 +49,7 @@ public class ShieldJammerControllerBlockEntity extends BlockEntity implements Ex
     private boolean isActive = false;
     private boolean isCooldown = false;
     public int forcedCooldownTicks = 0;
+    private boolean isEnabled = true;
 
     private final ContainerData dataAccess = new ContainerData() {
         @Override
@@ -63,6 +64,7 @@ public class ShieldJammerControllerBlockEntity extends BlockEntity implements Ex
                 case 6 -> forcedCooldownTicks;
                 case 7 -> duplicate ? 1 : 0;
                 case 8 -> frameCountCache;
+                case 9 -> isEnabled ? 1 : 0;
                 default -> 0;
             };
         }
@@ -74,7 +76,7 @@ public class ShieldJammerControllerBlockEntity extends BlockEntity implements Ex
 
         @Override
         public int getCount() {
-            return 9;
+            return 10;
         }
     };
 
@@ -157,6 +159,11 @@ public class ShieldJammerControllerBlockEntity extends BlockEntity implements Ex
                 setChanged();
                 level.sendBlockUpdated(pos, state, state, 3);
             }
+            return;
+        }
+
+        if (!isEnabled) {
+            isActive = false;
             return;
         }
 
@@ -314,6 +321,20 @@ public class ShieldJammerControllerBlockEntity extends BlockEntity implements Ex
         return isCooldown;
     }
 
+    public boolean isEnabled() {
+        return isEnabled;
+    }
+
+    public void disable() {
+        this.isEnabled = false;
+        forceCooldown();
+    }
+
+    public void enable() {
+        this.isEnabled = true;
+        setChanged();
+    }
+
     @Override
     public void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
@@ -321,6 +342,7 @@ public class ShieldJammerControllerBlockEntity extends BlockEntity implements Ex
         tag.putBoolean("IsCooldown", this.isCooldown);
         tag.putInt("Energy", this.energyStored);
         tag.putInt("ForcedCooldownTicks", this.forcedCooldownTicks);
+        tag.putBoolean("IsEnabled", this.isEnabled);
     }
 
     @Override
@@ -330,6 +352,7 @@ public class ShieldJammerControllerBlockEntity extends BlockEntity implements Ex
         this.isCooldown = tag.getBoolean("IsCooldown");
         this.energyStored = tag.getInt("Energy");
         this.forcedCooldownTicks = tag.getInt("ForcedCooldownTicks");
+        this.isEnabled = !tag.contains("IsEnabled") || tag.getBoolean("IsEnabled");
         this.maxEnergy = 3000000;
     }
 

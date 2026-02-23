@@ -29,7 +29,7 @@ public class ShieldJammerMenu extends AbstractContainerMenu {
         super(ModMenus.shield_jammer_MENU.get(), containerId);
         this.blockPos = buf.readBlockPos();
         this.shipId = buf.readLong();
-        this.data = new SimpleContainerData(9);
+        this.data = new SimpleContainerData(10);
         addDataSlots(data);
     }
 
@@ -51,6 +51,10 @@ public class ShieldJammerMenu extends AbstractContainerMenu {
 
     public int getFrameCount() {
         return data.get(8);
+    }
+
+    public boolean isEnabled() {
+        return data.get(9) == 1;
     }
 
     public int getForcedCooldownTicks() {

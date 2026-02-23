@@ -33,6 +33,7 @@ public class ModNetwork {
     public static final ResourceLocation NUKE_VISUAL_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "nuke_visual");
     public static final ResourceLocation CLOAK_TOGGLE_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "cloak_toggle");
     public static final ResourceLocation JAMMER_RELOAD_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "jammer_reload");
+    public static final ResourceLocation JAMMER_ENABLE_ID = new ResourceLocation(VSShieldsMod.MOD_ID, "jammer_enable");
 
     public static void init() {
         NetworkManager.registerReceiver(
@@ -59,6 +60,15 @@ public class ModNetwork {
                 (buf, context) -> {
                     BlockPos pos = buf.readBlockPos();
                     context.queue(() -> handleJammerReload(context.getPlayer(), pos));
+                });
+
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.C2S,
+                JAMMER_ENABLE_ID,
+                (buf, context) -> {
+                    BlockPos pos = buf.readBlockPos();
+                    boolean enable = buf.readBoolean();
+                    context.queue(() -> handleJammerEnable(context.getPlayer(), pos, enable));
                 });
 
         // Register S2C Receivers (Client Only)
@@ -177,11 +187,31 @@ public class ModNetwork {
         NetworkManager.sendToServer(JAMMER_RELOAD_ID, buf);
     }
 
+    public static void sendJammerEnableToServer(BlockPos pos, boolean enable) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeBlockPos(pos);
+        buf.writeBoolean(enable);
+        NetworkManager.sendToServer(JAMMER_ENABLE_ID, buf);
+    }
+
     private static void handleJammerReload(Player player, BlockPos pos) {
         if (player.level() instanceof ServerLevel serverLevel) {
             if (serverLevel.getBlockEntity(
                     pos) instanceof com.mechanicalskies.vsshields.blockentity.ShieldJammerControllerBlockEntity be) {
                 be.forceCooldown();
+            }
+        }
+    }
+
+    private static void handleJammerEnable(Player player, BlockPos pos, boolean enable) {
+        if (player.level() instanceof ServerLevel serverLevel) {
+            if (serverLevel.getBlockEntity(
+                    pos) instanceof com.mechanicalskies.vsshields.blockentity.ShieldJammerControllerBlockEntity be) {
+                if (enable) {
+                    be.enable();
+                } else {
+                    be.disable();
+                }
             }
         }
     }

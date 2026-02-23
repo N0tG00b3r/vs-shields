@@ -134,8 +134,8 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
     // Honeycomb grid parameters
     private static final float HEX_SCALE = 8.0f; // How many hex cells across the sphere
     private static final float EDGE_WIDTH = 0.12f; // Width of hex edges (0-1, fraction of cell)
-    private static final float EDGE_BRIGHTNESS = 1.8f; // How bright edges are vs fill
-    private static final float FILL_ALPHA_MULT = 0.4f; // Alpha multiplier for hex cell interiors
+    private static final float EDGE_BRIGHTNESS = 1.2f; // How bright edges are vs fill
+    private static final float FILL_ALPHA_MULT = 0.2f; // Alpha multiplier for hex cell interiors
 
     private void renderSphere(PoseStack poseStack, float radius, float r, float g, float b, float alpha,
             boolean isCloaked) {
@@ -201,26 +201,26 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
     /**
      * Compute RGBA for a point on the sphere based on its distance to the nearest
      * hexagonal grid edge. Points on edges are brighter; cell interiors are dimmer.
+     *
+     * Edge detection uses the cube max-norm which equals exactly 1.0 uniformly
+     * across the entire hexagon boundary (both straight sides and corners).
      */
     private float[] hexColor(double phi, double theta, float r, float g, float b, float baseAlpha) {
-        // Map spherical coords to 2D plane for hex grid
-        // Use equirectangular projection, scaled by HEX_SCALE
+        // Equirectangular projection, scaled by HEX_SCALE
         float u = (float) (theta / (2.0 * Math.PI)) * HEX_SCALE * 2.0f;
         float v = (float) (phi / Math.PI) * HEX_SCALE;
 
-        // Convert to axial hex coordinates
-        // Hex grid: pointy-top orientation
+        // UV → fractional axial (pointy-top hex, inverse of Cartesian→axial matrix)
         float sqrt3 = 1.7320508f;
-        float q = (sqrt3 / 3.0f * u - 1.0f / 3.0f * v);
-        float rr = (2.0f / 3.0f * v);
+        float q  = sqrt3 / 3.0f * u - 1.0f / 3.0f * v;
+        float rr = 2.0f / 3.0f * v;
 
-        // Round to nearest hex center (cube coordinate rounding)
+        // Cube coordinate rounding — snap to nearest hex center
         float s = -q - rr;
         int qi = Math.round(q);
         int ri = Math.round(rr);
         int si = Math.round(s);
 
-        // Fix rounding so q+r+s == 0
         float qDiff = Math.abs(qi - q);
         float rDiff = Math.abs(ri - rr);
         float sDiff = Math.abs(si - s);
@@ -230,29 +230,31 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
             ri = -qi - si;
         }
 
-        // Distance from the point to the nearest hex center (in hex space)
+        // Fractional offset from the hex center in cube coords
         float dq = q - qi;
         float dr = rr - ri;
+        float ds = -dq - dr;
 
-        // Convert back to cartesian distance for edge detection
-        float dx = sqrt3 * dq + sqrt3 / 2.0f * dr;
-        float dy = 1.5f * dr;
-        float dist = (float) Math.sqrt(dx * dx + dy * dy);
-
-        // Hex cell has circumradius 1.0 in this space; edge is at ~1.0
-        // Use smoothstep to blend between edge and fill
-        float edgeDist = 1.0f - dist; // 0 at edge, 1 at center
+        // --- FIX: cube max-norm is exactly 0.5 on the full hexagon boundary ---
+        // (at every edge midpoint AND every corner, max(|dq|,|dr|,|ds|) == 0.5)
+        // Multiply by 2 to normalize to [0, 1]: 0 at center, 1 at boundary.
+        float hexNorm  = 2.0f * Math.max(Math.abs(dq), Math.max(Math.abs(dr), Math.abs(ds)));
+        float edgeDist = 1.0f - hexNorm;          // 1 at center, 0 at boundary
         float edgeFactor = smoothstep(0.0f, EDGE_WIDTH, edgeDist);
 
         // Edge: bright, full alpha. Fill: dimmer, lower alpha.
         float fillAlpha = baseAlpha * FILL_ALPHA_MULT;
-        float edgeAlpha = Math.min(baseAlpha * EDGE_BRIGHTNESS, 0.9f);
+        float edgeAlpha = Math.min(0.9f, baseAlpha * EDGE_BRIGHTNESS);
         float finalAlpha = lerp(edgeAlpha, fillAlpha, edgeFactor);
 
-        float edgeBright = Math.min(1.0f, EDGE_BRIGHTNESS);
-        float finalR = lerp(Math.min(1.0f, r * edgeBright), r * 0.6f, edgeFactor);
-        float finalG = lerp(Math.min(1.0f, g * edgeBright), g * 0.6f, edgeFactor);
-        float finalB = lerp(Math.min(1.0f, b * edgeBright), b * 0.6f, edgeFactor);
+        // --- FIX: apply EDGE_BRIGHTNESS directly, without pre-clamping to 1.0 ---
+        float finalR = lerp(Math.min(1.0f, r * EDGE_BRIGHTNESS), r * 0.6f, edgeFactor);
+        float finalG = lerp(Math.min(1.0f, g * EDGE_BRIGHTNESS), g * 0.6f, edgeFactor);
+        float finalB = lerp(Math.min(1.0f, b * EDGE_BRIGHTNESS), b * 0.6f, edgeFactor);
+
+        // Fade near poles to hide equirectangular projection distortion
+        float poleFade = (float) Math.sin(phi); // 0 at poles, 1 at equator
+        finalAlpha *= 0.3f + 0.7f * poleFade;
 
         return new float[] { finalR, finalG, finalB, finalAlpha };
     }

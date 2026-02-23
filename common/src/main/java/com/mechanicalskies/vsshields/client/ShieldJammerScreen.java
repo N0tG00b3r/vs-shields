@@ -14,6 +14,7 @@ public class ShieldJammerScreen extends AbstractContainerScreen<ShieldJammerMenu
     private static final int BAR_BG_COLOR = 0xFF2A2A3E;
 
     private Button forceReloadButton;
+    private Button enableToggleButton;
 
     public ShieldJammerScreen(ShieldJammerMenu menu, Inventory playerInv, Component title) {
         super(menu, playerInv, title);
@@ -25,10 +26,18 @@ public class ShieldJammerScreen extends AbstractContainerScreen<ShieldJammerMenu
     @Override
     protected void init() {
         super.init();
+        // Two buttons side-by-side: [Reload 76px] [8px gap] [Disable/Enable 76px]
+        int btnY = topPos + 95;
+        int startX = leftPos + 8;
         forceReloadButton = Button.builder(Component.translatable("gui.vs_shields.shield_jammer.reload"), btn -> {
             ModNetwork.sendJammerReloadToServer(menu.getBlockPos());
-        }).bounds(leftPos + imageWidth / 2 - 50, topPos + 95, 100, 20).build();
+        }).bounds(startX, btnY, 76, 20).build();
         addRenderableWidget(forceReloadButton);
+
+        enableToggleButton = Button.builder(Component.translatable("gui.vs_shields.shield_jammer.disable"), btn -> {
+            ModNetwork.sendJammerEnableToServer(menu.getBlockPos(), !menu.isEnabled());
+        }).bounds(startX + 76 + 8, btnY, 76, 20).build();
+        addRenderableWidget(enableToggleButton);
     }
 
     @Override
@@ -62,30 +71,51 @@ public class ShieldJammerScreen extends AbstractContainerScreen<ShieldJammerMenu
         String statusText;
         int statusColor;
 
+        boolean isEnabled = menu.isEnabled();
+        boolean inCooldown = menu.isCooldown() || menu.getForcedCooldownTicks() > 0;
+
         if (menu.isDuplicate()) {
             statusText = "STATUS: DUPLICATE (Only 1 allowed)";
             statusColor = 0xFFFF5555; // Red
             forceReloadButton.active = false;
+            enableToggleButton.active = false;
         } else if (menu.getShipId() == -1) {
             statusText = "STATUS: GROUNDED (Must be on Ship)";
             statusColor = 0xFF5555FF; // Blue
             forceReloadButton.active = false;
+            enableToggleButton.active = false;
         } else if (menu.getForcedCooldownTicks() > 0) {
             statusText = String.format("RECHARGING: %d s", menu.getForcedCooldownTicks() / 20);
             statusColor = 0xFFFF9900; // Orange
             forceReloadButton.active = false;
+            enableToggleButton.active = false;
         } else if (menu.isCooldown()) {
             statusText = "STATUS: REBOOTING (LOW ENERGY)";
             statusColor = 0xFFFF3333; // Red
             forceReloadButton.active = false;
+            enableToggleButton.active = false;
+        } else if (!isEnabled) {
+            statusText = "STATUS: OFFLINE (DISABLED)";
+            statusColor = 0xFF888888; // Gray
+            forceReloadButton.active = false;
+            enableToggleButton.active = true;
         } else if (menu.isActive()) {
             statusText = "STATUS: ACTIVE (SCANNING)";
             statusColor = 0xFF55FF55; // Green
             forceReloadButton.active = true;
+            enableToggleButton.active = true;
         } else {
             statusText = String.format("STRUCTURAL ERROR (26 req, found %d)", menu.getFrameCount());
             statusColor = 0xFFCCCCCC; // Gray
             forceReloadButton.active = false;
+            enableToggleButton.active = false;
+        }
+
+        // Update toggle button label to match current state
+        if (isEnabled) {
+            enableToggleButton.setMessage(Component.translatable("gui.vs_shields.shield_jammer.disable"));
+        } else {
+            enableToggleButton.setMessage(Component.translatable("gui.vs_shields.shield_jammer.enable"));
         }
 
         graphics.drawCenteredString(font, statusText, leftPos + imageWidth / 2, y, statusColor);

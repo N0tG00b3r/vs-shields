@@ -26,6 +26,8 @@
   "container.vs_shields.shield_battery": "Shield Battery",
   "container.vs_shields.shield_jammer": "Shield Jammer",
   "gui.vs_shields.shield_jammer.reload": "Reload Jammer",
+  "gui.vs_shields.shield_jammer.disable": "Disable",
+  "gui.vs_shields.shield_jammer.enable": "Enable",
   "message.vs_shields.duplicate_generator": "This ship already has an active shield generator!",
   "message.vs_shields.duplicate_cloak": "This ship already has an active cloaking generator!"
 }
