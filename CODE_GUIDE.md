@@ -9,22 +9,29 @@ common/                          # Architectury — кроссплатформе
 │   ├── ShieldInstance.java       # HP, recharge, damage(), DamageListener, energyPercent
 │   ├── ShieldTier.java          # Iron/Diamond/Netherite: HP, recharge, cooldowns
 │   └── CloakManager.java        # Реестр замаскированных кораблей
+├── shield/
+│   ├── ShieldManager.java       # Singleton: реестр щитов (shipId → ShieldInstance)
+│   ├── ShieldInstance.java      # HP, recharge, damage(), DamageListener, energyPercent
+│   ├── ShieldTier.java          # Iron/Diamond/Netherite: HP, recharge, cooldowns
+│   ├── CloakManager.java        # Реестр замаскированных кораблей
+│   └── GravityFieldRegistry.java # OWNERS + ACTIVE ConcurrentHashMap, getForPlayer()
 ├── network/
-│   ├── ModNetwork.java          # Пакеты: SHIELD_SYNC, SHIELD_HIT, SHIELD_BREAK, NUKE_VISUAL, CLOAK_TOGGLE
+│   ├── ModNetwork.java          # Пакеты: SHIELD_SYNC, HIT, BREAK, REGEN, NUKE_VISUAL, CLOAK, JAMMER, GRAVITY
+│   ├── ClientNetworkHandler.java # S2C: щиты, звуки, cloaking, regen
 │   ├── ClientShieldManager.java # Клиентский кэш щитов + world AABB
 │   └── VSShieldsNetworking.java # CloakStatusPacket регистрация
 ├── client/
 │   ├── ShieldRenderer.java      # BER: эллипсоид с honeycomb + HP-цвет + flicker
-│   ├── ShieldEffectHandler.java # Hit particles + break animation (tick-based)
+│   ├── ShieldEffectHandler.java # Hit/break particles + звуки: hit, collapse, activate, deactivate, regen
 │   ├── ShieldHudOverlay.java    # HUD: HP-бар ближайшего щита
 │   ├── ShieldAmbientSoundHandler.java # Ambient hum loop
 │   ├── VSShieldsModClient.java  # Клиентская инициализация, пакеты S2C
 │   ├── CloakRenderState.java    # Thread-local: текущий рендерящийся корабль
 │   └── ClientCloakManager.java  # Клиентский кэш замаскированных кораблей
-├── block/                       # Блоки: генераторы, конденсатор, эмиттер, батарея, маскировка
-├── blockentity/                 # BE: тики, FE, Create SU, мультиблок батареи
+├── block/                       # Блоки: генераторы, конденсатор, эмиттер, батарея, маскировка, джаммер, гравитация
+├── blockentity/                 # BE: тики, FE, Create SU, мультиблок батареи, джаммер, гравитация
 ├── config/ShieldConfig.java     # JSON конфиг (vs_shields.json)
-├── registry/                    # Architectury: блоки, BE, меню, звуки, рецепты
+├── registry/ModSounds.java      # SHIELD_HUM, HIT, COLLAPSE, ACTIVATION, DEACTIVATION, REGENERATION
 └── mixin/                       # CloakChunkLayerMixin (отключена)
 
 forge/                           # Forge-специфичный код
@@ -33,6 +40,8 @@ forge/                           # Forge-специфичный код
 ├── ShieldEnergyCapability.kt    # IEnergyStorage для Shield Generator
 ├── BatteryInputEnergyCapability.kt
 ├── CloakEnergyCapability.kt
+├── GravityFieldEnergyCapability.kt
+├── GravityFieldHandler.kt       # onPlayerTick (mayfly) + onLivingFall (cancel)
 ├── CreateCompat.kt              # SU → FE через reflection
 └── VSShieldsModForge.kt         # Forge entrypoint, регистрация EVENT_BUS
 ```
@@ -48,13 +57,37 @@ ShieldBarrierHandler (каждый тик)
   └── curPos внутри coreAABB, prevPos внутри shieldAABB → FRIENDLY FIRE
   ↓
 shield.damage(amount, tick)
+  ├── damageListener?.onShieldDamaged() → ShieldBatteryController → regen 20% + sendShieldRegen()
   ↓
 ModNetwork.sendShieldHit(server, shipId, interceptX/Y/Z, damage)
   ↓ (S2C пакет)
-ShieldEffectHandler.onShieldHit() → ELECTRIC_SPARK + END_ROD + CRIT + FLASH
+ShieldEffectHandler.onShieldHit() → ELECTRIC_SPARK + END_ROD + CRIT + FLASH + shield_hit.ogg
   ↓
 Если HP ≤ 0: ModNetwork.sendShieldBreak(server, shipId)
-  → ShieldEffectHandler.onShieldBreak() → 1-сек анимация разлёта осколков
+  → ShieldEffectHandler.onShieldBreak() → 1-сек анимация разлёта осколков + shield_collapse.ogg
+```
+
+### Батарея → Регенерация → Звук
+```
+ShieldBatteryControllerBlockEntity.onShieldDamaged(absorbed)
+  → restoreAmount = absorbed × 0.20
+  → feCost = restoreAmount × 200 FE
+  → energyStored -= feCost; shield.restoreHP(restoreAmount)
+  → VSGameUtilsKt.getShipManagingPos() → ship.getWorldAABB() → center (cx, cy, cz)
+  → ModNetwork.sendShieldRegen(server, cx, cy, cz)
+  ↓ (S2C SHIELD_REGEN_ID)
+ShieldEffectHandler.onShieldRegen(x, y, z) → shield_regeneration.ogg @ ship center
+```
+
+### Активация / Деактивация щита
+```
+ClientNetworkHandler (SHIELD_SYNC_ID handler)
+  → prevActive = snapshot of csm.getAllShields() BEFORE csm.clear()
+  → csm.clear(); csm.updateShield(...) × N
+  → для каждого shipId: сравнить prevActive[id] vs actives[i]
+     ├── false → true: ShieldEffectHandler.onShieldActivate(cx, cy, cz) → shield_activation.ogg
+     └── true → false: ShieldEffectHandler.onShieldDeactivate(cx, cy, cz) → shield_deactivation.ogg
+  (звук не играет при первом входе — prevActive пустой)
 ```
 
 ### Энергия → Щит
@@ -82,12 +115,18 @@ ShieldRenderer.render()
 | ID | Направление | Данные | Назначение |
 |---|---|---|---|
 | `shield_sync` | S2C | N × (shipId, HP, maxHP, active, energyPct, worldAABB?) | Периодическая синхронизация |
-| `shield_hit` | S2C | shipId, x, y, z, damage | Партиклы попадания |
-| `shield_break` | S2C | shipId | Анимация разрушения |
+| `shield_hit` | S2C | shipId, x, y, z, damage | Партиклы + звук попадания |
+| `shield_break` | S2C | shipId | Анимация разрушения + звук |
+| `shield_regen` | S2C | x, y, z | Звук регенерации (Battery) |
 | `shield_toggle` | C2S | shipId, active | Вкл/выкл из GUI |
 | `nuke_visual` | S2C | x, y, z | Alex's Caves nuke entity |
 | `cloak_toggle` | C2S | shipId, active | Вкл/выкл маскировки |
 | `cloak_status` | S2C | shipId, isCloaked | CloakStatusPacket |
+| `jammer_reload` | C2S | BlockPos | Ручная перезарядка глушителя |
+| `jammer_enable` | C2S | BlockPos, boolean | Вкл/выкл глушителя |
+| `gravity_toggle` | C2S | BlockPos, boolean | Вкл/выкл гравитационного поля |
+| `gravity_flight_toggle` | C2S | BlockPos, boolean | Переключить режим полёта |
+| `gravity_fall_toggle` | C2S | BlockPos, boolean | Переключить защиту от падений |
 
 ## Конфигурация (`config/vs_shields.json`)
 
@@ -117,6 +156,75 @@ ShieldRenderer.render()
 - `EDGE_BRIGHTNESS = 1.8` (яркость рёбер)
 - `FILL_ALPHA_MULT = 0.4` (прозрачность заливки)
 - Медленное вращение: 1 оборот / 60 сек
+
+## Пайплайн OBJ-моделей (Forge OBJ Loader)
+
+Все кастомные 3D-блоки используют `"loader": "forge:obj"`.
+
+### Рабочий процесс
+
+```
+Blockbench → экспорт OBJ → корень проекта (blockname.obj + .mtl + .png)
+                ↓
+        Python-скрипт обработки:
+          1. Переименовать группы: "o cube" → "o cube_1", "o cube_2", ...
+          2. +0.5 к X и Z всех вершин (Blockbench: центр в 0, Minecraft: нужен 0–1)
+          3. Исправить строку mtllib → "blockname_model.mtl"
+          4. Сохранить → models/block/blockname_model.obj
+                ↓
+        Создать blockname_model.mtl:
+          newmtl <uuid_из_usemtl_в_obj>
+          map_Kd vs_shields:block/blockname
+                ↓
+        Создать blockname.json (forge:obj, flip_v: true, правильный UUID)
+                ↓
+        .noOcclusion() в ModBlocks.java (если модель не полный куб)
+                ↓
+        Скопировать .obj/.mtl/.json в bin/main/...
+```
+
+### Шаблон JSON модели
+
+```json
+{
+  "loader": "forge:obj",
+  "flip_v": true,
+  "model": "vs_shields:models/block/blockname_model.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "vs_shields:block/blockname",
+    "<usemtl_uuid_из_obj>": "vs_shields:block/blockname"
+  },
+  "display": {
+    "gui":                   { "rotation": [30, 225, 0], "translation": [0,0,0],   "scale": [0.625,0.625,0.625] },
+    "ground":                { "rotation": [0,  0,   0], "translation": [0,3,0],   "scale": [0.25, 0.25, 0.25]  },
+    "fixed":                 { "rotation": [0,  0,   0], "translation": [0,0,0],   "scale": [0.5,  0.5,  0.5]   },
+    "thirdperson_righthand": { "rotation": [75, 45,  0], "translation": [0,2.5,0], "scale": [0.375,0.375,0.375] },
+    "thirdperson_lefthand":  { "rotation": [75, 225, 0], "translation": [0,2.5,0], "scale": [0.375,0.375,0.375] },
+    "firstperson_righthand": { "rotation": [0,  45,  0], "translation": [0,0,0],   "scale": [0.40, 0.40, 0.40]  },
+    "firstperson_lefthand":  { "rotation": [0,  225, 0], "translation": [0,0,0],   "scale": [0.40, 0.40, 0.40]  }
+  }
+}
+```
+
+### Критичные правила
+
+| Правило | Последствие нарушения |
+|---------|----------------------|
+| `"flip_v": true` | Текстуры перевёрнуты (Blockbench экспортирует V в image-space) |
+| UUID в JSON = `usemtl` в OBJ | Текстура не применяется вообще |
+| Группы переименованы `cube_1`... | Forge перезаписывает геометрию одноимённых групп |
+| +0.5 по X/Z | Frustum culling обрезает модель |
+| `.noOcclusion()` | "Дыры" в соседних блоках по краям |
+| Исходник в корне проекта | Доступен для повторной обработки при обновлении текстуры |
+
+### Восстановление после ошибок
+
+- Оригинальные OBJ с UV-атласами — в корне проекта (`blockname.obj`)
+- Резервная копия последней успешной сборки — `common/build/resources/main/assets/vs_shields/models/block/`
+- **Никогда** не нормализовать UV-атлас вручную — это уничтожает UV-развёртку модели
+
+---
 
 ## Gravity Field Generator
 

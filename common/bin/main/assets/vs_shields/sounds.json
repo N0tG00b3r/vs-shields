@@ -1,11 +1,26 @@
 {
     "shield_hum": {
         "category": "blocks",
-        "sounds": [
-            {
-                "name": "vs_shields:shield_hum",
-                "stream": true
-            }
-        ]
+        "sounds": [{ "name": "vs_shields:shield_hum", "stream": true }]
+    },
+    "shield_hit": {
+        "category": "blocks",
+        "sounds": [{ "name": "vs_shields:shield_hit" }]
+    },
+    "shield_collapse": {
+        "category": "blocks",
+        "sounds": [{ "name": "vs_shields:shield_collapse" }]
+    },
+    "shield_activation": {
+        "category": "blocks",
+        "sounds": [{ "name": "vs_shields:shield_activation" }]
+    },
+    "shield_deactivation": {
+        "category": "blocks",
+        "sounds": [{ "name": "vs_shields:shield_deactivation" }]
+    },
+    "shield_regeneration": {
+        "category": "blocks",
+        "sounds": [{ "name": "vs_shields:shield_regeneration" }]
     }
 }

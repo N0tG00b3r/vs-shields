@@ -75,7 +75,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(4.0f, 8.0f)
                                                         .sound(SoundType.METAL)
-                                                        .requiresCorrectToolForDrops()));
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
 
         public static final RegistrySupplier<Block> SHIELD_BATTERY_CELL = BLOCKS.register(
                         "shield_battery_cell",
@@ -83,7 +84,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(3.0f, 6.0f)
                                                         .sound(SoundType.METAL)
-                                                        .requiresCorrectToolForDrops()));
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
 
         public static final RegistrySupplier<Block> SHIELD_BATTERY_INPUT = BLOCKS.register(
                         "shield_battery_input",
@@ -91,7 +93,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(3.0f, 6.0f)
                                                         .sound(SoundType.METAL)
-                                                        .requiresCorrectToolForDrops()));
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
 
         public static final RegistrySupplier<Block> CLOAKING_FIELD_GENERATOR = BLOCKS.register(
                         "cloaking_field_generator",
@@ -107,7 +110,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(5.0f, 10.0f)
                                                         .sound(SoundType.METAL)
-                                                        .requiresCorrectToolForDrops()));
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
 
         public static final RegistrySupplier<Block> shield_jammer_CONTROLLER = BLOCKS.register(
                         "shield_jammer_controller",
@@ -115,7 +119,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(5.0f, 10.0f)
                                                         .sound(SoundType.METAL)
-                                                        .requiresCorrectToolForDrops()));
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
 
         public static final RegistrySupplier<Block> shield_jammer_INPUT = BLOCKS.register(
                         "shield_jammer_input",
@@ -131,7 +136,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(5.0f, 10.0f)
                                                         .sound(SoundType.METAL)
-                                                        .requiresCorrectToolForDrops()));
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
 
         public static void register() {
                 BLOCKS.register();

@@ -16,6 +16,31 @@ public class ModSounds {
             () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(VSShieldsMod.MOD_ID, "shield_hum")));
 
+    public static final RegistrySupplier<SoundEvent> SHIELD_HIT = SOUNDS.register(
+            "shield_hit",
+            () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(VSShieldsMod.MOD_ID, "shield_hit")));
+
+    public static final RegistrySupplier<SoundEvent> SHIELD_COLLAPSE = SOUNDS.register(
+            "shield_collapse",
+            () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(VSShieldsMod.MOD_ID, "shield_collapse")));
+
+    public static final RegistrySupplier<SoundEvent> SHIELD_ACTIVATION = SOUNDS.register(
+            "shield_activation",
+            () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(VSShieldsMod.MOD_ID, "shield_activation")));
+
+    public static final RegistrySupplier<SoundEvent> SHIELD_DEACTIVATION = SOUNDS.register(
+            "shield_deactivation",
+            () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(VSShieldsMod.MOD_ID, "shield_deactivation")));
+
+    public static final RegistrySupplier<SoundEvent> SHIELD_REGENERATION = SOUNDS.register(
+            "shield_regeneration",
+            () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(VSShieldsMod.MOD_ID, "shield_regeneration")));
+
     public static void register() {
         SOUNDS.register();
     }

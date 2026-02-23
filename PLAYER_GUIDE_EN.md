@@ -82,8 +82,25 @@ Front face (controller side):      Middle layer:      Back layer:
 
 ### How It Works
 
-- **Passive Regen:** Every time the shield is hit, the battery instantly restores **20%** of the absorbed damage by consuming FE.
-- **Emergency Dump:** If the shield's HP drops below **25%**, the battery dumps **ALL** its remaining energy into the shield for a massive, instant heal (30-second cooldown).
+The battery has two independent mechanisms:
+
+**1. Passive Absorption** *(silent, fires on every hit)*
+Every time the shield takes a hit, the battery silently absorbs **20% of that damage** — reducing the effective HP loss. Costs **500 FE per 1 HP** absorbed. If not enough energy is available the absorption is skipped, but the battery never stalls.
+
+**2. Emergency Regen** *(with sound, fires when HP is critically low)*
+When the shield's HP drops below **20%**, the battery immediately dumps as much energy as possible into restoring HP — calculated by how much FE is currently stored:
+
+> `HP restored = energyStored ÷ 250`  (capped at current HP deficit)
+
+| Scenario | Battery FE | HP restored |
+|----------|-----------|-------------|
+| Iron shield at 0 HP, battery full (500k FE) | −125,000 FE | 100 HP (fully restored) |
+| Diamond shield at 0 HP, battery full | −62,500 FE | 250 HP (fully restored) |
+| Netherite shield at 0 HP, battery full | −125,000 FE | 500 HP (fully restored) |
+| Any shield, battery at 50k FE | −50,000 FE | 200 HP |
+
+- **Cooldown:** 30 seconds between emergency bursts — the battery will not fire again until the cooldown expires, even if HP stays below 20%. This prevents the unit from getting stuck in a loop at 0 HP.
+- **Sound:** The `shield_regeneration` sound plays only during this emergency burst, not during passive absorption.
 
 ---
 
@@ -274,17 +291,25 @@ Place a **Create rotation shaft** next to a generator or battery input. Rotation
   - **Blue** — HP > 50% (healthy)
   - **Yellow** — HP 25–50% (damaged)
   - **Red** — HP < 25% (critical)
-- **Low Energy Distortions:** If the generator's internal energy (FE) drops below 20%, the shield will begin to violently flicker, glitch, and shift to a red-orange hue, warning you that the power supply is failing.
+- **Low Energy Distortions:** If the generator's FE drops below 20%, the shield will begin to violently flicker and glitch, shifting to a red-orange hue.
 
 ### Impact & Destruction
-- **Hit Sparks:** Striking the shield (with a projectile or explosion) creates a burst of electrical sparks exactly at the point of impact on the shield's surface. Heavier damage causes larger bursts.
-- **Shield Break:** When HP reaches 0, the shield shatters in a dramatic 1-second animation with sparks flying outward, accompanied by a loud electrical discharge sound.
+- **Hit Sparks:** Any projectile or explosion striking the shield creates a burst of electrical sparks at the point of impact. Heavier hits produce larger bursts.
+- **Shield Break:** When HP reaches 0, the shield shatters in a 1-second animation with sparks flying outward.
 
 ### Sounds
-- Active shields emit a low, vibrating **ambient hum** that can be heard up to 48 blocks away. The sound fades smoothly as you move away from the ship.
 
-### HUD Integration
-When you are near a ship with an active shield, an HP bar will appear at the top of your screen.
+| Event | Sound |
+|-------|-------|
+| Shield active (continuous) | Low ambient hum, audible up to ~48 blocks, fades with distance |
+| Projectile / explosion hit | Electrical impact crackle |
+| Shield destroyed (HP → 0) | Loud electrical discharge |
+| Shield activated | Rising power-up tone |
+| Shield deactivated | Fading power-down click |
+| Battery regen (Shield Battery) | Short energy pulse |
+
+### HUD
+When inside the shield bubble, an HP bar appears at the top of your screen.
 
 ### Generator GUI
 Right-click the generator to see:
@@ -292,3 +317,9 @@ Right-click the generator to see:
 - FE bar (orange)
 - Status: Active / Inactive
 - Activate / Deactivate button
+
+---
+
+## Redstone Integration
+
+The **Shield Generator** outputs a **redstone signal** when it takes damage — the signal strength is proportional to the damage received. Place a **comparator** next to the generator to wire it into automation circuits (e.g., alert systems, auto-activating backup batteries when under attack).

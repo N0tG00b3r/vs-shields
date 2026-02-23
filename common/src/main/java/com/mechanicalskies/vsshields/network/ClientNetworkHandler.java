@@ -9,9 +9,22 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientNetworkHandler {
+
+    /**
+     * Persistent active-state tracking that survives csm.clear().
+     * csm does NOT store inactive shields (active=false, existing=null → null returned),
+     * so we can't read previous state from it — this map fills that gap.
+     * Populated after every sync, pruned to only ships present in the current sync.
+     */
+    private static final Map<Long, Boolean> lastKnownActiveState = new ConcurrentHashMap<>();
+
     public static void registerS2C() {
         NetworkManager.registerReceiver(
                 NetworkManager.Side.S2C,
@@ -44,6 +57,24 @@ public class ClientNetworkHandler {
                     }
                     context.queue(() -> {
                         ClientShieldManager csm = ClientShieldManager.getInstance();
+
+                        // Detect activate/deactivate transitions using persistent state.
+                        // We check BEFORE csm.clear() so the timing is right, but we read
+                        // from lastKnownActiveState (not csm) because csm drops inactive entries.
+                        for (int i = 0; i < count; i++) {
+                            Boolean prev = lastKnownActiveState.get(shipIds[i]);
+                            if (prev != null && hasAABB[i]) {
+                                double cx = (minXs[i] + maxXs[i]) / 2.0;
+                                double cy = (minYs[i] + maxYs[i]) / 2.0;
+                                double cz = (minZs[i] + maxZs[i]) / 2.0;
+                                if (!prev && actives[i]) {
+                                    ShieldEffectHandler.onShieldActivate(cx, cy, cz);
+                                } else if (prev && !actives[i]) {
+                                    ShieldEffectHandler.onShieldDeactivate(cx, cy, cz);
+                                }
+                            }
+                        }
+
                         csm.clear();
                         for (int i = 0; i < count; i++) {
                             csm.updateShield(shipIds[i], currentHPs[i], maxHPs[i], actives[i],
@@ -51,6 +82,12 @@ public class ClientNetworkHandler {
                                     minXs[i], minYs[i], minZs[i],
                                     maxXs[i], maxYs[i], maxZs[i]);
                         }
+
+                        // Update persistent state: only keep ships present in this sync
+                        Set<Long> syncedIds = new HashSet<>();
+                        for (int i = 0; i < count; i++) syncedIds.add(shipIds[i]);
+                        lastKnownActiveState.keySet().retainAll(syncedIds);
+                        for (int i = 0; i < count; i++) lastKnownActiveState.put(shipIds[i], actives[i]);
                     });
                 });
 
@@ -106,6 +143,16 @@ public class ClientNetworkHandler {
                 (buf, context) -> {
                     CloakStatusPacket packet = new CloakStatusPacket(buf);
                     packet.handle(context);
+                });
+
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.S2C,
+                ModNetwork.SHIELD_REGEN_ID,
+                (buf, context) -> {
+                    double x = buf.readDouble();
+                    double y = buf.readDouble();
+                    double z = buf.readDouble();
+                    context.queue(() -> ShieldEffectHandler.onShieldRegen(x, y, z));
                 });
     }
 }

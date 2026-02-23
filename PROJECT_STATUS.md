@@ -46,11 +46,9 @@ Multiloader (Architectury): `common` (Java) + `forge` (Kotlin entry points) + `f
 ### Shield Battery параметры
 | Параметр | Значение |
 |----------|----------|
-| Ёмкость FE | (500,000 / 26) * кол-во ячеек |
-| Пассивное восстановление | 20% от поглощённого урона за удар |
-| FE за 1 HP | 200 (hpPerFE = 0.005) |
-| Порог экстренного сброса | 25% HP |
-| Кулдаун экстренного сброса | 600 тиков (30 сек) |
+| Ёмкость FE | 500,000 FE (полный мультиблок из 26 Cell/Input) |
+| **Пассивное поглощение** | 20% от поглощённого урона за удар, **500 FE/HP**, без звука |
+| **Экстренная регенерация** | HP < 20% → `energyStored / 250 HP` одним сбросом, кулдаун 30 сек, со звуком |
 | Буфер Input блока | 50,000 FE |
 
 ### Урон по щитам
@@ -157,9 +155,77 @@ in net.minecraft.client.renderer.LevelRenderer
 
 ---
 
+### Сессия 17 — Фикс текстур OBJ-блоков и обработка новых моделей ✅
+
+**Исправлены проблемы отображения текстур у 7 блоков:**
+
+**Корневая причина**: блоки с `forge:obj` loader требуют `"flip_v": true` — без него Blockbench-текстуры отображаются перевёрнутыми. Также в `shield_jammer_frame.json` был неверный UUID материала (`m_46abdeac` от gravity_generator вместо `m_5b1efc91`).
+
+**Обработаны новые OBJ из корня проекта** по пайплайну Сессии 14:
+- `gravity_field_generator.obj` → `gravity_field_generator_model.obj` (группы переименованы, +0.5 X/Z, mtllib исправлен)
+- `shield_jammer_frame.obj` → `shield_jammer_frame_model.obj`
+- `shield_jammer_controller.obj` → `shield_jammer_controller_model.obj` (переведён с `orientable` на `forge:obj`)
+- `shield_jammer_input.obj` → `shield_jammer_input_model.obj` (переведён с `orientable` на `forge:obj`)
+
+**Добавлен `"flip_v": true`** во все JSON-модели OBJ-блоков:
+`shield_battery_cell`, `shield_battery_input`, `shield_battery_controller`, `shield_jammer_frame`, `shield_jammer_controller`, `shield_jammer_input`, `gravity_field_generator`
+
+**Исправлен occlusion culling**: добавлен `.noOcclusion()` для `shield_jammer_controller` в `ModBlocks.java` — устранены "дыры" в соседних блоках по краям модели.
+
+**Пайплайн OBJ задокументирован** в `CLAUDE.md`, `CODE_GUIDE.md` и `PROJECT_STATUS.md`.
+
+---
+
+### Сессия 18 — Звуки щита ✅
+
+Добавлены 5 звуковых эффектов. OGG-файлы скопированы из корня проекта в `common/src/main/resources/assets/vs_shields/sounds/`.
+
+| Событие | Файл | Триггер |
+|---------|------|---------|
+| `shield_hit` | `1hit.ogg` | При попадании снаряда / взрыва в щит |
+| `shield_collapse` | `2collapse.ogg` | При разрушении щита (HP → 0) |
+| `shield_activation` | `3activation.ogg` | При включении щита через GUI |
+| `shield_deactivation` | `3deactivation.ogg` | При выключении щита через GUI |
+| `shield_regeneration` | `4regeneration.ogg` | При пассивной регенерации от Shield Battery |
+
+**Изменённые файлы:**
+- `sounds.json` — 5 новых записей
+- `registry/ModSounds.java` — 5 новых `RegistrySupplier<SoundEvent>`
+- `network/ModNetwork.java` — добавлен `SHIELD_REGEN_ID` (S2C) + `sendShieldRegen()`
+- `client/ShieldEffectHandler.java` — sound calls в `onShieldHit/onShieldBreak`; новые методы `onShieldActivate/Deactivate/Regen`
+- `network/ClientNetworkHandler.java` — детекция переключения `active` в SHIELD_SYNC; приёмник `SHIELD_REGEN_ID`
+- `blockentity/ShieldBatteryControllerBlockEntity.java` — реализована логика в `onShieldDamaged`: 20% absorbed → `restoreHP()`, FE cost 200/HP, отправка `SHIELD_REGEN_ID`
+
+---
+
+### Сессия 19 — Переработка логики Shield Battery + фикс звука активации ✅
+
+**Фикс звука активации щита:**
+- **Баг:** `ClientNetworkHandler` читал предыдущее состояние `active` из `ClientShieldManager`, который не хранит inactive-щиты (при `active=false, existing=null` запись не создаётся). Переход `false→true` не детектировался.
+- **Исправление:** Добавлен статический `lastKnownActiveState: ConcurrentHashMap<Long, Boolean>` в `ClientNetworkHandler` — персистентный map, который не зависит от `csm.clear()` и хранит последнее известное состояние каждого щита включая `false`. Обновляется после каждого синка, удаляет корабли через `retainAll`.
+
+**Переработка Shield Battery — два режима:**
+
+| Режим | Триггер | Звук | Стоимость |
+|-------|---------|------|-----------|
+| Пассивное поглощение | Каждый удар (`onShieldDamaged`) | ❌ нет | 500 FE/HP, восстанавливает 20% урона |
+| Экстренная регенерация | HP < 20% в `serverTick` | ✅ `shield_regeneration` | 250 FE/HP, весь доступный заряд за раз |
+
+- **Экстренная формула:** `HP = energyStored / 250`, ограничено дефицитом HP. Кулдаун 600 тиков (30 сек) — не застревает в цикле при 0 HP.
+- Предыдущий код `onShieldDamaged` (200 FE/HP + звук на каждый удар) заменён.
+
+**Изменённые файлы:**
+- `blockentity/ShieldBatteryControllerBlockEntity.java` — новые константы `FE_PER_HP_PASSIVE=500`, `FE_PER_HP_EMERGENCY=250`, `EMERGENCY_HP_THRESHOLD=0.20`, `EMERGENCY_COOLDOWN_TICKS=600`; `onShieldDamaged` — только поглощение без звука; emergency regen перенесён в `serverTick`
+- `network/ClientNetworkHandler.java` — `lastKnownActiveState` вместо `prevActive` из csm
+
+---
+
 ## Известные проблемы / TODO
 1. **Нет Fabric damage handler** — на Fabric щит не защищает (нет Forge events, нужны миксины)
 2. **CGS hitscan пули** — обычные пули CGS (из gun library ntgl) могут не файрить `ProjectileImpactEvent`, если используют hitscan. Может понадобиться подписка на кастомный ивент gun library
+
+**Реализовано (ранее было в TODO):**
+- ✅ Redstone signal при получении урона щитом — реализовано в Сессии 15 (`ShieldGeneratorBlock` выдаёт redstone сигнал при ударе через `BlockState` компаратор)
 
 ## Структура файлов (ключевые изменения)
 

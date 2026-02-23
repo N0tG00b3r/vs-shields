@@ -1,6 +1,7 @@
 package com.mechanicalskies.vsshields.blockentity;
 
 import com.mechanicalskies.vsshields.menu.ShieldBatteryMenu;
+import com.mechanicalskies.vsshields.network.ModNetwork;
 import com.mechanicalskies.vsshields.registry.ModBlockEntities;
 import com.mechanicalskies.vsshields.registry.ModBlocks;
 import com.mechanicalskies.vsshields.shield.ShieldInstance;
@@ -11,6 +12,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -20,6 +22,7 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
+import org.joml.primitives.AABBdc;
 import org.valkyrienskies.core.api.ships.Ship;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
@@ -142,6 +145,30 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
         } else {
             status = STATUS_READY;
         }
+
+        // Emergency regen: fires once when HP drops below 20%, dumps energy into HP
+        if (shield.isActive() && shield.getHPPercent() < EMERGENCY_HP_THRESHOLD && energyStored > 0) {
+            long currentTick = level.getGameTime();
+            if (currentTick - lastEmergencyTick >= EMERGENCY_COOLDOWN_TICKS) {
+                double maxRestoreByEnergy = energyStored / (double) FE_PER_HP_EMERGENCY;
+                double hpDeficit = shield.getMaxHP() - shield.getCurrentHP();
+                double restoreAmount = Math.min(maxRestoreByEnergy, hpDeficit);
+
+                if (restoreAmount >= 1.0) {
+                    int feCost = (int) Math.ceil(restoreAmount * FE_PER_HP_EMERGENCY);
+                    energyStored -= Math.min(feCost, energyStored);
+                    shield.restoreHP(restoreAmount);
+                    lastEmergencyTick = currentTick;
+                    setChanged();
+
+                    AABBdc aabb = ship.getWorldAABB();
+                    double cx = (aabb.minX() + aabb.maxX()) / 2.0;
+                    double cy = (aabb.minY() + aabb.maxY()) / 2.0;
+                    double cz = (aabb.minZ() + aabb.maxZ()) / 2.0;
+                    ModNetwork.sendShieldRegen(((ServerLevel) level).getServer(), cx, cy, cz);
+                }
+            }
+        }
     }
 
     private void scanCells(Level level, BlockPos pos, BlockState state) {
@@ -176,10 +203,37 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
         this.storageCellCount = storage;
     }
 
+    // --- Passive absorption (on every hit, no sound) ---
+    // Restores 20% of absorbed damage. Costs 500 FE per HP — "large energy" for constant protection.
+    private static final double PASSIVE_ABSORB_RATIO   = 0.20;
+    private static final int    FE_PER_HP_PASSIVE       = 500;
+
+    // --- Emergency regen (triggered in serverTick when HP < 20%, with sound) ---
+    // Dumps all available energy into HP at once. 250 FE per HP — cheaper per unit but fires as a burst.
+    // 30-second cooldown prevents re-triggering while HP stays low.
+    private static final double EMERGENCY_HP_THRESHOLD  = 0.20;
+    private static final int    FE_PER_HP_EMERGENCY     = 250;
+    private static final int    EMERGENCY_COOLDOWN_TICKS = 600; // 30 seconds
+
+    /**
+     * Called every time the shield absorbs damage.
+     * Silently restores 20% of that damage by consuming 500 FE/HP.
+     * No sound — sound only plays during emergency regen (see serverTick).
+     */
     @Override
     public void onShieldDamaged(ShieldInstance shield, double absorbed, long tick) {
-        if (!formed || energyStored <= 0)
+        if (!formed || energyStored <= 0 || level == null || level.isClientSide())
             return;
+
+        double restoreAmount = absorbed * PASSIVE_ABSORB_RATIO;
+        int feCost = (int) Math.ceil(restoreAmount * FE_PER_HP_PASSIVE);
+        if (energyStored < feCost)
+            return;
+
+        energyStored -= feCost;
+        shield.restoreHP(restoreAmount);
+        setChanged();
+        // No sound: passive absorption is silent
     }
 
     public int getEnergyStored() {

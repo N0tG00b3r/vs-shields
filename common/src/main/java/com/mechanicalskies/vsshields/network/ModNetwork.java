@@ -37,6 +37,7 @@ public class ModNetwork {
     public static final ResourceLocation GRAVITY_TOGGLE_ID         = new ResourceLocation(VSShieldsMod.MOD_ID, "gravity_toggle");
     public static final ResourceLocation GRAVITY_FLIGHT_TOGGLE_ID  = new ResourceLocation(VSShieldsMod.MOD_ID, "gravity_flight_toggle");
     public static final ResourceLocation GRAVITY_FALL_TOGGLE_ID    = new ResourceLocation(VSShieldsMod.MOD_ID, "gravity_fall_toggle");
+    public static final ResourceLocation SHIELD_REGEN_ID           = new ResourceLocation(VSShieldsMod.MOD_ID, "shield_regen");
 
     public static void init() {
         NetworkManager.registerReceiver(
@@ -90,6 +91,14 @@ public class ModNetwork {
         EnvExecutor.runInEnv(Env.CLIENT, () -> () -> {
             ClientNetworkHandler.registerS2C();
         });
+    }
+
+    public static void sendShieldRegen(MinecraftServer server, double x, double y, double z) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeDouble(x);
+        buf.writeDouble(y);
+        buf.writeDouble(z);
+        NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), SHIELD_REGEN_ID, buf);
     }
 
     public static void sendNukeVisual(MinecraftServer server, double x, double y, double z) {

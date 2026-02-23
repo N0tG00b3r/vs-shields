@@ -58,6 +58,10 @@ class VSShieldsModForge {
         com.mechanicalskies.vsshields.blockentity.ShieldJammerInputBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickShieldJammerInput(level, pos, be)
         }
+
+        com.mechanicalskies.vsshields.blockentity.GravityFieldGeneratorBlockEntity.setEnergyInputHook { level, pos, be ->
+            CreateCompat.tickGravityFieldInput(level, pos, be)
+        }
     }
 
     @SubscribeEvent

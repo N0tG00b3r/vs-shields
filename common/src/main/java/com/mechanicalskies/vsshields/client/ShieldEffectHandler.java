@@ -1,9 +1,11 @@
 package com.mechanicalskies.vsshields.client;
 
 import com.mechanicalskies.vsshields.network.ClientShieldManager;
+import com.mechanicalskies.vsshields.registry.ModSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.sounds.SoundSource;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -69,6 +71,8 @@ public class ShieldEffectHandler {
                     hitX, hitY, hitZ,
                     0, 0, 0);
         }
+
+        level.playLocalSound(hitX, hitY, hitZ, ModSounds.SHIELD_HIT.get(), SoundSource.BLOCKS, 1.0f, 1.0f, false);
     }
 
     /**
@@ -90,6 +94,29 @@ public class ShieldEffectHandler {
         double radiusZ = (data.worldMaxZ - data.worldMinZ) / 2.0;
 
         breakAnimations.add(new BreakAnimation(cx, cy, cz, radiusX, radiusY, radiusZ));
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) {
+            mc.level.playLocalSound(cx, cy, cz, ModSounds.SHIELD_COLLAPSE.get(), SoundSource.BLOCKS, 1.5f, 1.0f, false);
+        }
+    }
+
+    public static void onShieldActivate(double x, double y, double z) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        mc.level.playLocalSound(x, y, z, ModSounds.SHIELD_ACTIVATION.get(), SoundSource.BLOCKS, 1.0f, 1.0f, false);
+    }
+
+    public static void onShieldDeactivate(double x, double y, double z) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        mc.level.playLocalSound(x, y, z, ModSounds.SHIELD_DEACTIVATION.get(), SoundSource.BLOCKS, 1.0f, 1.0f, false);
+    }
+
+    public static void onShieldRegen(double x, double y, double z) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        mc.level.playLocalSound(x, y, z, ModSounds.SHIELD_REGENERATION.get(), SoundSource.BLOCKS, 1.0f, 1.0f, false);
     }
 
     /**

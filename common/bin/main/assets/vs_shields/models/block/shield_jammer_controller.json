@@ -1,9 +1,19 @@
 {
-    "parent": "minecraft:block/orientable",
-    "textures": {
-        "top": "vs_shields:block/shield_jammer_frame",
-        "bottom": "vs_shields:block/shield_jammer_frame",
-        "front": "vs_shields:block/shield_jammer_controller",
-        "side": "vs_shields:block/shield_jammer_frame"
-    }
+  "loader": "forge:obj",
+  "flip_v": true,
+  "model": "vs_shields:models/block/shield_jammer_controller_model.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "vs_shields:block/shield_jammer_controller",
+    "m_0fc54cfb-c379-3c62-a16e-af7b95406ecb": "vs_shields:block/shield_jammer_controller"
+  },
+  "display": {
+    "gui": { "rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625] },
+    "ground": { "rotation": [0, 0, 0], "translation": [0, 3, 0], "scale": [0.25, 0.25, 0.25] },
+    "fixed": { "rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.5, 0.5, 0.5] },
+    "thirdperson_righthand": { "rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375] },
+    "thirdperson_lefthand": { "rotation": [75, 225, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375] },
+    "firstperson_righthand": { "rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.40, 0.40, 0.40] },
+    "firstperson_lefthand": { "rotation": [0, 225, 0], "translation": [0, 0, 0], "scale": [0.40, 0.40, 0.40] }
+  }
 }

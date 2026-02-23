@@ -27,5 +27,14 @@
     "gui.vs_shields.cloak_generator.status": "Статус: %s",
     "gui.vs_shields.cloak_generator.consumption": "Потребление: %d FE/тик",
     "message.vs_shields.duplicate_generator": "У этого корабля уже есть активный генератор щита!",
-    "message.vs_shields.duplicate_cloak": "У этого корабля уже есть активный генератор маскировочного поля!"
+    "message.vs_shields.duplicate_cloak": "У этого корабля уже есть активный генератор маскировочного поля!",
+    "block.vs_shields.gravity_field_generator": "Генератор гравитационного поля",
+    "container.vs_shields.gravity_field_generator": "Генератор гравитационного поля",
+    "gui.vs_shields.gravity_field.activate": "Активировать",
+    "gui.vs_shields.gravity_field.deactivate": "Деактивировать",
+    "gui.vs_shields.gravity_field.flight_on": "Полет: ВКЛ",
+    "gui.vs_shields.gravity_field.flight_off": "Полет: ВЫКЛ",
+    "gui.vs_shields.gravity_field.fall_on": "Защ. от падения: ВКЛ",
+    "gui.vs_shields.gravity_field.fall_off": "Защ. от падения: ВЫКЛ",
+    "message.vs_shields.duplicate_gravity": "У этого корабля уже есть активный генератор гравитационного поля!"
 }
