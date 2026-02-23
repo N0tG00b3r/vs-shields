@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "vs_shields:block/gravity_field_generator" }
+  }
+}

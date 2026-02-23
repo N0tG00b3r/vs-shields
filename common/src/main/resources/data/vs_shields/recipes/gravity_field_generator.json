@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ENE",
+    "NSN",
+    "ENE"
+  ],
+  "key": {
+    "E": { "item": "minecraft:ender_pearl" },
+    "N": { "item": "minecraft:netherite_block" },
+    "S": { "item": "minecraft:nether_star" }
+  },
+  "result": {
+    "item": "vs_shields:gravity_field_generator",
+    "count": 1
+  }
+}
