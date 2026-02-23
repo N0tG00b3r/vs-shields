@@ -39,7 +39,7 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
 
     private long trackedShipId = -1;
     private int energyStored = 0;
-    private int maxEnergy = 500000;
+    private int maxEnergy = 200000;
     private int cellCount = 0;
     private int storageCellCount = 0;
     private boolean formed = false;
@@ -204,25 +204,32 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
     }
 
     // --- Passive absorption (on every hit, no sound) ---
-    // Restores 20% of absorbed damage. Costs 500 FE per HP — "large energy" for constant protection.
-    private static final double PASSIVE_ABSORB_RATIO   = 0.20;
-    private static final int    FE_PER_HP_PASSIVE       = 500;
+    // Restores 20% of absorbed damage. Costs 1500 FE per HP — "large energy" for
+    // constant protection.
+    private static final double PASSIVE_ABSORB_RATIO = 0.20;
+    private static final int FE_PER_HP_PASSIVE = 1500;
 
     // --- Emergency regen (triggered in serverTick when HP < 20%, with sound) ---
-    // Dumps all available energy into HP at once. 250 FE per HP — cheaper per unit but fires as a burst.
+    // Dumps all available energy into HP at once. 250 FE per HP — cheaper per unit
+    // but fires as a burst.
     // 30-second cooldown prevents re-triggering while HP stays low.
-    private static final double EMERGENCY_HP_THRESHOLD  = 0.20;
-    private static final int    FE_PER_HP_EMERGENCY     = 250;
-    private static final int    EMERGENCY_COOLDOWN_TICKS = 600; // 30 seconds
+    private static final double EMERGENCY_HP_THRESHOLD = 0.20;
+    private static final int FE_PER_HP_EMERGENCY = 250;
+    private static final int EMERGENCY_COOLDOWN_TICKS = 600; // 30 seconds
 
     /**
      * Called every time the shield absorbs damage.
-     * Silently restores 20% of that damage by consuming 500 FE/HP.
+     * Silently restores 20% of that damage by consuming 1500 FE/HP.
+     * Only activates if current HP > 1% (prevents stalling destruction).
      * No sound — sound only plays during emergency regen (see serverTick).
      */
     @Override
     public void onShieldDamaged(ShieldInstance shield, double absorbed, long tick) {
         if (!formed || energyStored <= 0 || level == null || level.isClientSide())
+            return;
+
+        // If shield is practically broken (< 1%), don't absorb to allow shattering.
+        if (shield.getHPPercent() <= 0.01)
             return;
 
         double restoreAmount = absorbed * PASSIVE_ABSORB_RATIO;

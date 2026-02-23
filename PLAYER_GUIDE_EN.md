@@ -85,7 +85,7 @@ Front face (controller side):      Middle layer:      Back layer:
 The battery has two independent mechanisms:
 
 **1. Passive Absorption** *(silent, fires on every hit)*
-Every time the shield takes a hit, the battery silently absorbs **20% of that damage** — reducing the effective HP loss. Costs **500 FE per 1 HP** absorbed. If not enough energy is available the absorption is skipped, but the battery never stalls.
+Every time the shield takes a hit, the battery silently absorbs **20% of that damage** — reducing the effective HP loss. Costs **1500 FE per 1 HP** absorbed. If not enough energy is available, the absorption is skipped. **Note:** Passive absorption is disabled when the shield's HP drops to 1% or lower, allowing the shield to shatter normally rather than becoming stuck at low health.
 
 **2. Emergency Regen** *(with sound, fires when HP is critically low)*
 When the shield's HP drops below **20%**, the battery immediately dumps as much energy as possible into restoring HP — calculated by how much FE is currently stored:
@@ -94,7 +94,7 @@ When the shield's HP drops below **20%**, the battery immediately dumps as much 
 
 | Scenario | Battery FE | HP restored |
 |----------|-----------|-------------|
-| Iron shield at 0 HP, battery full (500k FE) | −125,000 FE | 100 HP (fully restored) |
+| Iron shield at 0 HP, battery full (200k FE) | −25,000 FE | 100 HP (fully restored) |
 | Diamond shield at 0 HP, battery full | −62,500 FE | 250 HP (fully restored) |
 | Netherite shield at 0 HP, battery full | −125,000 FE | 500 HP (fully restored) |
 | Any shield, battery at 50k FE | −50,000 FE | 200 HP |
@@ -267,7 +267,7 @@ Connect any FE source to a generator or battery input:
 
 ### Create SU (Stress Units)
 
-Place a **Create rotation shaft** next to a generator or battery input. Rotation speed is converted to FE:
+Place a **Create rotation shaft** next to a **Shield Generator**, **Shield Battery Input**, or **Gravity Field Generator**. Rotation speed is converted automatically to FE via mechanical coupling:
 - **1 FE/tick per 1 RPM**
 - A shaft at 256 RPM = 256 FE/tick
 - Works from all 6 sides.
