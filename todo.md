@@ -1,5 +1,5 @@
 # VS Shields — TODO
-
+1. redstone signal when the shield takes damage
 ## Приоритет: Высокий
 
 

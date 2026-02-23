@@ -14,16 +14,17 @@
 
 ### Shield Generator
 
-The core block. Creates a protective field around the ship. Three tiers are available:
+The core block. Creates a protective field around the ship. It features a unique, high-poly 3D model for each tier. Three tiers are available:
 
-| Tier | HP | Radius | Regen | FE/tick | FE Capacity |
+| Tier | HP | Radius (Coverage) | Regen | FE/tick | FE Capacity |
 |------|-----|--------|-------|---------|-------------|
-| **Iron** | 100 | 8 blocks | 0.5/tick | 20 | 50,000 |
-| **Diamond** | 250 | 16 blocks | 1.0/tick | 50 | 200,000 |
-| **Netherite** | 500 | 24 blocks | 2.0/tick | 100 | 500,000 |
+| **Iron** | 100 | Dynamic | 0.5/tick | 20 | 50,000 |
+| **Diamond** | 250 | Dynamic | 1.0/tick | 50 | 200,000 |
+| **Netherite** | 500 | Dynamic | 2.0/tick | 100 | 500,000 |
 
 **Rules:**
 - Only **one generator per ship**. A second one will show a red "Duplicate" message.
+- **Dynamic Radius:** The shield no longer has a fixed size. It automatically scans the physical bounding box bounds of your entire ship and generates a protective dome perfectly wrapped around the hull, with an extra 10-block padding in all directions (5 blocks in vertical directions). Adding more blocks to the ship automatically expands the shield.
 - The generator consumes FE every tick. Without power, the shield turns off.
 - Shield HP scales with energy level (50% HP at 0% FE, 100% HP at 100% FE).
 - After taking damage, recharge starts after a cooldown (5-10 seconds depending on tier).
@@ -31,17 +32,18 @@ The core block. Creates a protective field around the ship. Three tiers are avai
 
 ### Shield Capacitor
 
-A simple addon block. Place it on the same ship to automatically add **+50 HP** to the shield's maximum health. The effect stacks: 4 capacitors = +200 HP.
+A simple addon block with a 3D model. Place it on the same ship to automatically add **+50 HP** to the shield's maximum health. The effect stacks: 4 capacitors = +200 HP.
 
 ### Shield Emitter
 
-Place on the same ship to add **+0.5 HP/tick** to the recharge rate and **+2 blocks** to the shield's radius. The effect stacks.
+Place on the same ship to add **+0.5 HP/tick** to the shield's recharge rate. The effect stacks.
 
 ---
 
 ## Shield Battery — Multiblock (3x3x3)
 
 A 3x3x3 multiblock that stores a massive amount of energy and instantly restores shield HP when it takes damage.
+**Warning:** Only **ONE** active shield battery per ship! Placing a second one will display a `DUPLICATE` error.
 
 ### How to Build
 
@@ -85,19 +87,30 @@ Front face (controller side):      Middle layer:      Back layer:
 
 ---
 
-## Cloaking Field (WIP - Temporarily Disabled)
+## Shield Jammer — Electronic Warfare Station
 
-*Note: The cloaking field generator is temporarily disabled due to stability issues with other mods.*
+The Shield Jammer is the ultimate Electronic Warfare (EW) station, designed to burn out enemy shield energy upon physical collision (ramming) of ships.
 
-The **Cloaking Field Generator** module hides your ship from other players.
+**Warning:** Only **ONE** jammer per ship! Placing a second one will display a `DUPLICATE` error.
 
-1. Place the cloaking generator on your ship (it doesn't need physical cables, it draws power wirelessly from the main shield generator).
-2. Open its GUI and activate it.
-3. Your ship will become completely invisible to everyone except the owner (or players currently standing on the ship).
+### How to Build
 
-**Features:**
-- Cloaking consumes a **massive amount of FE/tick** from the main shield generator. Without enough energy, the cloak turns off.
-- The cloak only works while the main shield generator is active.
+A 3x3x3 multiblock built similarly to the Shield Battery:
+
+1. Place the **Shield Jammer Controller** in the center of the front face. It must face outward (towards the enemy).
+2. Fill the remaining **26 positions** with **Shield Jammer Frame** and **Shield Jammer Input** blocks.
+3. The more Frame blocks used, the higher the maximum energy capacity of the station (up to 3,900,000 FE).
+4. Input blocks are necessary to connect external power cables to the Jammer.
+
+### How It Works
+
+- **Scanning:** The Jammer constantly scans the surrounding area and nearby ships.
+- **Jamming:** If the physical bounding boxes of the ships intersect, the Jammer activates. It rapidly burns **50,000 FE per tick** from the enemy shield, while consuming **5,000 FE per tick** from its own reserves. This is accompanied by loud sonic boom effects in the air.
+- **Direct Damage:** If the enemy shield is depleted to 0 FE, the Jammer begins dealing direct piercing damage (3 HP per tick) to the enemy generator.
+- **Cooldown:** During active jamming and cooldown, the Jammer hardware-locks external energy reception. If its internal reserve runs dry (0 FE), it aggressively powers down and enters a forced stasis until it recharges 2,500,000 FE (it can receive power during stasis).
+- **Manual Reset:** The Controller GUI has a "Reload" button for a manual, safe 60-second cooldown dump.
+
+
 
 ## Crafting Recipes
 
@@ -147,14 +160,30 @@ The **Cloaking Field Generator** module hides your ship from other players.
 [Echo Shard] [Battery Input] [Echo Shard]
 ```
 
-### Cloaking
+### Electronic Warfare Station (Shield Jammer)
 
-**Cloaking Field Generator**
+**Shield Jammer Controller**
+```text
+[Diamond Block] [End Crystal]     [Diamond Block]
+[Redstone Block] [Netherite Block] [Redstone Block]
+[Diamond Block] [Obsidian]        [Diamond Block]
 ```
-[Phantom Membrane] [Echo Shard]       [Phantom Membrane]
-[Netherite Ingot]  [Shield Capacitor] [Netherite Ingot]
-[Phantom Membrane] [Echo Shard]       [Phantom Membrane]
+
+**Shield Jammer Frame (x4)**
+```text
+[Iron Block] [Obsidian]   [Iron Block]
+[Obsidian]   [Iron Block] [Obsidian]
+[Iron Block] [Obsidian]   [Iron Block]
 ```
+
+**Shield Jammer Input**
+```text
+[Empty]    [Iron Block] [Empty]
+[Obsidian] [Jammer Frame] [Obsidian]
+[Empty]    [Iron Block] [Empty]
+```
+
+
 
 ---
 
@@ -211,5 +240,4 @@ Right-click the generator to see:
 - HP bar (color-coded)
 - FE bar (orange)
 - Status: Active / Inactive
-- Shield radius
 - Activate / Deactivate button
