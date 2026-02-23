@@ -109,8 +109,59 @@ A 3x3x3 multiblock built similarly to the Shield Battery:
 - **Direct Damage:** If the enemy shield is depleted to 0 FE, the Jammer begins dealing direct piercing damage (3 HP per tick) to the enemy generator.
 - **Cooldown:** During active jamming and cooldown, the Jammer hardware-locks external energy reception. If its internal reserve runs dry (0 FE), it aggressively powers down and enters a forced stasis until it recharges 2,500,000 FE (it can receive power during stasis).
 - **Manual Reset:** The Controller GUI has a "Reload" button for a manual, safe 60-second cooldown dump.
+- **Disable / Enable:** The Controller GUI also has a "Disable" button that fully shuts the Jammer off and triggers the same 60-second recharge cooldown. Use it to conserve power. Click "Enable" once the cooldown ends to bring it back online.
 
 
+
+---
+
+## Gravity Field Generator
+
+A high-energy device that creates an artificial gravity field around your ship, granting special effects to all players inside the shield radius.
+
+**Warning:** Only **ONE** per ship! A second one shows a "DUPLICATE" error.
+
+### How to Use
+
+1. Craft a **Gravity Field Generator**.
+2. Place it on your VS2 ship.
+3. Connect a powerful FE source (it consumes a lot of energy).
+4. Right-click to open the GUI and press **"Activate"**.
+5. Toggle the desired effects: **Flight** and/or **Fall Protection**.
+
+### Effects
+
+| Effect | Extra Cost | Description |
+|--------|-----------|-------------|
+| Base activation | 100 FE/tick | Device running overhead |
+| **Flight** | +400 FE/tick | Players inside the field gain creative-style flight (`mayfly`) |
+| **Fall Protection** | +100 FE/tick | Players inside the field take no fall damage |
+| **Maximum (all on)** | 600 FE/tick | Both effects active simultaneously |
+
+- **Radius:** Matches the ship's shield bubble (ship AABB + shield padding from config).
+- **Energy:** 1,000,000 FE buffer. Accepts up to 50,000 FE/tick. Auto-shuts off when empty.
+- **Flight:** Grants `mayfly` — players can fly freely as in Creative mode. Removed immediately if the player leaves the field or the device runs out of power.
+- **Fall protection:** All fall damage is cancelled for players inside the field.
+
+### Crafting Recipe
+
+**Gravity Field Generator**
+```
+[Ender Pearl]    [Netherite Block] [Ender Pearl]
+[Netherite Block] [Nether Star]    [Netherite Block]
+[Ender Pearl]    [Netherite Block] [Ender Pearl]
+```
+
+### GUI
+
+- **Energy bar** — shows current charge.
+- **Usage: X FE/t** — live cost based on active effects.
+- **Status**: ACTIVE / OFFLINE / GROUNDED / DUPLICATE.
+- **[Activate / Deactivate]** — master on/off toggle.
+- **[Flight: ON/OFF]** — toggle creative flight for players in field.
+- **[Fall Prot: ON/OFF]** — toggle fall damage immunity.
+
+---
 
 ## Crafting Recipes
 

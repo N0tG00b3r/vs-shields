@@ -2,6 +2,7 @@ package com.mechanicalskies.vsshields.registry;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
 import com.mechanicalskies.vsshields.menu.CloakGeneratorMenu;
+import com.mechanicalskies.vsshields.menu.GravityFieldMenu;
 import com.mechanicalskies.vsshields.menu.ShieldBatteryMenu;
 import com.mechanicalskies.vsshields.menu.ShieldGeneratorMenu;
 import dev.architectury.registry.menu.MenuRegistry;
@@ -22,6 +23,9 @@ public class ModMenus {
 
         public static final RegistrySupplier<MenuType<CloakGeneratorMenu>> CLOAK_GENERATOR_MENU = MENUS
                         .register("cloak_generator", () -> MenuRegistry.ofExtended(CloakGeneratorMenu::new));
+
+        public static final RegistrySupplier<MenuType<GravityFieldMenu>> GRAVITY_FIELD_MENU = MENUS
+                        .register("gravity_field", () -> MenuRegistry.ofExtended(GravityFieldMenu::new));
 
         public static final RegistrySupplier<MenuType<com.mechanicalskies.vsshields.menu.ShieldJammerMenu>> shield_jammer_MENU = MENUS
                         .register("shield_jammer", () -> MenuRegistry

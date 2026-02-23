@@ -48,6 +48,10 @@ public class ModItems {
                         "cloaking_field_generator",
                         () -> new BlockItem(ModBlocks.CLOAKING_FIELD_GENERATOR.get(), new Item.Properties()));
 
+        public static final RegistrySupplier<Item> GRAVITY_FIELD_GENERATOR = ITEMS.register(
+                        "gravity_field_generator",
+                        () -> new BlockItem(ModBlocks.GRAVITY_FIELD_GENERATOR.get(), new Item.Properties()));
+
         public static final RegistrySupplier<Item> shield_jammer_CONTROLLER = ITEMS.register(
                         "shield_jammer_controller",
                         () -> new BlockItem(ModBlocks.shield_jammer_CONTROLLER.get(), new Item.Properties()));

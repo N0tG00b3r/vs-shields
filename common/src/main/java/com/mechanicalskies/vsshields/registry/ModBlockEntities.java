@@ -2,6 +2,7 @@ package com.mechanicalskies.vsshields.registry;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
 import com.mechanicalskies.vsshields.blockentity.CloakingFieldGeneratorBlockEntity;
+import com.mechanicalskies.vsshields.blockentity.GravityFieldGeneratorBlockEntity;
 import com.mechanicalskies.vsshields.blockentity.ShieldBatteryControllerBlockEntity;
 import com.mechanicalskies.vsshields.blockentity.ShieldBatteryInputBlockEntity;
 import com.mechanicalskies.vsshields.blockentity.ShieldCapacitorBlockEntity;
@@ -53,6 +54,12 @@ public class ModBlockEntities {
                         .register("cloaking_field_generator", () -> BlockEntityType.Builder.of(
                                         CloakingFieldGeneratorBlockEntity::new,
                                         ModBlocks.CLOAKING_FIELD_GENERATOR.get()).build(null));
+
+        @SuppressWarnings("ConstantConditions")
+        public static final RegistrySupplier<BlockEntityType<GravityFieldGeneratorBlockEntity>> GRAVITY_FIELD_GENERATOR = BLOCK_ENTITIES
+                        .register("gravity_field_generator", () -> BlockEntityType.Builder.of(
+                                        GravityFieldGeneratorBlockEntity::new,
+                                        ModBlocks.GRAVITY_FIELD_GENERATOR.get()).build(null));
 
         @SuppressWarnings("ConstantConditions")
         public static final RegistrySupplier<BlockEntityType<com.mechanicalskies.vsshields.blockentity.ShieldJammerControllerBlockEntity>> shield_jammer_CONTROLLER = BLOCK_ENTITIES

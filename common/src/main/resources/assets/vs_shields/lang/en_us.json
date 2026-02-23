@@ -28,6 +28,15 @@
   "gui.vs_shields.shield_jammer.reload": "Reload Jammer",
   "gui.vs_shields.shield_jammer.disable": "Disable",
   "gui.vs_shields.shield_jammer.enable": "Enable",
+  "block.vs_shields.gravity_field_generator": "Gravity Field Generator",
+  "container.vs_shields.gravity_field_generator": "Gravity Field Generator",
+  "gui.vs_shields.gravity_field.activate": "Activate",
+  "gui.vs_shields.gravity_field.deactivate": "Deactivate",
+  "gui.vs_shields.gravity_field.flight_on": "Flight: ON",
+  "gui.vs_shields.gravity_field.flight_off": "Flight: OFF",
+  "gui.vs_shields.gravity_field.fall_on": "Fall Prot: ON",
+  "gui.vs_shields.gravity_field.fall_off": "Fall Prot: OFF",
   "message.vs_shields.duplicate_generator": "This ship already has an active shield generator!",
-  "message.vs_shields.duplicate_cloak": "This ship already has an active cloaking generator!"
+  "message.vs_shields.duplicate_cloak": "This ship already has an active cloaking generator!",
+  "message.vs_shields.duplicate_gravity": "This ship already has an active gravity field generator!"
 }

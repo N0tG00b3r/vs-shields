@@ -250,6 +250,74 @@ forge/src/main/kotlin/.../forge/
 
 ---
 
+### Сессия 15 — Shield Emitter OBJ + Hexagonal Shield + Redstone + Jammer Disable/Enable ✅
+
+**Shield Emitter OBJ pipeline:**
+- Обработан триада `shield_emitter.obj/.mtl/.png` из корня проекта по шаблону Сессии 14 (группы переименованы, вершины +0.5 X/Z, `mtllib` исправлен, `flip_v: true`).
+- Blockstate исправлен: добавлены `facing=up/down` (x:270/x:90) и `facing=east/west`.
+
+**Hexagonal shield rendering (ShieldRenderer.java):**
+- Исправлен алгоритм honeycomb edge-detection: заменён `sqrt(dx²+dy²)` на cube max-norm `2·max(|dq|,|dr|,|ds|)`, который равномерно = 1.0 по всей границе шестигранника.
+- Исправлен баг pre-clamp EDGE_BRIGHTNESS: теперь применяется напрямую.
+- Добавлен pole-fade: `finalAlpha *= 0.3 + 0.7·sin(phi)`.
+- Параметры прозрачности: `EDGE_BRIGHTNESS=1.2`, `FILL_ALPHA_MULT=0.2`.
+
+**Redstone signal от Shield Generator:**
+- `ShieldGeneratorBlock` добавлен `BooleanProperty POWERED`.
+- Blockstate расширен: 12 вариантов `facing×powered`.
+- BE детектирует попадание по щиту через `shield.getLastHitTick()` vs `lastKnownHitTick` (без конфликта с DamageListener батареи).
+- Сигнал S=15 на 20 тиков после каждого попадания. Продлевается при последовательных ударах.
+
+**Jammer Disable/Enable toggle:**
+- `ShieldJammerControllerBlockEntity`: добавлен `isEnabled` (default=true), ContainerData slot 9, `disable()` (→forceCooldown) / `enable()`.
+- `ShieldJammerMenu`: `SimpleContainerData(9→10)`, добавлен `isEnabled()`.
+- `ModNetwork`: добавлен `JAMMER_ENABLE_ID` C2S packet.
+- `ShieldJammerScreen`: два кнопки `[Reload Jammer 76px] [Disable/Enable 76px]`. Статус OFFLINE добавлен в приоритетную цепочку.
+
+---
+
+### Сессия 16 — Gravity Field Generator ✅
+
+**Новый блок: `GravityFieldGeneratorBlock`**
+- Размещается на корабле VS2, 1 штука на корабль (GravityFieldRegistry отслеживает дубликаты).
+- Открывает GUI по ПКМ.
+
+**Механика:**
+- Синхронизирует зону действия с AABB щита: использует `ship.getWorldAABB()` + `shieldPadding` из конфига.
+- Эффекты применяются всем игрокам внутри этого расширенного AABB корабля.
+
+**Эффекты (настраиваются в GUI):**
+| Эффект | Стоимость | Описание |
+|--------|-----------|----------|
+| Базовый (включён) | 100 FE/тик | поддержание активности |
+| Flight | +400 FE/тик | `player.abilities.mayfly=true` → творческий полёт |
+| Fall Protection | +100 FE/тик | отмена `LivingFallEvent` для игроков в зоне |
+| Максимум | 600 FE/тик | все опции включены |
+
+**Энергия:** 1,000,000 FE буфер, 50,000 FE/tick вход. При нехватке FE — автоотключение.
+
+**GUI:**
+- Шкала энергии (синяя, темнеет при разряде).
+- `Usage: X FE/t` — текущий расход.
+- Статус: ACTIVE / OFFLINE / GROUNDED / DUPLICATE.
+- Кнопки: `[Activate/Deactivate (160px)]` | `[Flight: ON/OFF] [Fall Prot: ON/OFF]`.
+
+**Архитектура (common Java):**
+- `GravityFieldRegistry.java` — ConcurrentHashMap OWNERS (duplicate detection) + ACTIVE (player lookups).
+- `GravityFieldGeneratorBlockEntity.java` — tick обновляет реестр.
+- `GravityFieldMenu.java` + `GravityFieldScreen.java`.
+
+**Forge обработчики:**
+- `GravityFieldHandler.kt` — `PlayerTickEvent` (flight), `LivingFallEvent` (fall cancel).
+- `GravityFieldEnergyCapability.kt` — FE capability.
+
+**Ресурсы:**
+- Текстура: 16×16 PNG — тёмно-синяя, три концентрических бирюзовых/голубых кольца, яркое ядро.
+- Рецепт: `[Iron Block][Ender Pearl][Iron Block] / [Ender Pearl][Diamond Block][Ender Pearl] / [Iron Block][Ender Pearl][Iron Block]`.
+- Добавлен в CreativeTab.
+
+---
+
 ## Сборка
 ```bash
 ./gradlew build --no-daemon

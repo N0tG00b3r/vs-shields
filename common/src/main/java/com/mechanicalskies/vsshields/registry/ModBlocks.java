@@ -2,6 +2,7 @@ package com.mechanicalskies.vsshields.registry;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
 import com.mechanicalskies.vsshields.block.CloakingFieldGeneratorBlock;
+import com.mechanicalskies.vsshields.block.GravityFieldGeneratorBlock;
 import com.mechanicalskies.vsshields.block.ShieldBatteryCellBlock;
 import com.mechanicalskies.vsshields.block.ShieldBatteryControllerBlock;
 import com.mechanicalskies.vsshields.block.ShieldBatteryInputBlock;
@@ -97,6 +98,14 @@ public class ModBlocks {
                         () -> new CloakingFieldGeneratorBlock(
                                         BlockBehaviour.Properties.of()
                                                         .strength(4.0f, 8.0f)
+                                                        .sound(SoundType.METAL)
+                                                        .requiresCorrectToolForDrops()));
+
+        public static final RegistrySupplier<Block> GRAVITY_FIELD_GENERATOR = BLOCKS.register(
+                        "gravity_field_generator",
+                        () -> new GravityFieldGeneratorBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(5.0f, 10.0f)
                                                         .sound(SoundType.METAL)
                                                         .requiresCorrectToolForDrops()));
 

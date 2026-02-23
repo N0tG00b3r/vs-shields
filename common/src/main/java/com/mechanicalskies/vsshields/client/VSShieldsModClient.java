@@ -18,6 +18,8 @@ public class VSShieldsModClient {
         MenuRegistry.registerScreenFactory(ModMenus.CLOAK_GENERATOR_MENU.get(), CloakGeneratorScreen::new);
         MenuRegistry.registerScreenFactory(ModMenus.shield_jammer_MENU.get(),
                 com.mechanicalskies.vsshields.client.ShieldJammerScreen::new);
+        MenuRegistry.registerScreenFactory(ModMenus.GRAVITY_FIELD_MENU.get(),
+                com.mechanicalskies.vsshields.client.GravityFieldScreen::new);
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> ShieldHudOverlay.render(graphics, delta));
 
         // Ambient shield hum sound + shield break animations

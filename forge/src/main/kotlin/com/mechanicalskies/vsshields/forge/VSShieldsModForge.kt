@@ -6,6 +6,7 @@ import com.mechanicalskies.vsshields.blockentity.ShieldBatteryInputBlockEntity
 import com.mechanicalskies.vsshields.blockentity.ShieldGeneratorBlockEntity
 import com.mechanicalskies.vsshields.network.ModNetwork
 import com.mechanicalskies.vsshields.shield.CloakManager
+import com.mechanicalskies.vsshields.shield.GravityFieldRegistry
 import com.mechanicalskies.vsshields.shield.ShieldManager
 import dev.architectury.platform.forge.EventBuses
 import net.minecraft.server.level.ServerPlayer
@@ -39,6 +40,8 @@ class VSShieldsModForge {
         MinecraftForge.EVENT_BUS.register(BatteryInputEnergyCapability())
         MinecraftForge.EVENT_BUS.register(CloakEnergyCapability())
         MinecraftForge.EVENT_BUS.register(ShieldJammerEnergyCapability())
+        MinecraftForge.EVENT_BUS.register(GravityFieldEnergyCapability())
+        MinecraftForge.EVENT_BUS.register(GravityFieldHandler())
 
         ShieldGeneratorBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickKineticInput(level, pos, be)
@@ -74,6 +77,7 @@ class VSShieldsModForge {
     fun onServerStopping(event: ServerStoppingEvent) {
         ShieldManager.getInstance().clear()
         CloakManager.getInstance().clear()
+        GravityFieldRegistry.clear()
     }
 
     @SubscribeEvent
