@@ -1,9 +1,11 @@
 package com.mechanicalskies.vsshields.forge.client
 
+import com.mechanicalskies.vsshields.client.GravitationalMineModel
 import com.mechanicalskies.vsshields.client.HelmAnalyzerHandler
 import com.mechanicalskies.vsshields.client.TacticalHelmModel
 import com.mechanicalskies.vsshields.client.VSShieldsModClient
 import com.mechanicalskies.vsshields.item.TacticalNetheriteHelm
+import com.mechanicalskies.vsshields.registry.ModEntities
 import net.minecraftforge.client.event.EntityRenderersEvent
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
@@ -24,6 +26,12 @@ class VSShieldsModForgeClient {
         @JvmStatic
         fun registerLayers(event: EntityRenderersEvent.RegisterLayerDefinitions) {
             event.registerLayerDefinition(TacticalHelmModel.LAYER_LOCATION, TacticalHelmModel<*>::createLayer)
+            event.registerLayerDefinition(GravitationalMineModel.LAYER_LOCATION, GravitationalMineModel<*>::createBodyLayer)
+        }
+
+        @JvmStatic
+        fun registerRenderers(event: EntityRenderersEvent.RegisterRenderers) {
+            event.registerEntityRenderer(ModEntities.GRAVITATIONAL_MINE.get(), ::GravitationalMineRenderer)
         }
 
         /**

@@ -1,6 +1,8 @@
 package com.mechanicalskies.vsshields.registry;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
+import com.mechanicalskies.vsshields.item.GravitationalMineItem;
+import com.mechanicalskies.vsshields.item.GravitationalMineLauncherItem;
 import com.mechanicalskies.vsshields.item.ShipAnalyzerItem;
 import com.mechanicalskies.vsshields.item.TacticalNetheriteHelm;
 import dev.architectury.registry.registries.DeferredRegister;
@@ -73,6 +75,14 @@ public class ModItems {
         public static final RegistrySupplier<Item> TACTICAL_HELM = ITEMS.register(
                         "tactical_helm",
                         TacticalNetheriteHelm::new);
+
+        public static final RegistrySupplier<Item> GRAVITATIONAL_MINE_LAUNCHER = ITEMS.register(
+                        "gravitational_mine_launcher",
+                        GravitationalMineLauncherItem::new);
+
+        public static final RegistrySupplier<Item> GRAVITATIONAL_MINE_ITEM = ITEMS.register(
+                        "gravitational_mine",
+                        GravitationalMineItem::new);
 
         public static void register() {
                 ITEMS.register();

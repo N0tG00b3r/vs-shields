@@ -44,5 +44,10 @@
   "item.vs_shields.tactical_helm": "Tactical Netherite Helm",
   "item.vs_shields.tactical_helm.desc": "Built-in Ship Analyzer. Hold the scan keybind to scan enemy vessels.",
   "key.vs_shields.helm_scan": "Scan (Tactical Helm)",
-  "key.categories.vs_shields": "VS Energy Shields"
+  "key.categories.vs_shields": "VS Energy Shields",
+  "item.vs_shields.gravitational_mine_launcher": "Gravitational Mine Launcher",
+  "item.vs_shields.gravitational_mine_launcher.desc": "Launches gravitational mines that hover and repulse ships on contact. Shift+Scroll to adjust deployment range.",
+  "item.vs_shields.gravitational_mine_launcher.range": "Deploy range: %d blocks",
+  "item.vs_shields.gravitational_mine": "Gravitational Mine",
+  "item.vs_shields.gravitational_mine.desc": "Ammo for the Gravitational Mine Launcher."
 }

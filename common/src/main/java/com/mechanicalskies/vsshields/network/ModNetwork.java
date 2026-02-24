@@ -1,6 +1,7 @@
 package com.mechanicalskies.vsshields.network;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
+import com.mechanicalskies.vsshields.item.GravitationalMineLauncherItem;
 import com.mechanicalskies.vsshields.scanner.AnalyzerScanHandler;
 import com.mechanicalskies.vsshields.shield.CloakManager;
 import com.mechanicalskies.vsshields.shield.ShieldInstance;
@@ -9,11 +10,13 @@ import dev.architectury.networking.NetworkManager;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import org.joml.primitives.AABBdc;
 import org.valkyrienskies.core.api.ships.Ship;
@@ -45,6 +48,7 @@ public class ModNetwork {
     public static final ResourceLocation SHIELD_REGEN_ID           = new ResourceLocation(VSShieldsMod.MOD_ID, "shield_regen");
     public static final ResourceLocation ANALYZER_SCAN_ID          = new ResourceLocation(VSShieldsMod.MOD_ID, "analyzer_scan");
     public static final ResourceLocation ANALYZER_DATA_ID          = new ResourceLocation(VSShieldsMod.MOD_ID, "analyzer_data");
+    public static final ResourceLocation MINE_SCROLL_ID            = new ResourceLocation(VSShieldsMod.MOD_ID, "mine_scroll");
 
     public static void init() {
         NetworkManager.registerReceiver(
@@ -92,6 +96,21 @@ public class ModNetwork {
                     BlockPos pos = buf.readBlockPos();
                     boolean enable = buf.readBoolean();
                     context.queue(() -> handleJammerEnable(context.getPlayer(), pos, enable));
+                });
+
+        // C2S: Gravitational Mine Launcher scroll (Shift+Scroll to cycle deploy range)
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, MINE_SCROLL_ID,
+                (buf, context) -> {
+                    int delta = buf.readInt();
+                    context.queue(() -> {
+                        ServerPlayer p = (ServerPlayer) context.getPlayer();
+                        ItemStack held = findLauncherInHands(p);
+                        if (held == null) return;
+                        GravitationalMineLauncherItem.cycleRange(held, delta);
+                        p.displayClientMessage(
+                                Component.translatable("item.vs_shields.gravitational_mine_launcher.range",
+                                        GravitationalMineLauncherItem.getRange(held)), true);
+                    });
                 });
 
         // C2S: Ship Analyzer scan request
@@ -177,7 +196,8 @@ public class ModNetwork {
                                         boolean active, float energy,
                                         double[] matrix,
                                         Set<BlockPos> cannons, Set<BlockPos> critical,
-                                        List<Integer> crewIds) {
+                                        List<Integer> crewIds,
+                                        List<double[]> minePositions) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         buf.writeLong(shipId);
         buf.writeDouble(hp);
@@ -186,7 +206,7 @@ public class ModNetwork {
         buf.writeFloat(energy);
         // Matrix: 16 doubles, column-major
         for (double v : matrix) buf.writeDouble(v);
-        // Cannon positions (max 64)
+        // Cannon positions (max 128)
         List<BlockPos> cannonList = new ArrayList<>(cannons);
         if (cannonList.size() > 128) cannonList = cannonList.subList(0, 128);
         buf.writeInt(cannonList.size());
@@ -203,7 +223,29 @@ public class ModNetwork {
         // Crew entity IDs
         buf.writeInt(crewIds.size());
         for (int id : crewIds) buf.writeInt(id);
+        // ARMED mine world positions (max 32)
+        List<double[]> mineList = minePositions != null ? minePositions : java.util.Collections.emptyList();
+        if (mineList.size() > 32) mineList = mineList.subList(0, 32);
+        buf.writeInt(mineList.size());
+        for (double[] m : mineList) {
+            buf.writeDouble(m[0]); buf.writeDouble(m[1]); buf.writeDouble(m[2]);
+        }
         NetworkManager.sendToPlayer(player, ANALYZER_DATA_ID, buf);
+    }
+
+    /** C2S helper: send mine launcher scroll delta from client to server. */
+    public static void sendMineScroll(int delta) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeInt(delta);
+        NetworkManager.sendToServer(MINE_SCROLL_ID, buf);
+    }
+
+    private static ItemStack findLauncherInHands(Player player) {
+        if (player.getMainHandItem().getItem() instanceof GravitationalMineLauncherItem)
+            return player.getMainHandItem();
+        if (player.getOffhandItem().getItem() instanceof GravitationalMineLauncherItem)
+            return player.getOffhandItem();
+        return null;
     }
 
     public static void sendSyncToAll(MinecraftServer server) {

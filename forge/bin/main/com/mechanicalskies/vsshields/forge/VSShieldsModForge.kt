@@ -4,6 +4,7 @@ import com.mechanicalskies.vsshields.VSShieldsMod
 import com.mechanicalskies.vsshields.blockentity.CloakingFieldGeneratorBlockEntity
 import com.mechanicalskies.vsshields.blockentity.ShieldBatteryInputBlockEntity
 import com.mechanicalskies.vsshields.blockentity.ShieldGeneratorBlockEntity
+import com.mechanicalskies.vsshields.entity.GravitationalMineEntity
 import com.mechanicalskies.vsshields.network.ModNetwork
 import com.mechanicalskies.vsshields.scanner.AnalyzerBlockCache
 import com.mechanicalskies.vsshields.scanner.AnalyzerScanHandler
@@ -13,6 +14,9 @@ import com.mechanicalskies.vsshields.shield.ShieldManager
 import dev.architectury.platform.forge.EventBuses
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import org.joml.Vector3d
+import org.valkyrienskies.mod.common.ValkyrienSkiesMod
+import org.valkyrienskies.mod.common.dimensionId
 import net.minecraftforge.api.distmarker.Dist
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.TickEvent
@@ -70,6 +74,14 @@ class VSShieldsModForge {
 
         com.mechanicalskies.vsshields.blockentity.GravityFieldGeneratorBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickGravityFieldInput(level, pos, be)
+        }
+
+        GravitationalMineEntity.setPhysicsApplier { level, shipId, fx, fy, fz, px, py, pz ->
+            try {
+                val adapter = ValkyrienSkiesMod.getOrCreateGTPA(level.dimensionId)
+                adapter.applyWorldForceToModelPos(shipId,
+                    Vector3d(fx, fy, fz), Vector3d(px, py, pz))
+            } catch (_: Exception) {}
         }
     }
 

@@ -42,5 +42,10 @@
     "item.vs_shields.tactical_helm": "Тактический незеритовый шлем",
     "item.vs_shields.tactical_helm.desc": "Встроенный анализатор кораблей. Удерживайте бинд сканирования для сканирования.",
     "key.vs_shields.helm_scan": "Сканировать (тактический шлем)",
-    "key.categories.vs_shields": "VS Энергетические щиты"
+    "key.categories.vs_shields": "VS Энергетические щиты",
+    "item.vs_shields.gravitational_mine_launcher": "Пусковая установка гравитационных мин",
+    "item.vs_shields.gravitational_mine_launcher.desc": "Запускает гравитационные мины, которые зависают и отталкивают корабли при контакте. Shift+Прокрутка для регулировки дальности.",
+    "item.vs_shields.gravitational_mine_launcher.range": "Дальность развёртывания: %d блоков",
+    "item.vs_shields.gravitational_mine": "Гравитационная мина",
+    "item.vs_shields.gravitational_mine.desc": "Боеприпас для пусковой установки гравитационных мин."
 }

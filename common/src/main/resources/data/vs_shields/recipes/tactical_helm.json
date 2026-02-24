@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ESE",
+    "YHY",
+    "NAN"
+  ],
+  "key": {
+    "E": {"item": "minecraft:echo_shard"},
+    "S": {"item": "minecraft:spyglass"},
+    "Y": {"item": "minecraft:ender_eye"},
+    "H": {"item": "minecraft:netherite_helmet"},
+    "N": {"item": "minecraft:netherite_ingot"},
+    "A": {"item": "vs_shields:ship_analyzer"}
+  },
+  "result": {
+    "item": "vs_shields:tactical_helm",
+    "count": 1
+  }
+}

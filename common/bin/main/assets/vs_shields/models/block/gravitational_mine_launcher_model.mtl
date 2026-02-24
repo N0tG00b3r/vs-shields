@@ -1,0 +1,4 @@
+# Made in Blockbench 5.0.7
+newmtl gravitational_mine_launcher
+map_Kd vs_shields:block/gravitational_mine_launcher
+newmtl none

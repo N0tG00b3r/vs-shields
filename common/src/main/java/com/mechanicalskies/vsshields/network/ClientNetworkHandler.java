@@ -186,9 +186,14 @@ public class ClientNetworkHandler {
                     int nCrew = buf.readInt();
                     List<Integer> crewIds = new ArrayList<>();
                     for (int i = 0; i < nCrew; i++) crewIds.add(buf.readInt());
+                    // Mine world positions
+                    int nMines = buf.readInt();
+                    List<double[]> mines = new ArrayList<>();
+                    for (int i = 0; i < nMines; i++)
+                        mines.add(new double[]{buf.readDouble(), buf.readDouble(), buf.readDouble()});
 
                     context.queue(() -> ClientAnalyzerData.getInstance()
-                            .update(shipId, hp, maxHp, active, energy, matrix, cannons, critical, crewIds));
+                            .update(shipId, hp, maxHp, active, energy, matrix, cannons, critical, crewIds, mines));
                 });
     }
 }

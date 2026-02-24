@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EAE",
+    "GSG",
+    "RCR"
+  ],
+  "key": {
+    "E": {"item": "minecraft:ender_eye"},
+    "A": {"item": "minecraft:amethyst_shard"},
+    "G": {"item": "minecraft:netherite_ingot"},
+    "S": {"item": "minecraft:spyglass"},
+    "R": {"item": "minecraft:redstone"},
+    "C": {"item": "minecraft:compass"}
+  },
+  "result": {
+    "item": "vs_shields:ship_analyzer",
+    "count": 1
+  }
+}

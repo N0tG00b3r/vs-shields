@@ -1,0 +1,26 @@
+{
+  "values": [
+    "createbigcannons:bronze_cannon_barrel",
+    "createbigcannons:cast_iron_cannon_barrel",
+    "createbigcannons:steel_cannon_barrel",
+    "createbigcannons:nethersteel_cannon_barrel",
+    "createbigcannons:built_up_steel_cannon_barrel",
+    "createbigcannons:built_up_nethersteel_cannon_barrel",
+    "createbigcannons:bronze_autocannon_barrel",
+    "createbigcannons:cast_iron_autocannon_barrel",
+    "createbigcannons:steel_autocannon_barrel",
+    "createbigcannons:bronze_sliding_breech",
+    "createbigcannons:bronze_quickfiring_breech",
+    "createbigcannons:cast_iron_sliding_breech",
+    "createbigcannons:cast_iron_quickfiring_breech",
+    "createbigcannons:steel_sliding_breech",
+    "createbigcannons:steel_quickfiring_breech",
+    "createbigcannons:steel_screw_breech",
+    "createbigcannons:nethersteel_screw_breech",
+    "createbigcannons:bronze_autocannon_breech",
+    "createbigcannons:cast_iron_autocannon_breech",
+    "createbigcannons:steel_autocannon_breech",
+    "supplementaries:cannon",
+    "minecraft:dispenser"
+  ]
+}

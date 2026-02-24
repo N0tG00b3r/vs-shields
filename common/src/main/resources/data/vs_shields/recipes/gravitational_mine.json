@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EWE",
+    "BIB",
+    "GIG"
+  ],
+  "key": {
+    "E": { "item": "minecraft:ender_pearl" },
+    "W": { "item": "minecraft:phantom_membrane" },
+    "B": { "item": "minecraft:blaze_powder" },
+    "I": { "item": "minecraft:iron_ingot" },
+    "G": { "item": "minecraft:gunpowder" }
+  },
+  "result": {
+    "item": "vs_shields:gravitational_mine",
+    "count": 4
+  }
+}

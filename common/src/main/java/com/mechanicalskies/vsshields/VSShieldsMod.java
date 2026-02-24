@@ -5,6 +5,7 @@ import com.mechanicalskies.vsshields.network.ModNetwork;
 import com.mechanicalskies.vsshields.registry.ModBlockEntities;
 import com.mechanicalskies.vsshields.registry.ModBlocks;
 import com.mechanicalskies.vsshields.registry.ModCreativeTabs;
+import com.mechanicalskies.vsshields.registry.ModEntities;
 import com.mechanicalskies.vsshields.registry.ModItems;
 import com.mechanicalskies.vsshields.registry.ModMenus;
 import com.mechanicalskies.vsshields.registry.ModSounds;
@@ -18,6 +19,7 @@ public class VSShieldsMod {
         ModBlocks.register();
         ModItems.register();
         ModBlockEntities.register();
+        ModEntities.register();
         ModCreativeTabs.register();
         ModMenus.register();
         ModSounds.register();

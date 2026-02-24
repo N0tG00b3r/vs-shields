@@ -32,6 +32,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.GRAVITY_FIELD_GENERATOR.get());
                         output.accept(ModItems.SHIP_ANALYZER.get());
                         output.accept(ModItems.TACTICAL_HELM.get());
+                        output.accept(ModItems.GRAVITATIONAL_MINE_LAUNCHER.get());
+                        output.accept(ModItems.GRAVITATIONAL_MINE_ITEM.get());
                         // output.accept(ModItems.CLOAKING_FIELD_GENERATOR.get()); // WIP - Temporarily
                         // Disabled
                     })

@@ -1,6 +1,7 @@
 package com.mechanicalskies.vsshields.forge
 
 import com.mechanicalskies.vsshields.forge.client.VSShieldsModForgeClient
+import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext
 
 class ClientProxy : Runnable {
@@ -10,5 +11,7 @@ class ClientProxy : Runnable {
         modEventBus.addListener(VSShieldsModForgeClient::registerKeyMappings)
         modEventBus.addListener(VSShieldsModForgeClient::registerLayers)
         modEventBus.addListener(VSShieldsModForgeClient::addLayers)
+        modEventBus.addListener(VSShieldsModForgeClient::registerRenderers)
+        MinecraftForge.EVENT_BUS.register(ClientScrollHandler())
     }
 }
