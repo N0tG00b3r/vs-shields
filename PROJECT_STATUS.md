@@ -46,8 +46,8 @@ Multiloader (Architectury): `common` (Java) + `forge` (Kotlin entry points) + `f
 ### Shield Battery параметры
 | Параметр | Значение |
 |----------|----------|
-| Ёмкость FE | 500,000 FE (полный мультиблок из 26 Cell/Input) |
-| **Пассивное поглощение** | 20% от поглощённого урона за удар, **500 FE/HP**, без звука |
+| Ёмкость FE | 200,000 FE (полный мультиблок из 26 Cell/Input) |
+| **Пассивное поглощение** | 20% от поглощённого урона за удар, **1500 FE/HP**, выключается при HP <= 1% |
 | **Экстренная регенерация** | HP < 20% → `energyStored / 250 HP` одним сбросом, кулдаун 30 сек, со звуком |
 | Буфер Input блока | 50,000 FE |
 
@@ -66,21 +66,27 @@ Multiloader (Architectury): `common` (Java) + `forge` (Kotlin entry points) + `f
 | Стрела | 5 |
 | Спектральная стрела | 6 |
 | Шалкер / Огненный шар (блейз) | 8 |
-| CGS: Nail | 10 |
-| CGS: Fireball / Incendiary | 15 |
+| CGS: Nail / Steel Nail | 6 / 8 |
+| CGS: Blaze Ball | 8 |
+| CGS: Incendiary | 12 |
 | Трезубец | 15 |
+| CGS: Hitscan — Flintlock ball | 15 |
+| CGS: Hitscan — Shotgun burst | 16 |
 | Фейерверк | 20 |
-| CGS: Spear / Default CGS bullet | 20 |
+| CGS: Spear | 20 |
 | Wither skull | 25 |
 | Ghast fireball | 30 |
 | Дракон fireball | 40 |
 | CGS: Rocket | 40 |
+| CBC: Autocannon round | 8 |
 | CBC: Solid shot | 50 |
 | CBC: HE | 60 |
 | CBC: AP | 80 |
 | Alex's Caves Torpedo | 80 |
 | CBC: Nuke Shell | 200 |
 | Alex's Caves Nuclear Bomb | 500 |
+| CGS: Hitscan — Revolver | 8 |
+| CGS: Hitscan — Gatling | 4/пуля |
 | Любой модовый (не minecraft:) | 10 |
 | Неизвестный ванильный | 3 |
 
@@ -152,98 +158,6 @@ in net.minecraft.client.renderer.LevelRenderer
 - Координатное пространство BER = shipyard-space, поэтому `ship.getShipAABB()` используется напрямую с поправкой `center - blockPos` (аналогично `ShieldRenderer`).
 
 **Сборка:** `BUILD SUCCESSFUL` после всех изменений.
-
----
-
-### Сессия 17 — Фикс текстур OBJ-блоков и обработка новых моделей ✅
-
-**Исправлены проблемы отображения текстур у 7 блоков:**
-
-**Корневая причина**: блоки с `forge:obj` loader требуют `"flip_v": true` — без него Blockbench-текстуры отображаются перевёрнутыми. Также в `shield_jammer_frame.json` был неверный UUID материала (`m_46abdeac` от gravity_generator вместо `m_5b1efc91`).
-
-**Обработаны новые OBJ из корня проекта** по пайплайну Сессии 14:
-- `gravity_field_generator.obj` → `gravity_field_generator_model.obj` (группы переименованы, +0.5 X/Z, mtllib исправлен)
-- `shield_jammer_frame.obj` → `shield_jammer_frame_model.obj`
-- `shield_jammer_controller.obj` → `shield_jammer_controller_model.obj` (переведён с `orientable` на `forge:obj`)
-- `shield_jammer_input.obj` → `shield_jammer_input_model.obj` (переведён с `orientable` на `forge:obj`)
-
-**Добавлен `"flip_v": true`** во все JSON-модели OBJ-блоков:
-`shield_battery_cell`, `shield_battery_input`, `shield_battery_controller`, `shield_jammer_frame`, `shield_jammer_controller`, `shield_jammer_input`, `gravity_field_generator`
-
-**Исправлен occlusion culling**: добавлен `.noOcclusion()` для `shield_jammer_controller` в `ModBlocks.java` — устранены "дыры" в соседних блоках по краям модели.
-
-**Пайплайн OBJ задокументирован** в `CLAUDE.md`, `CODE_GUIDE.md` и `PROJECT_STATUS.md`.
-
----
-
-### Сессия 18 — Звуки щита ✅
-
-Добавлены 5 звуковых эффектов. OGG-файлы скопированы из корня проекта в `common/src/main/resources/assets/vs_shields/sounds/`.
-
-| Событие | Файл | Триггер |
-|---------|------|---------|
-| `shield_hit` | `1hit.ogg` | При попадании снаряда / взрыва в щит |
-| `shield_collapse` | `2collapse.ogg` | При разрушении щита (HP → 0) |
-| `shield_activation` | `3activation.ogg` | При включении щита через GUI |
-| `shield_deactivation` | `3deactivation.ogg` | При выключении щита через GUI |
-| `shield_regeneration` | `4regeneration.ogg` | При пассивной регенерации от Shield Battery |
-
-**Изменённые файлы:**
-- `sounds.json` — 5 новых записей
-- `registry/ModSounds.java` — 5 новых `RegistrySupplier<SoundEvent>`
-- `network/ModNetwork.java` — добавлен `SHIELD_REGEN_ID` (S2C) + `sendShieldRegen()`
-- `client/ShieldEffectHandler.java` — sound calls в `onShieldHit/onShieldBreak`; новые методы `onShieldActivate/Deactivate/Regen`
-- `network/ClientNetworkHandler.java` — детекция переключения `active` в SHIELD_SYNC; приёмник `SHIELD_REGEN_ID`
-- `blockentity/ShieldBatteryControllerBlockEntity.java` — реализована логика в `onShieldDamaged`: 20% absorbed → `restoreHP()`, FE cost 200/HP, отправка `SHIELD_REGEN_ID`
-
----
-
-### Сессия 19 — Переработка логики Shield Battery + фикс звука активации ✅
-
-**Фикс звука активации щита:**
-- **Баг:** `ClientNetworkHandler` читал предыдущее состояние `active` из `ClientShieldManager`, который не хранит inactive-щиты (при `active=false, existing=null` запись не создаётся). Переход `false→true` не детектировался.
-- **Исправление:** Добавлен статический `lastKnownActiveState: ConcurrentHashMap<Long, Boolean>` в `ClientNetworkHandler` — персистентный map, который не зависит от `csm.clear()` и хранит последнее известное состояние каждого щита включая `false`. Обновляется после каждого синка, удаляет корабли через `retainAll`.
-
-**Переработка Shield Battery — два режима:**
-
-| Режим | Триггер | Звук | Стоимость |
-|-------|---------|------|-----------|
-| Пассивное поглощение | Каждый удар (`onShieldDamaged`) | ❌ нет | 500 FE/HP, восстанавливает 20% урона |
-| Экстренная регенерация | HP < 20% в `serverTick` | ✅ `shield_regeneration` | 250 FE/HP, весь доступный заряд за раз |
-
-- **Экстренная формула:** `HP = energyStored / 250`, ограничено дефицитом HP. Кулдаун 600 тиков (30 сек) — не застревает в цикле при 0 HP.
-- Предыдущий код `onShieldDamaged` (200 FE/HP + звук на каждый удар) заменён.
-
-**Изменённые файлы:**
-- `blockentity/ShieldBatteryControllerBlockEntity.java` — новые константы `FE_PER_HP_PASSIVE=500`, `FE_PER_HP_EMERGENCY=250`, `EMERGENCY_HP_THRESHOLD=0.20`, `EMERGENCY_COOLDOWN_TICKS=600`; `onShieldDamaged` — только поглощение без звука; emergency regen перенесён в `serverTick`
-- `network/ClientNetworkHandler.java` — `lastKnownActiveState` вместо `prevActive` из csm
-
----
-
-## Известные проблемы / TODO
-1. **Нет Fabric damage handler** — на Fabric щит не защищает (нет Forge events, нужны миксины)
-2. **CGS hitscan пули** — обычные пули CGS (из gun library ntgl) могут не файрить `ProjectileImpactEvent`, если используют hitscan. Может понадобиться подписка на кастомный ивент gun library
-
-**Реализовано (ранее было в TODO):**
-- ✅ Redstone signal при получении урона щитом — реализовано в Сессии 15 (`ShieldGeneratorBlock` выдаёт redstone сигнал при ударе через `BlockState` компаратор)
-
-## Структура файлов (ключевые изменения)
-
-```
-common/src/main/java/com/mechanicalskies/vsshields/
-├── shield/
-│   └── ShieldInstance.java          # Логика щита без радиуса
-├── client/
-│   ├── ShieldRenderer.java          # Рендер по AABB корабля
-│   ├── CloakShimmerRenderer.java    # Эффект мерцания внутри маскировки
-│   └── CloakedShipsRegistry.java    # Менеджер списка скрытых кораблей
-└── mixin/
-    └── LevelRendererCloakMixin.java # Chunk Culling миксин (Priority 2000, Reflection)
-
-forge/src/main/kotlin/.../forge/
-├── ShieldDamageHandler.kt             # Упрощённая логика урона без координат
-└── ...
-```
 
 ---
 
@@ -383,6 +297,192 @@ forge/src/main/kotlin/.../forge/
 - Добавлен в CreativeTab.
 
 ---
+
+---
+
+### Сессия 17 — Фикс текстур OBJ-блоков и обработка новых моделей ✅
+
+**Исправлены проблемы отображения текстур у 7 блоков:**
+
+**Корневая причина**: блоки с `forge:obj` loader требуют `"flip_v": true` — без него Blockbench-текстуры отображаются перевёрнутыми. Также в `shield_jammer_frame.json` был неверный UUID материала (`m_46abdeac` от gravity_generator вместо `m_5b1efc91`).
+
+**Обработаны новые OBJ из корня проекта** по пайплайну Сессии 14:
+- `gravity_field_generator.obj` → `gravity_field_generator_model.obj` (группы переименованы, +0.5 X/Z, mtllib исправлен)
+- `shield_jammer_frame.obj` → `shield_jammer_frame_model.obj`
+- `shield_jammer_controller.obj` → `shield_jammer_controller_model.obj` (переведён с `orientable` на `forge:obj`)
+- `shield_jammer_input.obj` → `shield_jammer_input_model.obj` (переведён с `orientable` на `forge:obj`)
+
+**Добавлен `"flip_v": true`** во все JSON-модели OBJ-блоков:
+`shield_battery_cell`, `shield_battery_input`, `shield_battery_controller`, `shield_jammer_frame`, `shield_jammer_controller`, `shield_jammer_input`, `gravity_field_generator`
+
+**Исправлен occlusion culling**: добавлен `.noOcclusion()` для `shield_jammer_controller` в `ModBlocks.java` — устранены "дыры" в соседних блоках по краям модели.
+
+**Пайплайн OBJ задокументирован** в `CLAUDE.md`, `CODE_GUIDE.md` и `PROJECT_STATUS.md`.
+
+---
+
+### Сессия 18 — Звуки щита ✅
+
+Добавлены 5 звуковых эффектов. OGG-файлы скопированы из корня проекта в `common/src/main/resources/assets/vs_shields/sounds/`.
+
+| Событие | Файл | Триггер |
+|---------|------|---------|
+| `shield_hit` | `1hit.ogg` | При попадании снаряда / взрыва в щит |
+| `shield_collapse` | `2collapse.ogg` | При разрушении щита (HP → 0) |
+| `shield_activation` | `3activation.ogg` | При включении щита через GUI |
+| `shield_deactivation` | `3deactivation.ogg` | При выключении щита через GUI |
+| `shield_regeneration` | `4regeneration.ogg` | При пассивной регенерации от Shield Battery |
+
+**Изменённые файлы:**
+- `sounds.json` — 5 новых записей
+- `registry/ModSounds.java` — 5 новых `RegistrySupplier<SoundEvent>`
+- `network/ModNetwork.java` — добавлен `SHIELD_REGEN_ID` (S2C) + `sendShieldRegen()`
+- `client/ShieldEffectHandler.java` — sound calls в `onShieldHit/onShieldBreak`; новые методы `onShieldActivate/Deactivate/Regen`
+- `network/ClientNetworkHandler.java` — детекция переключения `active` в SHIELD_SYNC; приёмник `SHIELD_REGEN_ID`
+- `blockentity/ShieldBatteryControllerBlockEntity.java` — реализована логика в `onShieldDamaged`: 20% absorbed → `restoreHP()`, FE cost 200/HP, отправка `SHIELD_REGEN_ID`
+
+---
+
+### Сессия 19 — Переработка логики Shield Battery + фикс звука активации ✅
+
+**Фикс звука активации щита:**
+- **Баг:** `ClientNetworkHandler` читал предыдущее состояние `active` из `ClientShieldManager`, который не хранит inactive-щиты (при `active=false, existing=null` запись не создаётся). Переход `false→true` не детектировался.
+- **Исправление:** Добавлен статический `lastKnownActiveState: ConcurrentHashMap<Long, Boolean>` в `ClientNetworkHandler` — персистентный map, который не зависит от `csm.clear()` и хранит последнее известное состояние каждого щита включая `false`. Обновляется после каждого синка, удаляет корабли через `retainAll`.
+
+**Переработка Shield Battery — два режима:**
+
+| Режим | Триггер | Звук | Стоимость |
+|-------|---------|------|-----------|
+| Пассивное поглощение | Каждый удар (`onShieldDamaged`) | ❌ нет | 500 FE/HP, восстанавливает 20% урона |
+| Экстренная регенерация | HP < 20% в `serverTick` | ✅ `shield_regeneration` | 250 FE/HP, весь доступный заряд за раз |
+
+- **Экстренная формула:** `HP = energyStored / 250`, ограничено дефицитом HP. Кулдаун 600 тиков (30 сек) — не застревает в цикле при 0 HP.
+- Предыдущий код `onShieldDamaged` (200 FE/HP + звук на каждый удар) заменён.
+
+**Изменённые файлы:**
+- `blockentity/ShieldBatteryControllerBlockEntity.java` — новые константы `FE_PER_HP_PASSIVE=500`, `FE_PER_HP_EMERGENCY=250`, `EMERGENCY_HP_THRESHOLD=0.20`, `EMERGENCY_COOLDOWN_TICKS=600`; `onShieldDamaged` — только поглощение без звука; emergency regen перенесён в `serverTick`
+- `network/ClientNetworkHandler.java` — `lastKnownActiveState` вместо `prevActive` из csm
+
+---
+
+### Сессия 20 — Баланс Батареи Щита и Фиксы Добычи ✅
+
+**Баланс Батареи Щита:**
+- Снижена базовая ёмкость контроллера с 500,000 FE до 200,000 FE.
+- Увеличена стоимость пассивного поглощения (20% reduction) с 500 FE до 1500 FE за 1 HP.
+- Отключено пассивное поглощение, когда здоровье щита падает до 1% и ниже, чтобы позволить щиту разрушиться (предотвращает застревание на 0.01 HP при постоянном огне).
+
+**Интеграция с модом Create:**
+- Добавлен хук `tickGravityFieldInput` в `CreateCompat.kt`.
+- Теперь **Gravity Field Generator** может напрямую конвертировать `SU` (Stress Units) от соседних валов и моторов в `FE` (1 RPM = 1 FE/t), аналогично генераторам щита.
+
+**Исправление лут-таблиц (Block Drops):**
+- Обнаружено отсутствие JSON-файлов лут-таблиц (loot tables) у нескольких блоков, из-за чего они исчезали при разрушении.
+- Созданы недостающие таблицы для: `gravity_field_generator`, `shield_jammer_controller`, `shield_jammer_frame`, `shield_jammer_input`. Были добавлены проверки `minecraft:survives_explosion`.
+
+**Исправление требований к добыче (Mineability Tags):**
+- Генератор гравитации ошибочно мог разрушаться железной киркой.
+- Блок удалён из `needs_iron_tool.json` и добавлен в новый тег-файл `needs_diamond_tool.json`, сохраняя прикрепление к общим инструментам `mineable/pickaxe`.
+
+---
+
+### Сессия 21 — Create Gunsmithing + CBC fix ✅
+
+**Защита от Create: Gunsmithing (Options B + C):**
+
+| Оружие | Тип | Метод перехвата | Урон по щиту |
+|--------|-----|----------------|-------------|
+| Nailgun | Projectile entity | `ProjectileImpactEvent` | 6–8 HP |
+| Launcher (ракеты) | Projectile entity | `ProjectileImpactEvent` | 40 HP |
+| Blazegun / Incendiary | Projectile entity | `ProjectileImpactEvent` | 8–12 HP |
+| Gatling | Hitscan | `GunFireEvent$Pre` (reflection) | 4 HP/пуля |
+| Revolver | Hitscan | `GunFireEvent$Pre` (reflection) | 8 HP |
+| Flintlock | Hitscan | `GunFireEvent$Pre` (reflection) | 15 HP |
+| Shotgun | Hitscan | `GunFireEvent$Pre` (reflection) | 16 HP (весь залп) |
+
+Hitscan-обработчик регистрируется через Forge `IEventBus.addListener()` с рефлексией — NTGL не является compile-time dependency. Если CGS/NTGL не установлен — тихий no-op. Стреляющий внутри щита не блокируется (AABB.clip() возвращает empty когда eyePos внутри).
+
+**Исправлена детекция CBC Nuke Shell (`cbc_nukes`):**
+
+Корневая причина: `NukeShellProjectile extends FuzedBigCannonProjectile` (CBC) — **не** является subclass `net.minecraft.world.entity.projectile.Projectile`. Поэтому:
+- `ShieldBarrierHandler` (`it is Projectile`) → НЕ ловил снаряд
+- Forge `ProjectileImpactEvent` → НЕ стрелял для CBC снарядов
+- Снаряд долетал до корабля, `nukeKaboom()` спавнил `alexscaves:nuclear_explosion` где попало → `onEntityJoinLevel` не находил корабль если взрыв снаружи AABB
+
+**Исправление:** `ShieldBarrierHandler` теперь также перехватывает entity с namespace `createbigcannons`, `cbc`, `cbc_nukes` через новый `isCbcEntity()` хелпер:
+```kotlin
+entity is Projectile || isCbcEntity(entity)
+// isCbcEntity: namespace == "createbigcannons" || "cbc" || "cbc_nukes", не LivingEntity, не ItemEntity
+```
+
+**CBC Autocannon support:** Добавлен паттерн `path.contains("autocannon")` → `cbcAutocannon = 8.0 HP`. Весь CBC (включая автопушку) теперь полностью блокируется.
+
+**Исправлен merge() конфига:** Теперь при загрузке существующего `vs_shields.json` новые записи в `projectiles` map (например, `cgs:nail`, `cbc_nukes:nuke_shell`) автоматически дополняются в существующий файл — ранее они добавлялись только в новый файл.
+
+**Изменённые файлы:**
+- `forge/ShieldBarrierHandler.kt` — расширен фильтр entity на CBC namespace, переменная `proj: Projectile` → `entity: Entity`, метод `interceptProjectile` → `interceptEntity`
+- `forge/ShieldDamageHandler.kt` — добавлены блоки `cbc_nukes` namespace и `autocannon` path
+- `common/config/ShieldConfig.java` — `cbcAutocannon = 8.0`, `CgsConfig` с per-weapon hitscan damage, merge()-fix для projectiles map, `cgs:*` entries в defaults
+
+---
+
+### Сессия 22 — Полное покрытие CBC + Nuke Visual на щите ✅
+
+**Полный реестр CBC снарядов (CBCEntityTypes):**
+
+Извлечён из JAR (`javap -verbose CBCEntityTypes.class`). Добавлены явные записи в `ShieldConfig.createDefault()` для снарядов, которые не матчились path-паттернами:
+
+| registry name | Урон | Причина явной записи |
+|---|---|---|
+| `createbigcannons:shrapnel_shell` | 55 HP | нет "he"/"ap" в path → раньше solid shot |
+| `createbigcannons:fluid_shell` | 55 HP | нет "he"/"ap" в path → раньше solid shot |
+| `createbigcannons:bag_of_grapeshot` | 30 HP | нет паттерна → раньше solid shot |
+| `createbigcannons:drop_mortar_shell` | 40 HP | нет паттерна → раньше solid shot |
+| `createbigcannons:mortar_stone` | 20 HP | нет паттерна → раньше solid shot |
+| `createbigcannons:smoke_shell` | 10 HP | нет паттерна → раньше solid shot |
+| `createbigcannons:machine_gun_bullet` | 8 HP | "machine_gun" не содержит "autocannon" → **50 HP** раньше |
+
+**machine_gun_bullet исправление:** В `getProjectileDamage()` CBC-блок добавлен `path.contains("machine_gun")` рядом с "autocannon" — пуля пулемёта теперь 8 HP (cbcAutocannon) вместо 50 HP (solid shot).
+
+**Nuke Shell → nuclear visual:**
+
+`interceptEntity()` в `ShieldBarrierHandler.kt` теперь вызывает `ModNetwork.sendNukeVisual()` при перехвате снаряда из namespace `cbc_nukes` — полноценная ядерная вспышка прямо на поверхности щита, идентично поведению при блокировке `alexscaves:nuclear_explosion`.
+
+**Урон Nuke Shell = Nuclear Bomb (500 HP):**
+
+- `cbc_nukes:nuke_shell` переведён с 200 → **500 HP** (= `alexsCavesNukeDamage`)
+- Fallback-ветка `path.contains("nuke")` в `ShieldDamageHandler` теперь ссылается на `cfg.damage.alexsCavesNukeDamage` — оба пути синхронизированы через один параметр конфига
+
+**Изменённые файлы:**
+- `forge/ShieldBarrierHandler.kt` — `sendNukeVisual` в `interceptEntity()` для cbc_nukes
+- `forge/ShieldDamageHandler.kt` — `machine_gun` в autocannon-check, nuke fallback → `alexsCavesNukeDamage`
+- `common/config/ShieldConfig.java` — 7 новых CBC записей + `cbc_nukes:nuke_shell` = 500, `BonusConfig.emitterRegenCost`
+- `CODE_GUIDE.md` — секции CBC/CGS совместимости, двойной барьер, конфиг cgs
+- `PLAYER_GUIDE_EN.md` / `PLAYER_GUIDE_RU.md` — полная таблица CBC снарядов
+
+## Известные проблемы / TODO
+1. **Нет Fabric damage handler** — на Fabric щит не защищает (нет Forge events, нужны миксины)
+
+**Реализовано (ранее было в TODO):**
+- ✅ Redstone signal при получении урона щитом — реализовано в Сессии 15 (`ShieldGeneratorBlock` выдаёт redstone сигнал при ударе через `BlockState` компаратор)
+
+## Структура файлов (ключевые изменения)
+
+```
+common/src/main/java/com/mechanicalskies/vsshields/
+├── shield/
+│   └── ShieldInstance.java          # Логика щита без радиуса
+├── client/
+│   ├── ShieldRenderer.java          # Рендер по AABB корабля
+│   ├── CloakShimmerRenderer.java    # Эффект мерцания внутри маскировки
+│   └── CloakedShipsRegistry.java    # Менеджер списка скрытых кораблей
+└── mixin/
+    └── LevelRendererCloakMixin.java # Chunk Culling миксин (Priority 2000, Reflection)
+
+forge/src/main/kotlin/.../forge/
+├── ShieldDamageHandler.kt             # Упрощённая логика урона без координат
+└── ...
+```
 
 ## Сборка
 ```bash

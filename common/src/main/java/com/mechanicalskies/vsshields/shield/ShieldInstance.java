@@ -23,6 +23,8 @@ public class ShieldInstance {
     private boolean active;
     private double hpScale = 1.0; // Energy-based HP scaling (0.5 to 1.0)
     private double energyPercent = 1.0; // Current energy level as 0.0–1.0
+    private int emitterCount = 0;
+    private boolean regenStalled = false;
     private DamageListener damageListener;
 
     public ShieldInstance(long shipId, ShieldTier tier) {
@@ -71,6 +73,37 @@ public class ShieldInstance {
         this.active = active;
     }
 
+    public int getEmitterCount() {
+        return emitterCount;
+    }
+
+    public void addEmitter() {
+        emitterCount++;
+    }
+
+    public void removeEmitter() {
+        if (emitterCount > 0)
+            emitterCount--;
+    }
+
+    public boolean isRegenStalled() {
+        return regenStalled;
+    }
+
+    public void setRegenStalled(boolean stalled) {
+        this.regenStalled = stalled;
+    }
+
+    public boolean isRegenerating(long currentTick) {
+        if (!active || currentHP >= getMaxHP())
+            return false;
+        if (currentHP <= 0) {
+            return (currentTick - depletionTick >= depletionCooldown);
+        } else {
+            return (currentTick - lastHitTick >= rechargeCooldown);
+        }
+    }
+
     /**
      * Apply damage to the shield. Returns the amount of damage that was absorbed.
      */
@@ -107,7 +140,7 @@ public class ShieldInstance {
      * Tick the shield: recharge HP if cooldown has passed.
      */
     public void tick(long currentTick) {
-        if (!active)
+        if (!active || regenStalled)
             return;
         double max = getMaxHP();
         if (currentHP >= max)

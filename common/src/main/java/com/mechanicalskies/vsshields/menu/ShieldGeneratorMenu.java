@@ -19,7 +19,8 @@ public class ShieldGeneratorMenu extends AbstractContainerMenu {
     private final BlockPos blockPos;
     private final long shipId;
 
-    public ShieldGeneratorMenu(int containerId, Inventory playerInv, ShieldGeneratorBlockEntity be, ContainerData data) {
+    public ShieldGeneratorMenu(int containerId, Inventory playerInv, ShieldGeneratorBlockEntity be,
+            ContainerData data) {
         super(ModMenus.SHIELD_GENERATOR_MENU.get(), containerId);
         this.data = data;
         this.blockPos = be.getBlockPos();
@@ -31,7 +32,7 @@ public class ShieldGeneratorMenu extends AbstractContainerMenu {
         super(ModMenus.SHIELD_GENERATOR_MENU.get(), containerId);
         this.blockPos = buf.readBlockPos();
         this.shipId = buf.readLong();
-        this.data = new SimpleContainerData(7);
+        this.data = new SimpleContainerData(8);
         addDataSlots(data);
     }
 
@@ -39,17 +40,49 @@ public class ShieldGeneratorMenu extends AbstractContainerMenu {
         return (high << 16) | (low & 0xFFFF);
     }
 
-    public int getCurrentHP10() { return data.get(0); }
-    public int getMaxHP10() { return data.get(1); }
-    public boolean isShieldActive() { return data.get(2) == 1; }
-    public boolean isDuplicate() { return data.get(2) == -1; }
-    public int getEnergyStored() { return fromSplitShort(data.get(3), data.get(4)); }
-    public int getMaxEnergy() { return fromSplitShort(data.get(5), data.get(6)); }
-    public long getShipId() { return shipId; }
-    public BlockPos getBlockPos() { return blockPos; }
+    public int getCurrentHP10() {
+        return data.get(0);
+    }
 
-    public double getCurrentHP() { return data.get(0) / 10.0; }
-    public double getMaxHP() { return data.get(1) / 10.0; }
+    public int getMaxHP10() {
+        return data.get(1);
+    }
+
+    public boolean isShieldActive() {
+        return data.get(2) == 1;
+    }
+
+    public boolean isDuplicate() {
+        return data.get(2) == -1;
+    }
+
+    public boolean isRegenStalled() {
+        return data.get(7) == 1;
+    }
+
+    public int getEnergyStored() {
+        return fromSplitShort(data.get(3), data.get(4));
+    }
+
+    public int getMaxEnergy() {
+        return fromSplitShort(data.get(5), data.get(6));
+    }
+
+    public long getShipId() {
+        return shipId;
+    }
+
+    public BlockPos getBlockPos() {
+        return blockPos;
+    }
+
+    public double getCurrentHP() {
+        return data.get(0) / 10.0;
+    }
+
+    public double getMaxHP() {
+        return data.get(1) / 10.0;
+    }
 
     public double getHPPercent() {
         int max = data.get(1);

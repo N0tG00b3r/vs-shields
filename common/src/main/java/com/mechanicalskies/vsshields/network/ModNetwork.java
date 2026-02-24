@@ -1,6 +1,7 @@
 package com.mechanicalskies.vsshields.network;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
+import com.mechanicalskies.vsshields.scanner.AnalyzerScanHandler;
 import com.mechanicalskies.vsshields.shield.CloakManager;
 import com.mechanicalskies.vsshields.shield.ShieldInstance;
 import com.mechanicalskies.vsshields.shield.ShieldManager;
@@ -13,11 +14,15 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import org.joml.primitives.AABBdc;
 import org.valkyrienskies.core.api.ships.Ship;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import dev.architectury.utils.Env;
 import dev.architectury.utils.EnvExecutor;
@@ -38,6 +43,8 @@ public class ModNetwork {
     public static final ResourceLocation GRAVITY_FLIGHT_TOGGLE_ID  = new ResourceLocation(VSShieldsMod.MOD_ID, "gravity_flight_toggle");
     public static final ResourceLocation GRAVITY_FALL_TOGGLE_ID    = new ResourceLocation(VSShieldsMod.MOD_ID, "gravity_fall_toggle");
     public static final ResourceLocation SHIELD_REGEN_ID           = new ResourceLocation(VSShieldsMod.MOD_ID, "shield_regen");
+    public static final ResourceLocation ANALYZER_SCAN_ID          = new ResourceLocation(VSShieldsMod.MOD_ID, "analyzer_scan");
+    public static final ResourceLocation ANALYZER_DATA_ID          = new ResourceLocation(VSShieldsMod.MOD_ID, "analyzer_data");
 
     public static void init() {
         NetworkManager.registerReceiver(
@@ -85,6 +92,16 @@ public class ModNetwork {
                     BlockPos pos = buf.readBlockPos();
                     boolean enable = buf.readBoolean();
                     context.queue(() -> handleJammerEnable(context.getPlayer(), pos, enable));
+                });
+
+        // C2S: Ship Analyzer scan request
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, ANALYZER_SCAN_ID,
+                (buf, context) -> {
+                    double ex = buf.readDouble(), ey = buf.readDouble(), ez = buf.readDouble();
+                    double lx = buf.readDouble(), ly = buf.readDouble(), lz = buf.readDouble();
+                    context.queue(() -> AnalyzerScanHandler.handle(
+                            (ServerPlayer) context.getPlayer(),
+                            new Vec3(ex, ey, ez), new Vec3(lx, ly, lz)));
                 });
 
         // Register S2C Receivers (Client Only)
@@ -137,6 +154,56 @@ public class ModNetwork {
 
     public static void sendSyncToPlayer(ServerPlayer player) {
         writeAndSendSync(player.server, buf -> NetworkManager.sendToPlayer(player, SHIELD_SYNC_ID, buf));
+    }
+
+    /** C2S helper: send analyzer scan request from client to server. */
+    public static void sendAnalyzerScan(Vec3 eyePos, Vec3 look) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeDouble(eyePos.x); buf.writeDouble(eyePos.y); buf.writeDouble(eyePos.z);
+        buf.writeDouble(look.x);   buf.writeDouble(look.y);   buf.writeDouble(look.z);
+        NetworkManager.sendToServer(ANALYZER_SCAN_ID, buf);
+    }
+
+    /**
+     * S2C: send analyzer scan results to a specific player.
+     *
+     * @param matrix  column-major double[16] of the ship's shipToWorld transform
+     * @param cannons  cannon block positions in shipyard space (capped to 64)
+     * @param critical critical block positions in shipyard space (capped to 4)
+     * @param crewIds  entity IDs of crew entities in world space
+     */
+    public static void sendAnalyzerData(ServerPlayer player, long shipId,
+                                        double hp, double maxHp,
+                                        boolean active, float energy,
+                                        double[] matrix,
+                                        Set<BlockPos> cannons, Set<BlockPos> critical,
+                                        List<Integer> crewIds) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeLong(shipId);
+        buf.writeDouble(hp);
+        buf.writeDouble(maxHp);
+        buf.writeBoolean(active);
+        buf.writeFloat(energy);
+        // Matrix: 16 doubles, column-major
+        for (double v : matrix) buf.writeDouble(v);
+        // Cannon positions (max 64)
+        List<BlockPos> cannonList = new ArrayList<>(cannons);
+        if (cannonList.size() > 128) cannonList = cannonList.subList(0, 128);
+        buf.writeInt(cannonList.size());
+        for (BlockPos pos : cannonList) {
+            buf.writeInt(pos.getX()); buf.writeInt(pos.getY()); buf.writeInt(pos.getZ());
+        }
+        // Critical positions (max 4)
+        List<BlockPos> critList = new ArrayList<>(critical);
+        if (critList.size() > 4) critList = critList.subList(0, 4);
+        buf.writeInt(critList.size());
+        for (BlockPos pos : critList) {
+            buf.writeInt(pos.getX()); buf.writeInt(pos.getY()); buf.writeInt(pos.getZ());
+        }
+        // Crew entity IDs
+        buf.writeInt(crewIds.size());
+        for (int id : crewIds) buf.writeInt(id);
+        NetworkManager.sendToPlayer(player, ANALYZER_DATA_ID, buf);
     }
 
     public static void sendSyncToAll(MinecraftServer server) {

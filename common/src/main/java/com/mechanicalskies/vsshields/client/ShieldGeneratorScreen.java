@@ -81,11 +81,15 @@ public class ShieldGeneratorScreen extends AbstractContainerScreen<ShieldGenerat
         y += barHeight + 8;
 
         String status = menu.isShieldActive() ? "\u00a7aActive" : "\u00a7cInactive";
-        graphics.drawString(font, Component.translatable("gui.vs_shields.shield_generator.status", status), x, y, LABEL_COLOR, false);
+        graphics.drawString(font, Component.translatable("gui.vs_shields.shield_generator.status", status), x, y,
+                LABEL_COLOR, false);
         y += 12;
 
-        String rechargeStatus = hpPct >= 1.0 ? "\u00a7aFull" : (menu.isShieldActive() ? "\u00a7eRecharging" : "\u00a78Offline");
-        graphics.drawString(font, Component.translatable("gui.vs_shields.shield_generator.recharge", rechargeStatus), x, y, LABEL_COLOR, false);
+        String rechargeStatus = hpPct >= 1.0 ? "\u00a7aFull"
+                : (menu.isShieldActive() ? (menu.isRegenStalled() ? "\u00a7eStalled (Low Pwr)" : "\u00a7eRecharging")
+                        : "\u00a78Offline");
+        graphics.drawString(font, Component.translatable("gui.vs_shields.shield_generator.recharge", rechargeStatus), x,
+                y, LABEL_COLOR, false);
         y += 14;
 
         double energyPct = menu.getEnergyPercent();
@@ -110,8 +114,10 @@ public class ShieldGeneratorScreen extends AbstractContainerScreen<ShieldGenerat
     }
 
     private static int getHPColor(double percent) {
-        if (percent > 0.5) return 0xFF3399FF;
-        if (percent > 0.25) return 0xFFFFAA00;
+        if (percent > 0.5)
+            return 0xFF3399FF;
+        if (percent > 0.25)
+            return 0xFFFFAA00;
         return 0xFFFF3333;
     }
 }

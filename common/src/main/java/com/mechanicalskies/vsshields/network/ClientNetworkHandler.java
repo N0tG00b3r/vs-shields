@@ -1,15 +1,19 @@
 package com.mechanicalskies.vsshields.network;
 
+import com.mechanicalskies.vsshields.client.ClientAnalyzerData;
 import com.mechanicalskies.vsshields.client.ShieldEffectHandler;
 import com.mechanicalskies.vsshields.network.packets.CloakStatusPacket;
 import dev.architectury.networking.NetworkManager;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -153,6 +157,38 @@ public class ClientNetworkHandler {
                     double y = buf.readDouble();
                     double z = buf.readDouble();
                     context.queue(() -> ShieldEffectHandler.onShieldRegen(x, y, z));
+                });
+
+        // S2C: Ship Analyzer data
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.S2C,
+                ModNetwork.ANALYZER_DATA_ID,
+                (buf, context) -> {
+                    long shipId  = buf.readLong();
+                    double hp    = buf.readDouble();
+                    double maxHp = buf.readDouble();
+                    boolean active = buf.readBoolean();
+                    float energy   = buf.readFloat();
+                    // Matrix (16 doubles, column-major)
+                    double[] matrix = new double[16];
+                    for (int i = 0; i < 16; i++) matrix[i] = buf.readDouble();
+                    // Cannon positions
+                    int nCannons = buf.readInt();
+                    List<BlockPos> cannons = new ArrayList<>();
+                    for (int i = 0; i < nCannons; i++)
+                        cannons.add(new BlockPos(buf.readInt(), buf.readInt(), buf.readInt()));
+                    // Critical positions
+                    int nCrit = buf.readInt();
+                    List<BlockPos> critical = new ArrayList<>();
+                    for (int i = 0; i < nCrit; i++)
+                        critical.add(new BlockPos(buf.readInt(), buf.readInt(), buf.readInt()));
+                    // Crew IDs
+                    int nCrew = buf.readInt();
+                    List<Integer> crewIds = new ArrayList<>();
+                    for (int i = 0; i < nCrew; i++) crewIds.add(buf.readInt());
+
+                    context.queue(() -> ClientAnalyzerData.getInstance()
+                            .update(shipId, hp, maxHp, active, energy, matrix, cannons, critical, crewIds));
                 });
     }
 }

@@ -1,6 +1,8 @@
 package com.mechanicalskies.vsshields.registry;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
+import com.mechanicalskies.vsshields.item.ShipAnalyzerItem;
+import com.mechanicalskies.vsshields.item.TacticalNetheriteHelm;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import net.minecraft.core.registries.Registries;
@@ -63,6 +65,14 @@ public class ModItems {
         public static final RegistrySupplier<Item> shield_jammer_INPUT = ITEMS.register(
                         "shield_jammer_input",
                         () -> new BlockItem(ModBlocks.shield_jammer_INPUT.get(), new Item.Properties()));
+
+        public static final RegistrySupplier<Item> SHIP_ANALYZER = ITEMS.register(
+                        "ship_analyzer",
+                        () -> new ShipAnalyzerItem(new Item.Properties().stacksTo(1)));
+
+        public static final RegistrySupplier<Item> TACTICAL_HELM = ITEMS.register(
+                        "tactical_helm",
+                        TacticalNetheriteHelm::new);
 
         public static void register() {
                 ITEMS.register();

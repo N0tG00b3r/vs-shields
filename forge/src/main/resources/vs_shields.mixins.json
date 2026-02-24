@@ -3,7 +3,9 @@
   "package": "com.mechanicalskies.vsshields.forge.mixin",
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
-  "client": [],
+  "client": [
+    "TacticalNetheriteHelmForgeMixin"
+  ],
   "mixins": [],
   "injectors": {
     "defaultRequire": 0

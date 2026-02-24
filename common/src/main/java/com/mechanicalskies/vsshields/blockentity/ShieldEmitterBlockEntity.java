@@ -25,7 +25,8 @@ public class ShieldEmitterBlockEntity extends BlockEntity {
     }
 
     public void serverTick(Level level, BlockPos pos, BlockState state) {
-        if (level.isClientSide()) return;
+        if (level.isClientSide())
+            return;
 
         Ship ship = VSGameUtilsKt.getShipManagingPos(level, pos);
         if (ship == null) {
@@ -48,6 +49,7 @@ public class ShieldEmitterBlockEntity extends BlockEntity {
         if (registered && currentShield != registeredShield) {
             if (registeredShield != null) {
                 registeredShield.removeBonusRechargeRate(getBonusRechargeRate());
+                registeredShield.removeEmitter();
             }
             registered = false;
             registeredShield = null;
@@ -56,6 +58,7 @@ public class ShieldEmitterBlockEntity extends BlockEntity {
         if (!registered) {
             if (currentShield != null) {
                 currentShield.addBonusRechargeRate(getBonusRechargeRate());
+                currentShield.addEmitter();
                 registered = true;
                 registeredShield = currentShield;
             }
@@ -71,10 +74,12 @@ public class ShieldEmitterBlockEntity extends BlockEntity {
     private void removeBonus() {
         if (registeredShield != null) {
             registeredShield.removeBonusRechargeRate(getBonusRechargeRate());
+            registeredShield.removeEmitter();
         } else if (trackedShipId != -1) {
             ShieldInstance shield = ShieldManager.getInstance().getShield(trackedShipId);
             if (shield != null) {
                 shield.removeBonusRechargeRate(getBonusRechargeRate());
+                shield.removeEmitter();
             }
         }
         registered = false;

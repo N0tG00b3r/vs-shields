@@ -55,7 +55,7 @@ public class ShieldHudOverlay {
         graphics.renderOutline(x, y, barWidth, barHeight, 0xFFFFFFFF);
 
         // Shield HP label
-        String label = String.format("Shield: %.0f%%", hpPercent * 100);
+        String label = String.format("Shield: %.0f / %.0f (%.0f%%)", data.currentHP, data.maxHP, hpPercent * 100);
         int textWidth = mc.font.width(label);
         graphics.drawString(mc.font, label, (screenWidth - textWidth) / 2, y + barHeight + 2, 0xFFFFFFFF, true);
     }

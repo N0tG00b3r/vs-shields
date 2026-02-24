@@ -37,7 +37,7 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
 
     private long trackedShipId = -1;
     private boolean duplicate = false;
-    private long lastKnownHitTick = 0;  // mirrors ShieldInstance.lastHitTick
+    private long lastKnownHitTick = 0; // mirrors ShieldInstance.lastHitTick
     private long damageSignalTick = -1; // level.getGameTime() when last hit detected
 
     private int energyStored = 0;
@@ -60,6 +60,7 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
                 case 4 -> (energyStored >> 16) & 0xFFFF;
                 case 5 -> maxEnergy & 0xFFFF;
                 case 6 -> (maxEnergy >> 16) & 0xFFFF;
+                case 7 -> shield != null && shield.isRegenStalled() ? 1 : 0;
                 default -> 0;
             };
         }
@@ -70,7 +71,7 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
 
         @Override
         public int getCount() {
-            return 7;
+            return 8;
         }
     };
 
@@ -125,15 +126,39 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
         ShieldInstance shield = ShieldManager.getInstance().getShield(shipId);
         if (shield != null) {
             if (shield.isActive()) {
-                if (energyStored >= energyPerTick) {
-                    energyStored -= energyPerTick;
-                    hasPower = true;
+                int baseCost = energyPerTick;
+                if (shield.isRegenerating(level.getGameTime())) {
+                    int emitterCost = com.mechanicalskies.vsshields.config.ShieldConfig.get()
+                            .getBonuses().emitterRegenCost;
+                    int regenCost = shield.getEmitterCount() * emitterCost;
+
+                    if (energyStored >= baseCost + regenCost) {
+                        energyStored -= (baseCost + regenCost);
+                        hasPower = true;
+                        shield.setRegenStalled(false);
+                    } else if (energyStored >= baseCost) {
+                        energyStored -= baseCost;
+                        hasPower = true;
+                        shield.setRegenStalled(true);
+                    } else {
+                        hasPower = false;
+                        shield.setActive(false);
+                        shield.setRegenStalled(false);
+                    }
                 } else {
-                    hasPower = false;
-                    shield.setActive(false);
+                    if (energyStored >= baseCost) {
+                        energyStored -= baseCost;
+                        hasPower = true;
+                        shield.setRegenStalled(false);
+                    } else {
+                        hasPower = false;
+                        shield.setActive(false);
+                        shield.setRegenStalled(false);
+                    }
                 }
             } else {
                 hasPower = energyStored >= energyPerTick;
+                shield.setRegenStalled(false);
             }
 
             com.mechanicalskies.vsshields.config.ShieldConfig.GeneralConfig gen = com.mechanicalskies.vsshields.config.ShieldConfig
@@ -156,7 +181,8 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
         boolean shouldSignal = damageSignalTick >= 0 && (now - damageSignalTick) < REDSTONE_SIGNAL_DURATION;
         boolean currentPowered = state.getValue(com.mechanicalskies.vsshields.block.ShieldGeneratorBlock.POWERED);
         if (shouldSignal != currentPowered) {
-            level.setBlock(pos, state.setValue(com.mechanicalskies.vsshields.block.ShieldGeneratorBlock.POWERED, shouldSignal), 3);
+            level.setBlock(pos,
+                    state.setValue(com.mechanicalskies.vsshields.block.ShieldGeneratorBlock.POWERED, shouldSignal), 3);
         }
     }
 

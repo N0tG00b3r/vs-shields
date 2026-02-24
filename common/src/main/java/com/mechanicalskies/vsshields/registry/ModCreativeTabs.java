@@ -30,6 +30,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.shield_jammer_frame.get());
                         output.accept(ModItems.shield_jammer_INPUT.get());
                         output.accept(ModItems.GRAVITY_FIELD_GENERATOR.get());
+                        output.accept(ModItems.SHIP_ANALYZER.get());
+                        output.accept(ModItems.TACTICAL_HELM.get());
                         // output.accept(ModItems.CLOAKING_FIELD_GENERATOR.get()); // WIP - Temporarily
                         // Disabled
                     })

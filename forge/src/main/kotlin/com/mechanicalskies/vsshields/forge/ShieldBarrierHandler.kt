@@ -4,11 +4,15 @@ import com.mechanicalskies.vsshields.config.ShieldConfig
 import com.mechanicalskies.vsshields.network.ModNetwork
 import com.mechanicalskies.vsshields.shield.ShieldInstance
 import com.mechanicalskies.vsshields.shield.ShieldManager
+import net.minecraft.world.entity.Entity
+import net.minecraft.world.entity.item.ItemEntity
+import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.projectile.Projectile
 import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
+import net.minecraftforge.registries.ForgeRegistries
 import org.valkyrienskies.core.api.ships.Ship
 import org.valkyrienskies.mod.common.getShipManagingPos
 
@@ -22,6 +26,10 @@ import org.valkyrienskies.mod.common.getShipManagingPos
  * Two-layer protection:
  * 1. External barrier: projectiles entering the shield zone from outside
  * 2. Friendly fire: projectiles inside the shield entering the ship's core AABB
+ *
+ * CBC shells (Create Big Cannons) extend rbasamoyai.createbigcannons…FuzedBigCannonProjectile
+ * which is NOT a subclass of net.minecraft.world.entity.projectile.Projectile — so they are
+ * detected via the separate isCbcEntity() check on the entity type registry namespace.
  */
 class ShieldBarrierHandler {
 
@@ -51,49 +59,64 @@ class ShieldBarrierHandler {
                 worldAABB.maxX() + padding, worldAABB.maxY() + padding, worldAABB.maxZ() + padding
             )
 
-            // Query entities specifically within this shield zone
-            val projectiles = level.getEntities(null, shieldAABB) { it is Projectile }
-            for (entity in projectiles) {
-                val proj = entity as Projectile
-                if (!proj.isAlive) continue
+            // Catch both standard Minecraft projectiles AND CBC cannon shells
+            // (CBC shells extend FuzedBigCannonProjectile, not Projectile)
+            val entities = level.getEntities(null, shieldAABB) { entity ->
+                entity is Projectile || isCbcEntity(entity)
+            }
+            for (entity in entities) {
+                if (!entity.isAlive) continue
 
-                val curPos = Vec3(proj.x, proj.y, proj.z)
-                val prevPos = Vec3(proj.xOld, proj.yOld, proj.zOld)
+                val curPos  = Vec3(entity.x,    entity.y,    entity.z)
+                val prevPos = Vec3(entity.xOld, entity.yOld, entity.zOld)
 
-                val curInShield = shieldAABB.contains(curPos.x, curPos.y, curPos.z)
+                val curInShield  = shieldAABB.contains(curPos.x,  curPos.y,  curPos.z)
                 val prevInShield = shieldAABB.contains(prevPos.x, prevPos.y, prevPos.z)
 
                 if (curInShield && !prevInShield) {
-                    // === EXTERNAL BARRIER: projectile just crossed the shield boundary ===
+                    // === EXTERNAL BARRIER: entity just crossed the shield boundary ===
                     val interceptPos = computeInterceptPoint(prevPos, curPos, shieldAABB)
-                    interceptProjectile(proj, shield, manager, server, shipId, interceptPos)
+                    interceptEntity(entity, shield, manager, server, shipId, interceptPos)
                     continue
                 }
 
                 if (curInShield && prevInShield) {
                     // Already inside shield zone — check friendly fire
-                    val curInCore = coreAABB.contains(curPos.x, curPos.y, curPos.z)
+                    val curInCore  = coreAABB.contains(curPos.x,  curPos.y,  curPos.z)
                     val prevInCore = coreAABB.contains(prevPos.x, prevPos.y, prevPos.z)
 
                     if (curInCore && !prevInCore) {
-                        // === FRIENDLY FIRE: projectile entering the ship's block zone ===
+                        // === FRIENDLY FIRE: entity entering the ship's block zone ===
                         val interceptPos = computeInterceptPoint(prevPos, curPos, coreAABB)
-                        interceptProjectile(proj, shield, manager, server, shipId, interceptPos)
+                        interceptEntity(entity, shield, manager, server, shipId, interceptPos)
                     }
                 }
             }
         }
     }
 
-    private fun interceptProjectile(
-        proj: Projectile,
+    /**
+     * Returns true for CBC cannon shells and nuke shells that are NOT subclasses of
+     * net.minecraft.world.entity.projectile.Projectile but must still be blocked by the shield.
+     *
+     * Excludes living entities, item entities, and anything outside known CBC namespaces.
+     */
+    private fun isCbcEntity(entity: Entity): Boolean {
+        if (entity is LivingEntity) return false
+        if (entity is ItemEntity)   return false
+        val namespace = ForgeRegistries.ENTITY_TYPES.getKey(entity.type)?.namespace ?: return false
+        return namespace == "createbigcannons" || namespace == "cbc" || namespace == "cbc_nukes"
+    }
+
+    private fun interceptEntity(
+        entity: Entity,
         shield: ShieldInstance,
         manager: ShieldManager,
         server: net.minecraft.server.MinecraftServer,
         shipId: Long,
         interceptPos: Vec3
     ) {
-        val damage = ShieldDamageHandler.getProjectileDamagePublic(proj)
+        val damage = ShieldDamageHandler.getProjectileDamagePublic(entity)
         if (damage <= 0.0) return
 
         shield.damage(damage, manager.currentTick)
@@ -107,7 +130,14 @@ class ShieldBarrierHandler {
             ModNetwork.sendShieldBreak(server, shipId)
         }
 
-        proj.discard()
+        // CBC Nuke shells: send nuclear explosion visual at the intercept point,
+        // matching the effect that fires when alexscaves:nuclear_explosion is blocked.
+        val cbcNs = ForgeRegistries.ENTITY_TYPES.getKey(entity.type)?.namespace
+        if (cbcNs == "cbc_nukes") {
+            ModNetwork.sendNukeVisual(server, interceptPos.x, interceptPos.y, interceptPos.z)
+        }
+
+        entity.discard()
     }
 
     /**

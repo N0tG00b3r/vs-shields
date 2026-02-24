@@ -36,5 +36,11 @@
     "gui.vs_shields.gravity_field.flight_off": "Полет: ВЫКЛ",
     "gui.vs_shields.gravity_field.fall_on": "Защ. от падения: ВКЛ",
     "gui.vs_shields.gravity_field.fall_off": "Защ. от падения: ВЫКЛ",
-    "message.vs_shields.duplicate_gravity": "У этого корабля уже есть активный генератор гравитационного поля!"
+    "message.vs_shields.duplicate_gravity": "У этого корабля уже есть активный генератор гравитационного поля!",
+    "item.vs_shields.ship_analyzer": "Анализатор кораблей",
+    "item.vs_shields.ship_analyzer.desc": "Удерживайте для сканирования вражеских кораблей. ПКМ и наведите на корабль.",
+    "item.vs_shields.tactical_helm": "Тактический незеритовый шлем",
+    "item.vs_shields.tactical_helm.desc": "Встроенный анализатор кораблей. Удерживайте бинд сканирования для сканирования.",
+    "key.vs_shields.helm_scan": "Сканировать (тактический шлем)",
+    "key.categories.vs_shields": "VS Энергетические щиты"
 }

@@ -37,6 +37,7 @@ A simple addon block with a 3D model. Place it on the same ship to automatically
 ### Shield Emitter
 
 Place on the same ship to add **+0.5 HP/tick** to the shield's recharge rate. The effect stacks.
+**Note:** Each emitter increases the generator's energy consumption by **50 FE/tick**, but *only* while the shield is actively recharging. If your generator does not have enough FE to support the emitters, recharge will stall.
 
 ---
 
@@ -276,10 +277,59 @@ Place a **Create rotation shaft** next to a **Shield Generator**, **Shield Batte
 
 ## Damage Mechanics
 
-- **Projectile Barrier (Force Field):** The shield acts as a physical force field against projectiles (arrows, cannonballs). 
+- **Projectile Barrier (Force Field):** The shield acts as a physical force field against projectiles (arrows, cannonballs).
   - **External Threats:** Any projectile striking the shield from the outside is intercepted and destroyed at the shield's boundary.
   - **Friendly Fire Protection:** Projectiles fired from *inside* the shield can freely exit. However, if an internal projectile attempts to strike the ship's own blocks, the shield intercepts it at the hull, preventing friendly fire damage.
 - **Explosions (TNT, Creepers, Nukes):** If the center of an explosion is inside an active shield, the explosion is **completely absorbed**. The shield takes damage, but all blocks and entities are protected.
+
+---
+
+## Mod Compatibility
+
+### Create: Big Cannons (CBC)
+
+All CBC projectiles are intercepted at the shield boundary. Damage scales by shell type:
+
+| Projectile | Shield Damage |
+|------------|--------------|
+| Autocannon round | 8 HP |
+| Machine gun bullet | 8 HP |
+| Smoke Shell | 10 HP |
+| Mortar Stone | 20 HP |
+| Bag of Grapeshot | 30 HP |
+| Drop Mortar Shell | 40 HP |
+| Solid Shot / Cannonball | 50 HP |
+| Shrapnel Shell | 55 HP |
+| Fluid Shell | 55 HP |
+| HE Shell | 60 HP |
+| AP Shot / AP Shell | 80 HP |
+| **Nuke Shell** *(CBC Nukes addon)* | **500 HP** + nuclear flash |
+
+Explosions from cannon shells are also absorbed (formula: `power² × 5.5`).
+When a Nuke Shell is intercepted by the shield, the full nuclear explosion visual fires at the impact point on the shield boundary.
+
+### Create: Gunsmithing (CGS)
+
+**Projectile weapons** (Nailgun, Launcher, Blazegun, Incendiary) are intercepted at the shield boundary:
+
+| Projectile | Shield Damage |
+|------------|--------------|
+| Nail / Steel Nail | 6 / 8 HP |
+| Blaze Ball | 8 HP |
+| Incendiary | 12 HP |
+| Spear | 20 HP |
+| Rocket | 40 HP |
+
+**Hitscan weapons** (Gatling, Revolver, Flintlock, Shotgun) are intercepted server-side. The shot is canceled when the raycast crosses the shield boundary. Shooters *inside* the shield can fire outward freely.
+
+| Weapon | Shield Damage per trigger |
+|--------|--------------------------|
+| Gatling gun | 4 HP/bullet |
+| Revolver | 8 HP |
+| Flintlock (ball) | 15 HP |
+| Shotgun (burst) | 16 HP |
+
+> All values above are configurable in `config/vs_shields.json`.
 
 ---
 

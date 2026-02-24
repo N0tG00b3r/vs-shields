@@ -22,6 +22,7 @@ public class ShieldConfig {
     private DamageConfig damage;
     private GeneralConfig general;
     private CloakConfig cloak;
+    private CgsConfig cgs;
 
     public static class TierConfig {
         public int maxHp;
@@ -48,6 +49,7 @@ public class ShieldConfig {
     public static class BonusConfig {
         public double capacitorMaxHp = 50.0;
         public double emitterRechargeRate = 0.5;
+        public int emitterRegenCost = 50;
     }
 
     public static class DamageConfig {
@@ -59,6 +61,8 @@ public class ShieldConfig {
         public double cbcSolidShot = 50.0;
         public double cbcHE = 60.0;
         public double cbcAP = 80.0;
+        /** CBC Autocannon rounds — small calibre, rapid fire. */
+        public double cbcAutocannon = 8.0;
         public double alexsCavesNukeDamage = 500.0;
 
         public DamageConfig() {
@@ -87,6 +91,24 @@ public class ShieldConfig {
         public int energyPerTick = 30;
     }
 
+    /**
+     * Per-weapon shield damage for Create Gunsmithing hitscan weapons.
+     * Projectile entities (nails, rockets, etc.) are handled via the projectiles/
+     * projectileClassPatterns maps in DamageConfig.
+     */
+    public static class CgsConfig {
+        /** Shield damage per Gatling bullet (fires ~4/sec — keep low). */
+        public double gatlingBullet = 4.0;
+        /** Shield damage per Revolver shot. */
+        public double revolverShot = 8.0;
+        /** Shield damage for Flintlock ball round. */
+        public double flintlockBall = 15.0;
+        /** Shield damage per Shotgun trigger pull (all pellets combined). */
+        public double shotgunBurst = 16.0;
+        /** Set false to disable hitscan interception entirely. */
+        public boolean enableHitscan = true;
+    }
+
     private ShieldConfig() {
     }
 
@@ -112,8 +134,18 @@ public class ShieldConfig {
         cfg.damage.projectiles.put("minecraft:wither_skull", 25.0);
         cfg.damage.projectiles.put("minecraft:large_fireball", 30.0);
         cfg.damage.projectiles.put("minecraft:dragon_fireball", 40.0);
-        cfg.damage.projectiles.put("cbc_nukes:nuke_shell", 200.0);
+        cfg.damage.projectiles.put("cbc_nukes:nuke_shell", 500.0);
         cfg.damage.projectiles.put("alexscaves_torpedoes:torpedo_missile", 80.0);
+
+        // Create Big Cannons — full shell roster (path-based fallback handles most,
+        // but explicit entries override for shells that don't match simple patterns)
+        cfg.damage.projectiles.put("createbigcannons:shrapnel_shell", 55.0); // fragmentation = HE-level
+        cfg.damage.projectiles.put("createbigcannons:fluid_shell", 55.0); // fluid payload = HE-level
+        cfg.damage.projectiles.put("createbigcannons:bag_of_grapeshot", 30.0); // scatter shot, lower per-hit
+        cfg.damage.projectiles.put("createbigcannons:drop_mortar_shell", 40.0); // plunging fire mortar
+        cfg.damage.projectiles.put("createbigcannons:mortar_stone", 20.0); // primitive stone mortar
+        cfg.damage.projectiles.put("createbigcannons:smoke_shell", 10.0); // minimal kinetic, non-HE
+        cfg.damage.projectiles.put("createbigcannons:machine_gun_bullet", cfg.damage.cbcAutocannon); // small-calibre MG
 
         cfg.damage.projectileClassPatterns.put("rocket", 40.0);
         cfg.damage.projectileClassPatterns.put("missile", 40.0);
@@ -122,8 +154,18 @@ public class ShieldConfig {
         cfg.damage.projectileClassPatterns.put("incendiary", 15.0);
         cfg.damage.projectileClassPatterns.put("nail", 10.0);
 
+        // Create Gunsmithing projectile entities — explicit registry-name overrides
+        // (lower than patterns since actual entity dmg should scale with realism)
+        cfg.damage.projectiles.put("cgs:nail", 6.0);
+        cfg.damage.projectiles.put("cgs:nail_steel", 8.0);
+        cfg.damage.projectiles.put("cgs:rocket", 40.0);
+        cfg.damage.projectiles.put("cgs:spear", 20.0);
+        cfg.damage.projectiles.put("cgs:blaze_ball", 8.0);
+        cfg.damage.projectiles.put("cgs:incendiary", 12.0);
+
         cfg.general = new GeneralConfig();
         cfg.cloak = new CloakConfig();
+        cfg.cgs = new CgsConfig();
         return cfg;
     }
 
@@ -196,6 +238,25 @@ public class ShieldConfig {
             loaded.cloak = defaults.cloak;
             changed = true;
         }
+        if (loaded.cgs == null) {
+            loaded.cgs = defaults.cgs;
+            changed = true;
+        }
+        // Backfill any new projectile entries added in newer versions
+        // (merge() only checks top-level fields, not individual map entries)
+        if (loaded.damage != null && defaults.damage != null) {
+            if (loaded.damage.projectiles == null) {
+                loaded.damage.projectiles = defaults.damage.projectiles;
+                changed = true;
+            } else {
+                for (Map.Entry<String, Double> entry : defaults.damage.projectiles.entrySet()) {
+                    if (!loaded.damage.projectiles.containsKey(entry.getKey())) {
+                        loaded.damage.projectiles.put(entry.getKey(), entry.getValue());
+                        changed = true;
+                    }
+                }
+            }
+        }
         return changed;
     }
 
@@ -225,5 +286,9 @@ public class ShieldConfig {
 
     public CloakConfig getCloak() {
         return cloak != null ? cloak : new CloakConfig();
+    }
+
+    public CgsConfig getCgs() {
+        return cgs != null ? cgs : new CgsConfig();
     }
 }

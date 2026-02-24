@@ -36,7 +36,10 @@ common/                          # Architectury — кроссплатформе
 
 forge/                           # Forge-специфичный код
 ├── ShieldDamageHandler.kt       # ExplosionEvent.Start + ProjectileImpactEvent + EntityJoinLevel (nukes)
+│                                #   + CGS namespace (cgs:/ntgl:) + cbc_nukes namespace
+│                                #   + CGS hitscan: reflected GunFireEvent$Pre via IEventBus.addListener()
 ├── ShieldBarrierHandler.kt      # LevelTickEvent: перехват снарядов на границе щита
+│                                #   Entity фильтр: Projectile ИЛИ isCbcEntity() (namespace createbigcannons/cbc/cbc_nukes)
 ├── ShieldEnergyCapability.kt    # IEnergyStorage для Shield Generator
 ├── BatteryInputEnergyCapability.kt
 ├── CloakEnergyCapability.kt
@@ -133,9 +136,12 @@ ShieldRenderer.render()
 Основные секции:
 - `general` — syncInterval, shieldPadding, hpScaleMin/Max
 - `tiers` — HP, recharge, cooldowns для Iron/Diamond/Netherite
-- `damage` — explosionPowerFactor, таблица урона по entity type, alexsCavesNukeDamage
+- `damage` — explosionPowerFactor, таблица урона по entity type (`projectiles` map), `projectileClassPatterns` map, `cbcSolidShot`, `cbcHE`, `cbcAP`, `cbcAutocannon`, `alexsCavesNukeDamage`, `moddedProjectileDefault`, `unknownProjectileDefault`
 - `energy` — FE capacity/consumption per tier, Create SU ratio
 - `battery` — cell capacity, passive regen rate, emergency threshold
+- `cgs` — `gatlingBullet` (4), `revolverShot` (8), `flintlockBall` (15), `shotgunBurst` (16), `enableHitscan`
+
+**merge() backfill**: `ShieldConfig.merge()` итерирует все ключи дефолтного `projectiles` и добавляет отсутствующие в загруженный конфиг. Это позволяет новым записям (cgs:*, cbc_nukes:*) появляться в существующих конфигах без ручного редактирования.
 
 ## Двойной барьер (ShieldBarrierHandler)
 
@@ -145,6 +151,19 @@ ShieldRenderer.render()
 
 Детекция пересечения: `xOld/yOld/zOld` vs `x/y/z` (не entity ID tracking).
 Точка перехвата: ray-AABB intersection для точного hit effect на поверхности.
+
+**CBC Shell поддержка**: `NukeShellProjectile` и другие CBC снаряды НЕ являются подклассами `net.minecraft.world.entity.projectile.Projectile` — они наследуют `FuzedBigCannonProjectile` (CBC-класс). Поэтому `ProjectileImpactEvent` для них не срабатывает. Перехват через `isCbcEntity()`:
+
+```kotlin
+private fun isCbcEntity(entity: Entity): Boolean {
+    if (entity is LivingEntity) return false
+    if (entity is ItemEntity)   return false
+    val namespace = ForgeRegistries.ENTITY_TYPES.getKey(entity.type)?.namespace ?: return false
+    return namespace == "createbigcannons" || namespace == "cbc" || namespace == "cbc_nukes"
+}
+```
+
+Урон для CBC назначается через `getProjectileDamage()` по namespace+path — autocannon, solid shot, HE, AP, nuke shell.
 
 ## Honeycomb рендеринг
 
@@ -223,6 +242,42 @@ Blockbench → экспорт OBJ → корень проекта (blockname.obj
 - Оригинальные OBJ с UV-атласами — в корне проекта (`blockname.obj`)
 - Резервная копия последней успешной сборки — `common/build/resources/main/assets/vs_shields/models/block/`
 - **Никогда** не нормализовать UV-атлас вручную — это уничтожает UV-развёртку модели
+
+---
+
+## Совместимость с модами
+
+### Create: Big Cannons (CBC)
+
+CBC снаряды (`FuzedBigCannonProjectile`) НЕ наследуют Minecraft `Projectile` — перехватываются через `isCbcEntity()` в `ShieldBarrierHandler`. Урон по path в `getProjectileDamage()`:
+
+| path-паттерн | Значение конфига | Дефолт |
+|---|---|---|
+| `autocannon` / `auto_cannon` | `cbcAutocannon` | 8 HP |
+| `he` / `explosive` | `cbcHE` | 60 HP |
+| `ap` / `armor_piercing` | `cbcAP` | 80 HP |
+| иное (solid shot) | `cbcSolidShot` | 50 HP |
+| `cbc_nukes:nuke_shell` | `projectiles["cbc_nukes:nuke_shell"]` | 200 HP |
+
+**NukeShell flow**: снаряд перехватывается `isCbcEntity()` ещё до вызова `nukeKaboom()` → урон щиту + `discard()`. Параллельно `onEntityJoinLevel` перехватывает `alexscaves:nuclear_explosion`, если она успела заспавниться за пределами AABB.
+
+### Create: Gunsmithing (CGS)
+
+**Projectile entities** (cgs:/ntgl: namespace) — `ProjectileImpactEvent` + namespace-блок в `getProjectileDamage()`:
+
+| registry path | HP |
+|---|---|
+| `cgs:nail` | 6 |
+| `cgs:nail_steel` | 8 |
+| `cgs:blaze_ball` | 8 |
+| `cgs:incendiary` | 12 |
+| `cgs:spear` | 20 |
+| `cgs:rocket` | 40 |
+
+**Hitscan weapons** (Gatling, Revolver, Flintlock, Shotgun) — reflected `GunFireEvent$Pre`:
+- Регистрация через `tryRegisterCgsHitscanHandler(eventBus)` в `VSShieldsModForge.kt`
+- `Class.forName("com.nukateam.ntgl.common.event.GunFireEvent$Pre")` — silent no-op если CGS не установлен
+- `AABB.clip(eyePos, rayEnd)` возвращает `Optional.empty()` если стрелок внутри AABB → дружественный огонь разрешён автоматически
 
 ---
 

@@ -5,15 +5,19 @@ import com.mechanicalskies.vsshields.blockentity.CloakingFieldGeneratorBlockEnti
 import com.mechanicalskies.vsshields.blockentity.ShieldBatteryInputBlockEntity
 import com.mechanicalskies.vsshields.blockentity.ShieldGeneratorBlockEntity
 import com.mechanicalskies.vsshields.network.ModNetwork
+import com.mechanicalskies.vsshields.scanner.AnalyzerBlockCache
+import com.mechanicalskies.vsshields.scanner.AnalyzerScanHandler
 import com.mechanicalskies.vsshields.shield.CloakManager
 import com.mechanicalskies.vsshields.shield.GravityFieldRegistry
 import com.mechanicalskies.vsshields.shield.ShieldManager
 import dev.architectury.platform.forge.EventBuses
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraftforge.api.distmarker.Dist
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.event.entity.player.PlayerEvent
+import net.minecraftforge.event.level.BlockEvent
 import net.minecraftforge.event.server.ServerStartedEvent
 import net.minecraftforge.event.server.ServerStoppingEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
@@ -21,6 +25,7 @@ import net.minecraftforge.fml.DistExecutor
 import net.minecraftforge.fml.common.Mod
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext
 import net.minecraftforge.fml.loading.FMLPaths
+import org.valkyrienskies.mod.common.getShipManagingPos
 
 @Mod(VSShieldsMod.MOD_ID)
 class VSShieldsModForge {
@@ -29,6 +34,9 @@ class VSShieldsModForge {
         EventBuses.registerModEventBus(VSShieldsMod.MOD_ID, modEventBus)
 
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT) { ClientProxy() }
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT) {
+            Runnable { MinecraftForge.EVENT_BUS.register(AnalyzerOutlineRenderer()) }
+        }
 
         VSShieldsMod.loadConfig(FMLPaths.GAMEDIR.get())
         VSShieldsMod.init()
@@ -36,6 +44,7 @@ class VSShieldsModForge {
         MinecraftForge.EVENT_BUS.register(this)
         MinecraftForge.EVENT_BUS.register(ShieldDamageHandler())
         MinecraftForge.EVENT_BUS.register(ShieldBarrierHandler())
+        ShieldDamageHandler.tryRegisterCgsHitscanHandler(MinecraftForge.EVENT_BUS)
         MinecraftForge.EVENT_BUS.register(ShieldEnergyCapability())
         MinecraftForge.EVENT_BUS.register(BatteryInputEnergyCapability())
         MinecraftForge.EVENT_BUS.register(CloakEnergyCapability())
@@ -74,6 +83,7 @@ class VSShieldsModForge {
     fun onServerTick(event: TickEvent.ServerTickEvent) {
         if (event.phase == TickEvent.Phase.END) {
             ShieldManager.getInstance().tick()
+            AnalyzerScanHandler.tickCleanup(event.server)
         }
     }
 
@@ -82,6 +92,22 @@ class VSShieldsModForge {
         ShieldManager.getInstance().clear()
         CloakManager.getInstance().clear()
         GravityFieldRegistry.clear()
+        AnalyzerBlockCache.getInstance().clear()
+        AnalyzerScanHandler.clear()
+    }
+
+    @SubscribeEvent
+    fun onBlockPlace(event: BlockEvent.EntityPlaceEvent) {
+        val level = event.level as? ServerLevel ?: return
+        val ship = level.getShipManagingPos(event.pos) ?: return
+        AnalyzerBlockCache.getInstance().onBlockPlaced(ship.id, event.pos, event.state)
+    }
+
+    @SubscribeEvent
+    fun onBlockBreak(event: BlockEvent.BreakEvent) {
+        val level = event.level as? ServerLevel ?: return
+        val ship = level.getShipManagingPos(event.pos) ?: return
+        AnalyzerBlockCache.getInstance().onBlockRemoved(ship.id, event.pos)
     }
 
     @SubscribeEvent

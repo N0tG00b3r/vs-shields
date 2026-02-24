@@ -21,11 +21,13 @@ public class VSShieldsModClient {
         MenuRegistry.registerScreenFactory(ModMenus.GRAVITY_FIELD_MENU.get(),
                 com.mechanicalskies.vsshields.client.GravityFieldScreen::new);
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> ShieldHudOverlay.render(graphics, delta));
+        ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> AnalyzerHudOverlay.render(graphics, delta));
 
-        // Ambient shield hum sound + shield break animations
+        // Ambient shield hum sound + shield break animations + helm scanner keybind
         dev.architectury.event.events.client.ClientTickEvent.CLIENT_POST.register(instance -> {
             ShieldAmbientSoundHandler.tick();
             ShieldEffectHandler.tick();
+            HelmAnalyzerHandler.tick(instance);
         });
     }
 

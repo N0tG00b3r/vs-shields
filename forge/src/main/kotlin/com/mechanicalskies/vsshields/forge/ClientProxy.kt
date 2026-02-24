@@ -7,5 +7,8 @@ class ClientProxy : Runnable {
     override fun run() {
         val modEventBus = FMLJavaModLoadingContext.get().modEventBus
         modEventBus.addListener(VSShieldsModForgeClient::clientInit)
+        modEventBus.addListener(VSShieldsModForgeClient::registerKeyMappings)
+        modEventBus.addListener(VSShieldsModForgeClient::registerLayers)
+        modEventBus.addListener(VSShieldsModForgeClient::addLayers)
     }
 }

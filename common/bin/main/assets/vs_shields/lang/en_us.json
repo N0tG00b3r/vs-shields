@@ -38,5 +38,11 @@
   "gui.vs_shields.gravity_field.fall_off": "Fall Prot: OFF",
   "message.vs_shields.duplicate_generator": "This ship already has an active shield generator!",
   "message.vs_shields.duplicate_cloak": "This ship already has an active cloaking generator!",
-  "message.vs_shields.duplicate_gravity": "This ship already has an active gravity field generator!"
+  "message.vs_shields.duplicate_gravity": "This ship already has an active gravity field generator!",
+  "item.vs_shields.ship_analyzer": "Ship Analyzer",
+  "item.vs_shields.ship_analyzer.desc": "Hold to scan enemy vessels. Right-click and aim at a ship.",
+  "item.vs_shields.tactical_helm": "Tactical Netherite Helm",
+  "item.vs_shields.tactical_helm.desc": "Built-in Ship Analyzer. Hold the scan keybind to scan enemy vessels.",
+  "key.vs_shields.helm_scan": "Scan (Tactical Helm)",
+  "key.categories.vs_shields": "VS Energy Shields"
 }
