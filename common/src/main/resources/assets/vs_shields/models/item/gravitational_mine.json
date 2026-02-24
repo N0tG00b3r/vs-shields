@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "vs_shields:entity/gravitational_mine"
+    "layer0": "vs_shields:item/gravitational_mine"
   }
 }

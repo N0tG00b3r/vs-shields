@@ -181,6 +181,32 @@ A high-energy device that creates an artificial gravity field around your ship, 
 
 ---
 
+## Tools & Equipment
+
+### Ship Analyzer
+A handheld scanning device used to identify ships and shielded structures.
+- **Scanning:** Hold right-click to scan the area in front of you. 
+- **HUD Info:** While scanning, a temporary HUD appears showing the name and distance of the ship you are looking at.
+- **Glowing Effect:** Scanned ships and their shield generators will briefly glow through blocks, making them visible to you and your teammates.
+
+### Tactical Netherite Helm
+An advanced helmet with integrated Ship Analyzer circuitry.
+- **Passive HUD:** Simply wearing the helmet provides a constant HUD readout of the ship you are currently looking at (no scanning required).
+- **Auto-Glow:** Provides a subtle, constant highlight for shielded generators within line of sight.
+
+### Gravitational Mine
+A deployable space-mine designed to destabilize enemy ships.
+- **Phases:** Fired at high speed (**Flight**), then enters a 3-second **Arming** phase (clicking sound), and finally stays active (**Armed**).
+- **Detonation:** If an Armed mine collides with a ship or shield, it applies massive physical torque and force, causing the ship to spin and drift violently.
+- **Fragile:** Mines hitting targets during the Flight phase will break without detonating. They can also be shot and destroyed by arrows.
+
+### Gravitational Mine Launcher
+A heavy-duty launcher for deploying Gravitational Mines.
+- **Cooldown:** Has a 5-second (100-tick) cooldown between shots to prevent rapid-fire bombardment.
+- **Variable Range:** Shift+Right-click to cycle through deployment distances (15, 30, 50, 70 blocks). The mine will stop and arm at exactly this distance from the firing point.
+
+---
+
 ## Crafting Recipes
 
 ### Generators & Modules
@@ -252,7 +278,35 @@ A high-energy device that creates an artificial gravity field around your ship, 
 [Empty]    [Iron Block] [Empty]
 ```
 
+### Tools & Weapons
 
+**Ship Analyzer**
+```text
+[Ender Eye] [Amethyst Shard] [Ender Eye]
+[Netherite Ingot] [Spyglass] [Netherite Ingot]
+[Redstone] [Compass] [Redstone]
+```
+
+**Tactical Netherite Helm**
+```text
+[Echo Shard] [Spyglass] [Echo Shard]
+[Ender Eye] [Netherite Helmet] [Ender Eye]
+[Netherite Ingot] [Ship Analyzer] [Netherite Ingot]
+```
+
+**Gravitational Mine (x4)**
+```text
+[Ender Pearl] [Phantom Membrane] [Ender Pearl]
+[Blaze Powder] [Iron Ingot] [Blaze Powder]
+[Gunpowder] [Iron Ingot] [Gunpowder]
+```
+
+**Gravitational Mine Launcher**
+```text
+[Ender Eye] [Dropper] [Ender Eye]
+[Quartz] [Netherite Ingot] [Quartz]
+[Redstone] [Piston] [Redstone]
+```
 
 ---
 

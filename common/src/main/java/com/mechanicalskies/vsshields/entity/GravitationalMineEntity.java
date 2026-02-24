@@ -12,6 +12,9 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -21,6 +24,9 @@ import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
+import net.minecraft.world.entity.projectile.ItemSupplier;
+import net.minecraft.world.item.ItemStack;
+import com.mechanicalskies.vsshields.registry.ModItems;
 
 /**
  * Gravitational Mine entity.
@@ -35,15 +41,19 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
  * {@link PhysicsApplier} (set from VSShieldsModForge on the forge side).
  * No damage to shield HP or blocks.
  */
-public class GravitationalMineEntity extends Entity {
+public class GravitationalMineEntity extends Entity implements ItemSupplier {
 
     // ── Synced phase ─────────────────────────────────────────────────────────
 
     private static final EntityDataAccessor<Integer> PHASE = SynchedEntityData.defineId(GravitationalMineEntity.class,
             EntityDataSerializers.INT);
 
+    private static final EntityDataAccessor<Integer> ARMING_TICK = SynchedEntityData.defineId(
+            GravitationalMineEntity.class,
+            EntityDataSerializers.INT);
+
     public enum Phase {
-        FLIGHT(0), ARMED(1), DETONATING(2);
+        FLIGHT(0), PRE_ARMED(1), ARMED(2), DETONATING(3);
 
         public final int id;
 
@@ -88,6 +98,7 @@ public class GravitationalMineEntity extends Entity {
     @Override
     protected void defineSynchedData() {
         entityData.define(PHASE, Phase.FLIGHT.id);
+        entityData.define(ARMING_TICK, 0);
     }
 
     // ── Accessors ─────────────────────────────────────────────────────────────
@@ -102,6 +113,14 @@ public class GravitationalMineEntity extends Entity {
 
     public void setDeploymentDistance(int d) {
         this.deploymentDistance = d;
+    }
+
+    public int getArmingTick() {
+        return entityData.get(ARMING_TICK);
+    }
+
+    private void setArmingTick(int t) {
+        entityData.set(ARMING_TICK, t);
     }
 
     // ── Tick ──────────────────────────────────────────────────────────────────
@@ -124,6 +143,7 @@ public class GravitationalMineEntity extends Entity {
 
         switch (getPhase()) {
             case FLIGHT -> tickFlight();
+            case PRE_ARMED -> tickPreArmed();
             case ARMED -> tickArmed();
             case DETONATING -> discard();
         }
@@ -132,15 +152,41 @@ public class GravitationalMineEntity extends Entity {
     private void tickFlight() {
         // VS2 ships are in shipyard space — block clip won't detect them;
         // check manually every tick on the server
-        if (!level().isClientSide)
-            checkShipAABBCollision();
+        if (!level().isClientSide) {
+            // Anti-Rocket Exploit: Collision in FLIGHT phase = discard WITHOUT detonation
+            if (checkShipAABBCollision(false))
+                return;
+        }
 
         if (flightStartPos != null &&
                 position().distanceToSqr(flightStartPos) >= (double) deploymentDistance * deploymentDistance) {
-            setPhase(Phase.ARMED);
+            setPhase(Phase.PRE_ARMED);
             setDeltaMovement(Vec3.ZERO);
-            armedStartTick = tickCount;
+            setArmingTick(0);
             bobBaseY = getY();
+        }
+    }
+
+    private void tickPreArmed() {
+        int t = getArmingTick() + 1;
+        setArmingTick(t);
+
+        // Visual/Audio feedback for arming
+        if (!level().isClientSide) {
+            // Sound feedback every 10 ticks, increasing pitch/speed
+            if (t % 10 == 0) {
+                level().playSound(null, getX(), getY(), getZ(),
+                        BuiltInRegistries.SOUND_EVENT.get(new ResourceLocation("minecraft:ui.button.click")),
+                        SoundSource.NEUTRAL, 0.5f, 0.5f + (t * 0.01f));
+            }
+            if (t >= 60) {
+                setPhase(Phase.ARMED);
+                armedStartTick = tickCount;
+                level().playSound(null, getX(), getY(), getZ(),
+                        BuiltInRegistries.SOUND_EVENT
+                                .get(new ResourceLocation("minecraft:entity.experience_orb.pickup")),
+                        SoundSource.NEUTRAL, 1.0f, 1.2f);
+            }
         }
     }
 
@@ -155,12 +201,12 @@ public class GravitationalMineEntity extends Entity {
         }
 
         if (!level().isClientSide)
-            checkShipAABBCollision();
+            checkShipAABBCollision(true);
     }
 
     // ── Ship collision ────────────────────────────────────────────────────────
 
-    private void checkShipAABBCollision() {
+    private boolean checkShipAABBCollision(boolean shouldDetonate) {
         ServerLevel sl = (ServerLevel) level();
         try {
             for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(sl).getLoadedShips()) {
@@ -170,13 +216,17 @@ public class GravitationalMineEntity extends Entity {
                         w.minX() - pad, w.minY() - pad, w.minZ() - pad,
                         w.maxX() + pad, w.maxY() + pad, w.maxZ() + pad);
                 if (check.contains(getX(), getY(), getZ())) {
-                    detonate(sl, ship);
-                    return;
+                    if (shouldDetonate) {
+                        detonate(sl, ship);
+                    } else {
+                        discard();
+                    }
+                    return true;
                 }
             }
         } catch (Exception ignored) {
-            // VS2 not loaded or world not ready
         }
+        return false;
     }
 
     private double getShieldPadding(long shipId) {
@@ -210,7 +260,7 @@ public class GravitationalMineEntity extends Entity {
         mineModel.z *= 40.0;
         mineModel.y *= 10.0;
 
-        double mag = ShieldConfig.get().getGeneral().gravMineForceMagnitude * 5.0;
+        double mag = ShieldConfig.get().getGeneral().gravMineForceMagnitude * 100.0; // Boosted magnitude
 
         if (physicsApplier != null) {
             physicsApplier.apply(level, ship.getId(),
@@ -272,5 +322,10 @@ public class GravitationalMineEntity extends Entity {
             tag.putDouble("startY", flightStartPos.y);
             tag.putDouble("startZ", flightStartPos.z);
         }
+    }
+
+    @Override
+    public ItemStack getItem() {
+        return new ItemStack(ModItems.GRAVITATIONAL_MINE_ITEM.get());
     }
 }

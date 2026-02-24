@@ -22,7 +22,9 @@ public class ClientAnalyzerData {
     public double maxShieldHP;
     public boolean shieldActive;
     public float energyPercent;
-    /** JOML Matrix4dc shipped as double[16], column-major (col0row0, col0row1, ...) */
+    /**
+     * JOML Matrix4dc shipped as double[16], column-major (col0row0, col0row1, ...)
+     */
     public final double[] shipToWorldMatrix = new double[16];
     public final List<BlockPos> cannonPositions = new ArrayList<>();
     public final List<BlockPos> criticalPositions = new ArrayList<>();
@@ -31,11 +33,12 @@ public class ClientAnalyzerData {
     public final List<double[]> mineWorldPositions = new ArrayList<>();
     public long lastUpdateMs = 0;
 
-    private ClientAnalyzerData() {}
+    private ClientAnalyzerData() {
+    }
 
     /** Returns true if data is present and fresh (< 2 seconds old). */
     public boolean isValid() {
-        return targetShipId != -1 && (System.currentTimeMillis() - lastUpdateMs) < 2000;
+        return lastUpdateMs != 0 && (System.currentTimeMillis() - lastUpdateMs) < 2000;
     }
 
     public void clear() {
@@ -48,8 +51,8 @@ public class ClientAnalyzerData {
     }
 
     public void update(long shipId, double hp, double maxHp, boolean active, float energy,
-                       double[] matrix, List<BlockPos> cannons, List<BlockPos> critical,
-                       List<Integer> crewIds, List<double[]> mines) {
+            double[] matrix, List<BlockPos> cannons, List<BlockPos> critical,
+            List<Integer> crewIds, List<double[]> mines) {
         this.targetShipId = shipId;
         this.shieldHP = hp;
         this.maxShieldHP = maxHp;

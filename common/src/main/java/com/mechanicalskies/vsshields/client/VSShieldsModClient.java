@@ -1,10 +1,13 @@
 package com.mechanicalskies.vsshields.client;
 
 import com.mechanicalskies.vsshields.registry.ModBlockEntities;
+import com.mechanicalskies.vsshields.registry.ModEntities;
 import com.mechanicalskies.vsshields.registry.ModMenus;
 import dev.architectury.event.events.client.ClientGuiEvent;
+import dev.architectury.registry.client.level.entity.EntityRendererRegistry;
 import dev.architectury.registry.client.rendering.BlockEntityRendererRegistry;
 import dev.architectury.registry.menu.MenuRegistry;
+import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 
 public class VSShieldsModClient {
     public static void initClient() {
@@ -22,6 +25,8 @@ public class VSShieldsModClient {
                 com.mechanicalskies.vsshields.client.GravityFieldScreen::new);
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> ShieldHudOverlay.render(graphics, delta));
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> AnalyzerHudOverlay.render(graphics, delta));
+
+        EntityRendererRegistry.register(ModEntities.GRAVITATIONAL_MINE, ThrownItemRenderer::new);
 
         // Ambient shield hum sound + shield break animations + helm scanner keybind
         dev.architectury.event.events.client.ClientTickEvent.CLIENT_POST.register(instance -> {

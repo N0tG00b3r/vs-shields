@@ -80,55 +80,77 @@ public class AnalyzerScanHandler {
         if (best == null) {
             // No ship in view — clean up any lingering glow for this player
             cleanupGlow(player.getUUID(), level.getServer());
-            return;
         }
 
         // --- Shield data ---
-        ShieldInstance shield = ShieldManager.getInstance().getShield(best.getId());
+        long targetId = best != null ? best.getId() : -1L;
+        ShieldInstance shield = targetId != -1 ? ShieldManager.getInstance().getShield(targetId) : null;
         double hp = shield != null ? shield.getCurrentHP() : 0;
         double maxHp = shield != null ? shield.getMaxHP() : 0;
         boolean active = shield != null && shield.isActive();
         float energy = shield != null ? (float) shield.getEnergyPercent() : 0f;
 
         // --- Block cache ---
-        AnalyzerBlockCache cache = AnalyzerBlockCache.getInstance();
-        cache.ensurePopulated(best, level);
-        Set<BlockPos> cannons = cache.getCannons(best.getId());
-        Set<BlockPos> critical = cache.getCritical(best.getId());
+        Set<BlockPos> cannons = Collections.emptySet();
+        Set<BlockPos> critical = Collections.emptySet();
+        if (best != null) {
+            AnalyzerBlockCache cache = AnalyzerBlockCache.getInstance();
+            cache.ensurePopulated(best, level);
+            cannons = cache.getCannons(targetId);
+            critical = cache.getCritical(targetId);
+        }
 
         // --- Crew entities ---
-        AABBdc w = best.getWorldAABB();
-        AABB crewAABB = new AABB(w.minX(), w.minY(), w.minZ(), w.maxX(), w.maxY(), w.maxZ());
-        List<Entity> crew = level.getEntities((Entity) null, crewAABB,
-                e -> (e instanceof LivingEntity) && !(e instanceof ArmorStand) && e.getId() != player.getId());
-        List<Integer> crewIds = crew.stream().map(Entity::getId).collect(Collectors.toList());
+        List<Integer> crewIds = new ArrayList<>();
+        if (best != null) {
+            AABBdc w = best.getWorldAABB();
+            AABB crewAABB = new AABB(w.minX(), w.minY(), w.minZ(), w.maxX(), w.maxY(), w.maxZ());
+            List<Entity> crew = level.getEntities((Entity) null, crewAABB,
+                    e -> (e instanceof LivingEntity) && !(e instanceof ArmorStand) && e.getId() != player.getId());
+            crewIds = crew.stream().map(Entity::getId).collect(Collectors.toList());
 
-        // Apply glow tag to crew
-        crew.forEach(e -> e.setGlowingTag(true));
-        activeScanners.put(player.getUUID(), new ScanState(new ArrayList<>(crewIds), System.currentTimeMillis()));
+            // Apply glow tag to crew
+            crew.forEach(e -> e.setGlowingTag(true));
+            activeScanners.put(player.getUUID(), new ScanState(new ArrayList<>(crewIds), System.currentTimeMillis()));
+        }
 
         // --- Serialize shipToWorld matrix (column-major double[16]) ---
-        org.joml.Matrix4dc matrix = best.getShipToWorld();
         double[] matrixArr = new double[16];
-        for (int col = 0; col < 4; col++)
-            for (int row = 0; row < 4; row++)
-                matrixArr[col * 4 + row] = matrix.get(col, row);
+        if (best != null) {
+            org.joml.Matrix4dc matrix = best.getShipToWorld();
+            for (int col = 0; col < 4; col++)
+                for (int row = 0; row < 4; row++)
+                    matrixArr[col * 4 + row] = matrix.get(col, row);
+        }
 
-        // --- ARMED gravitational mines near this ship ---
+        // --- ARMED gravitational mines ---
         List<double[]> minePositions = new ArrayList<>();
         try {
-            AABB mineSearchAABB = new AABB(
-                    w.minX() - 70, w.minY() - 70, w.minZ() - 70,
-                    w.maxX() + 70, w.maxY() + 70, w.maxZ() + 70);
+            AABB mineSearchAABB;
+            if (best != null) {
+                // Near focused ship (70 block buffer)
+                AABBdc w = best.getWorldAABB();
+                mineSearchAABB = new AABB(
+                        w.minX() - 70, w.minY() - 70, w.minZ() - 70,
+                        w.maxX() + 70, w.maxY() + 70, w.maxZ() + 70);
+            } else {
+                // Broad scan around player (128 block radius)
+                mineSearchAABB = new AABB(
+                        player.getX() - 128, player.getY() - 128, player.getZ() - 128,
+                        player.getX() + 128, player.getY() + 128, player.getZ() + 128);
+            }
+
             for (Entity e : level.getEntities((Entity) null, mineSearchAABB,
                     e -> e instanceof GravitationalMineEntity gme &&
-                         gme.getPhase() == GravitationalMineEntity.Phase.ARMED)) {
-                minePositions.add(new double[]{e.getX(), e.getY(), e.getZ()});
-                if (minePositions.size() >= 32) break;
+                            gme.getPhase() == GravitationalMineEntity.Phase.ARMED)) {
+                minePositions.add(new double[] { e.getX(), e.getY(), e.getZ() });
+                if (minePositions.size() >= 32)
+                    break;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
-        ModNetwork.sendAnalyzerData(player, best.getId(), hp, maxHp, active, energy,
+        ModNetwork.sendAnalyzerData(player, targetId, hp, maxHp, active, energy,
                 matrixArr, cannons, critical, crewIds, minePositions);
     }
 

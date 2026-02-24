@@ -14,7 +14,7 @@ import net.minecraft.world.level.Level;
 
 public class GravitationalMineLauncherItem extends Item {
 
-    public static final int[] RANGES = {15, 30, 50, 70};
+    public static final int[] RANGES = { 15, 30, 50, 70 };
 
     public GravitationalMineLauncherItem() {
         super(new Properties().stacksTo(1));
@@ -38,6 +38,7 @@ public class GravitationalMineLauncherItem extends Item {
             mine.setDeltaMovement(player.getLookAngle().scale(2.5));
             mine.flightStartPos = mine.position();
             level.addFreshEntity(mine);
+            player.getCooldowns().addCooldown(this, 100);
         }
         player.swing(hand, true);
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
@@ -60,7 +61,8 @@ public class GravitationalMineLauncherItem extends Item {
         Inventory inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack s = inv.getItem(i);
-            if (!s.isEmpty() && s.getItem() == item) return s;
+            if (!s.isEmpty() && s.getItem() == item)
+                return s;
         }
         return ItemStack.EMPTY;
     }
