@@ -41,6 +41,12 @@ public class ModSounds {
             () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(VSShieldsMod.MOD_ID, "shield_regeneration")));
 
+    /** Gravitational mine detonation — add vs_shields:sounds/mine_explosion.ogg to activate. */
+    public static final RegistrySupplier<SoundEvent> MINE_EXPLOSION = SOUNDS.register(
+            "mine_explosion",
+            () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(VSShieldsMod.MOD_ID, "mine_explosion")));
+
     public static void register() {
         SOUNDS.register();
     }

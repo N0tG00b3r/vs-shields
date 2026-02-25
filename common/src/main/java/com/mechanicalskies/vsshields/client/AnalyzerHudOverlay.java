@@ -54,7 +54,7 @@ public class AnalyzerHudOverlay {
         // Background panel
         graphics.fill(x - 2, y - 2, x + PANEL_W + 2, y + actualH + 2, 0xA0000000);
         graphics.renderOutline(x - 2, y - 2, PANEL_W + 4, actualH + 4,
-                hasShip ? 0xFF33FF33 : (hasMines ? 0xFFFF6666 : 0xFFFFFF33));
+                hasShip ? 0xFF33FF33 : (hasMines ? 0xFF33FF33 : 0xFFFFFF33));
 
         int cx = x;
         int cy = y + 2;
@@ -80,32 +80,37 @@ public class AnalyzerHudOverlay {
             graphics.drawString(mc.font, hpLabel, cx, cy, 0xFF55FF55, true);
             cy += LINE_HEIGHT;
 
-            // Status and energy
+            // Status and energy — split for color
             String statusStr = data.shieldActive ? "ACTIVE" : "INACTIVE";
-            String energyStr = String.format("⚡ %.0f%%", data.energyPercent * 100);
-            String statusLine = "Generator: " + statusStr + "  " + energyStr;
-            graphics.drawString(mc.font, statusLine, cx, cy, 0xFF55FF55, true);
+            String statusPart = "Generator: " + statusStr + "  ";
+            String energyPart = String.format("\u26A1 %.0f%%", data.energyPercent * 100);
+            graphics.drawString(mc.font, statusPart, cx, cy, 0xFF55FF55, true);
+            graphics.drawString(mc.font, energyPart, cx + mc.font.width(statusPart), cy, 0xFFFFCC00, true);
             cy += LINE_HEIGHT;
 
-            // Crew / turrets / core counts
-            String statsLine = String.format("Crew: %d  |  Turrets: %d  |  Core: %d",
-                    data.crewEntityIds.size(),
-                    data.cannonPositions.size(),
-                    data.criticalPositions.size());
-            graphics.drawString(mc.font, statsLine, cx, cy, 0xFF22CC22, true);
+            // Crew / turrets / core counts — each segment in its own color
+            String crewPart    = String.format("Crew: %d", data.crewEntityIds.size());
+            String turretPart  = String.format("  |  Turrets: %d", data.cannonPositions.size());
+            String corePart    = String.format("  |  Core: %d", data.criticalPositions.size());
+            int curX = cx;
+            graphics.drawString(mc.font, crewPart,   curX, cy, 0xFF88DDFF, true); // light blue
+            curX += mc.font.width(crewPart);
+            graphics.drawString(mc.font, turretPart, curX, cy, 0xFFFFAA44, true); // orange
+            curX += mc.font.width(turretPart);
+            graphics.drawString(mc.font, corePart,   curX, cy, 0xFFCC88FF, true); // purple
             cy += LINE_HEIGHT;
 
             // Mine count
-            String mineLine = String.format("Mines: %d", data.mineWorldPositions.size());
-            graphics.drawString(mc.font, mineLine, cx, cy, 0xFFFF4444, true);
+            if (!data.mineWorldPositions.isEmpty()) {
+                String mineLine = String.format("Mines: %d", data.mineWorldPositions.size());
+                graphics.drawString(mc.font, mineLine, cx, cy, 0xFFFFDD44, true); // amber
+            }
         } else if (hasMines) {
-            // Vessel Detected (via Mines)
-            graphics.drawString(mc.font, "◉ VESSEL DETECTED (MINES)", cx, cy, 0xFFFF6666, true);
+            graphics.drawString(mc.font, "◉ MINES DETECTED", cx, cy, 0xFF55FF55, true);
             cy += LINE_HEIGHT + 4;
 
-            // Mine count
             String mineLine = String.format("Mines Detected: %d", data.mineWorldPositions.size());
-            graphics.drawString(mc.font, mineLine, cx, cy, 0xFFFF4444, true);
+            graphics.drawString(mc.font, mineLine, cx, cy, 0xFFFFDD44, true); // amber
         } else {
             // No Target Title
             graphics.drawString(mc.font, "◉ SCANNING: NO TARGET", cx, cy, 0xFFFFFF33, true);

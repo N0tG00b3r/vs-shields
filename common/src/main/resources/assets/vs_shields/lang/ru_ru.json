@@ -47,5 +47,6 @@
     "item.vs_shields.gravitational_mine_launcher.desc": "Запускает гравитационные мины, которые зависают и отталкивают корабли при контакте. Shift+Прокрутка для регулировки дальности.",
     "item.vs_shields.gravitational_mine_launcher.range": "Дальность развёртывания: %d блоков",
     "item.vs_shields.gravitational_mine": "Гравитационная мина",
-    "item.vs_shields.gravitational_mine.desc": "Боеприпас для пусковой установки гравитационных мин."
+    "item.vs_shields.gravitational_mine.desc": "Боеприпас для пусковой установки гравитационных мин.",
+    "entity.vs_shields.gravitational_mine": "Гравитационная мина"
 }

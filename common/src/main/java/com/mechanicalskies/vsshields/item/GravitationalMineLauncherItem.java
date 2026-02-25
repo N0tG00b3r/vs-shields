@@ -3,6 +3,7 @@ package com.mechanicalskies.vsshields.item;
 import com.mechanicalskies.vsshields.entity.GravitationalMineEntity;
 import com.mechanicalskies.vsshields.registry.ModEntities;
 import com.mechanicalskies.vsshields.registry.ModItems;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -11,6 +12,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import org.joml.primitives.AABBdc;
+import org.valkyrienskies.core.api.ships.LoadedServerShip;
+import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 public class GravitationalMineLauncherItem extends Item {
 
@@ -37,6 +42,19 @@ public class GravitationalMineLauncherItem extends Item {
             mine.setPos(player.getX(), player.getEyeY() - 0.1, player.getZ());
             mine.setDeltaMovement(player.getLookAngle().scale(2.5));
             mine.flightStartPos = mine.position();
+
+            // Detect if player is inside a ship — skip that ship during FLIGHT so the mine exits cleanly
+            try {
+                for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld((ServerLevel) level).getLoadedShips()) {
+                    AABBdc w = ship.getWorldAABB();
+                    AABB wb = new AABB(w.minX(), w.minY(), w.minZ(), w.maxX(), w.maxY(), w.maxZ());
+                    if (wb.contains(player.getEyePosition())) {
+                        mine.setOwnerShipId(ship.getId());
+                        break;
+                    }
+                }
+            } catch (Exception ignored) {}
+
             level.addFreshEntity(mine);
             player.getCooldowns().addCooldown(this, 100);
         }

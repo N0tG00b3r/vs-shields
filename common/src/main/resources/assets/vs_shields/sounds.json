@@ -22,5 +22,9 @@
     "shield_regeneration": {
         "category": "blocks",
         "sounds": [{ "name": "vs_shields:shield_regeneration" }]
+    },
+    "mine_explosion": {
+        "category": "neutral",
+        "sounds": [{ "name": "vs_shields:mine_explosion" }]
     }
 }

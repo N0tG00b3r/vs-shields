@@ -76,12 +76,15 @@ class VSShieldsModForge {
             CreateCompat.tickGravityFieldInput(level, pos, be)
         }
 
+        // px/py/pz = mine model-space position (pre-amplified lever arm)
         GravitationalMineEntity.setPhysicsApplier { level, shipId, fx, fy, fz, px, py, pz ->
             try {
                 val adapter = ValkyrienSkiesMod.getOrCreateGTPA(level.dimensionId)
                 adapter.applyWorldForceToModelPos(shipId,
                     Vector3d(fx, fy, fz), Vector3d(px, py, pz))
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

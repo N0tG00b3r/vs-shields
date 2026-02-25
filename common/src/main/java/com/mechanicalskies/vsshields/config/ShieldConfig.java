@@ -76,7 +76,7 @@ public class ShieldConfig {
         public double hpScaleMax = 1.0;
         public int syncIntervalTicks = 10;
         public double shieldPadding = 10.0;
-        public double gravMineForceMagnitude = 500_000.0;
+        public double gravMineForceMagnitude = 120_000.0;
     }
 
     public static class BatteryConfig {

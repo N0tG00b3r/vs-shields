@@ -2,7 +2,7 @@
 
 ## Обзор
 Аддон для Valkyrien Skies 2 — система энергетических щитов для кораблей.
-**ModID:** `vs_shields` | **Пакет:** `com.mechanicalskies.vsshields` | **MC:** 1.20.1 | **VS2:** 2.4.10
+**ModID:** `vs_shields` | **Пакет:** `com.mechanicalskies.vsshields` | **MC:** 1.20.1 | **VS2:** 2.4.10 | **Версия:** 0.0.6
 **Автор:** LennyPane
 
 ## Архитектура
@@ -472,16 +472,137 @@ entity is Projectile || isCbcEntity(entity)
 - **Синхронизация Entity**: Исправлен визуальный рассинхрон мин (spawn packet) и масштаб лаунчера в инвентаре (0.35x).
 - **Документация**: Обновлены гайды `PLAYER_GUIDE_EN.md` и `PLAYER_GUIDE_RU.md`, добавлены описания новых инструментов и полные рецепты крафта.
 
+### Сессия 24 — Гравитационная мина: рендер-фикс, HUD, иконки ✅
+
+**Фикс рендера мины (нет текстуры + колбасило):**
+- Причина: `scale(1f, -1f, -1f)` флипал Y и Z — вершины тела мины уходили на Y = -1.0 (под землю), модель была невидима. При случайном подъёме возникал Z-fighting с поверхностью → мерцание.
+- Исправление: заменено на стандартный MC EntityModel трансформ `scale(-1f, -1f, 1f)` + `translate(0, -21/16, 0)` (формула `-(root_y_px / 16)`, корень Landmine на y=21).
+
+**HUD анализатора — зелёная тема для мин:**
+- Строка "Mines: N" изменена с красного `0xFFFF4444` на зелёный `0xFF22CC22` (соответствует остальному HUD).
+- Рамка панели при наличии только мин (без корабля): была красной (`0xFFFF6666`), стала зелёной `0xFF33FF33`.
+- Заголовок при обнаружении только мин: `"VESSEL DETECTED"` → `"◉ MINES DETECTED"`.
+
+**Иконка предмета мины:**
+- Заменена 128×128 UV-развёртка (`textures/item/gravitational_mine.png`) на 16×16 иконку — тёмно-серый корпус с энергетическим бирюзовым контуром и запалом.
+
+**Угол лаунчера в руках:**
+- `firstperson_righthand`: убран наклон X=10/Z=0, заменён на `[0, -15, 0]` с нормальным смещением `[1.5, 3.5, 0]`, масштаб снижен до `1.0` (перестал загораживать обзор).
+
+**Снижена сила гравитационной мины:**
+- Удалены множители: `mineModel.x *= 40`, `mineModel.z *= 40`, `mineModel.y *= 10` и `gravMineForceMagnitude * 100`.
+- Дефолт конфига снижен с 500,000 до 5,000. Настраивается в `config/vs_shields.json`.
+
+---
+
+### Сессия 25 — Полировка гравитационной мины ✅
+
+**HUD анализатора — разноцветные строки:**
+- `⚡ XX%` → жёлтый `0xFFFFCC00`
+- `Crew: N` → голубой `0xFF88DDFF`
+- `| Turrets: N` → оранжевый `0xFFFFAA44`
+- `| Core: N` → фиолетовый `0xFFCC88FF`
+- `Mines: N` (в обеих ветках) → янтарный `0xFFFFDD44`
+- Каждый сегмент строки рисуется отдельным `drawString()` с `mc.font.width()` смещением.
+
+**Иконка предмета мины** — текстура item `gravitational_mine.png` (128×128 UV-развёртка) заменена на 16×16 иконку (тёмно-серый корпус, бирюзовый контур, фиоль-запал).
+
+**Текстура entity мины** — `gravitational_mine.png` для entity была полностью прозрачной (alpha=0 у всех 16384 пикселей — пустой UV-шаблон Blockbench). Сгенерирована новая 128×128 RGBA с непрозрачными UV-регионами (2424 opaque px).
+
+**Рендер мины — два фикса:**
+- `entityCutoutNoCull` → `entityCutout`: включается backface culling, устранено Z-fighting мерцание при вращении.
+- Убран `setPos(bobBaseY + sin(...))` из `tickArmed()`: `bobBaseY` — серверное поле, на клиенте = 0, из-за чего entity телепортировалась на Y≈0 каждый тик. Боббинг перенесён в `GravitationalMineRenderer.kt` как чисто визуальный `poseStack.translate(0, sin((tickCount + partialTick) * 0.1) * 0.04, 0)` — плавный с partialTick, не влияет на серверную позицию.
+
+**Физика — applyWorldForce (мировые координаты):**
+- Заменён `applyWorldForceToModelPos(force, modelPos)` на `applyWorldForce(force, worldPos)`.
+- В `detonate()` передаётся `getX(), getY(), getZ()` напрямую (мировая позиция мины) вместо конвертации через `ship.getWorldToShip().transformPosition(...)`.
+- VS2 самостоятельно вычисляет рычаг: `r = worldPos − shipCentre`, torque = `r × F`.
+- Сила `gravMineForceMagnitude`: `5,000` → `150,000` (настраивается в `config/vs_shields.json`).
+- Исключения теперь логируются (`e.printStackTrace()` вместо `catch (_: Exception) {}`).
+
+**Логика столкновений — три улучшения:**
+1. **FLIGHT → тоже детонирует**: прямое попадание в корабль в режиме полёта применяет физический импульс вместо тихого discard.
+2. **8-блочная зона ARMED**: в фазе ARMED мина срабатывает при `distance ≤ max(8, shieldPadding)` от AABB корабля — без щита всё равно детонирует при сближении.
+3. **ownerShipId**: при выстреле лаунчер проверяет, находится ли игрок внутри AABB какого-либо корабля → сохраняет `ownerShipId`. В фазе FLIGHT мина пропускает этот корабль — можно ставить мины, находясь на борту собственного судна.
+
+**WAILA-style name tag:**
+- `shouldShowName()` → `true` в фазах `PRE_ARMED` и `ARMED`.
+- `getDisplayName()`:
+  - PRE_ARMED: `⚡ ARMING XX%` (gold), обновляется каждый тик.
+  - ARMED: `⚠ GRAVITATIONAL MINE` (red).
+- Стандартный MC name tag — WAILA без зависимости.
+
+**Визуальные эффекты взрыва** (server-side `sendParticles`, видны всем игрокам):
+| Частицы | Количество | Эффект |
+|---------|-----------|--------|
+| `EXPLOSION_EMITTER` | 1 | Главный взрыв |
+| `PORTAL` | 80 | Гравитационный водоворот |
+| `ELECTRIC_SPARK` | 30 | Энергетический разряд |
+| `LARGE_SMOKE` | 15 | Дымовой шлейф |
+
+**Звук взрыва:**
+- `ModSounds.MINE_EXPLOSION` зарегистрирован в `ModSounds.java` и `sounds.json`.
+- `GravMineExplosion.ogg` (из корня проекта) скопирован в `assets/vs_shields/sounds/mine_explosion.ogg`.
+- Воспроизводится в `detonate()`: `level.playSound(null, x, y, z, MINE_EXPLOSION, NEUTRAL, 3.0f, 1.0f)`.
+- Файл `GravMineExplosion.ogg` оставлен в корне проекта как исходник.
+
+**Лаунчер — финальные transform'ы:**
+- `firstperson_righthand`: rotation `[0, +90, 0]` → ствол смотрит вперёд, `translation [2.0, 3.5, 0]`, scale `0.9`.
+- GUI: translation `[-3, 0, 0]`, scale `0.48` (чуть левее и меньше).
+
+**Сборка:** `BUILD SUCCESSFUL`.
+
+---
+
+### Сессия 26 — Полировка гравитационной мины (физика, коллизия, локализация) ✅
+
+**Восстановлена физика рычага (lever-arm):**
+- `detonate()` снова использует `ship.getWorldToShip().transformPosition(mineWorld → mineModel)`.
+- Lever arms усилены: `mineModel.x *= 40`, `mineModel.z *= 40`, `mineModel.y *= 10`.
+- Итоговый множитель: `gravMineForceMagnitude * 100.0`.
+- `VSShieldsModForge.kt`: `applyWorldForce` → `applyWorldForceToModelPos` (model-space координаты).
+- Причина: `applyWorldForce` (мировые координаты) не давал достаточного крутящего момента — корабль сдвигался лишь слегка. Старый метод с усиленным рычагом создаёт сильную дестабилизацию/вращение.
+
+**Сила взрыва снижена на 20%:**
+- `gravMineForceMagnitude`: `150,000` → `120,000` в `ShieldConfig.java`.
+- Эффективная сила: `120,000 × 100 = 12,000,000` (было `15,000,000`).
+
+**Коллизия мины:**
+- `canBeCollidedWith()` → `true` в фазах `PRE_ARMED` и `ARMED` — игрок больше не проходит сквозь мину.
+- `isPickable()` расширен до `PRE_ARMED` (ранее только `ARMED`).
+
+**Логика урона — защита от удара рукой:**
+- `hurt()` теперь проверяет тип и величину урона:
+  - `IS_PROJECTILE` (стрела, снаряд) → мгновенное уничтожение без взрыва.
+  - `IS_EXPLOSION` → мгновенное уничтожение.
+  - `amount >= 2.0` (меч, топор) → уничтожение.
+  - `amount < 2.0` (голый кулак = 1 урон) → **игнорируется**.
+- Проверка через `DamageTypeTags.IS_PROJECTILE` / `IS_EXPLOSION` (MC 1.20.1 tag API).
+
+**Локализация:**
+- `ru_ru.json`: добавлен `"entity.vs_shields.gravitational_mine": "Гравитационная мина"`.
+- Устранено отображение raw key `entity.vs_shields.gravitational_mine` в WAILA/WTHIT.
+
+**Изменённые файлы:**
+- `entity/GravitationalMineEntity.java` — lever-arm physics, `canBeCollidedWith()`, `isPickable()`, `hurt()`, импорты `Matrix4dc` / `Vector3d` / `DamageTypeTags`
+- `forge/VSShieldsModForge.kt` — `applyWorldForceToModelPos`
+- `config/ShieldConfig.java` — `gravMineForceMagnitude = 120_000.0`
+- `lang/ru_ru.json` — entity translation key
+
+**Сборка:** `BUILD SUCCESSFUL`.
+
+---
+
 ## Известные проблемы / TODO
 1. **Нет Fabric damage handler** — на Fabric щит не защищает (нет Forge events, нужны миксины).
 2. **Остаточный аутлайн от анализатора** — при использовании Ship Analyzer игрок иногда продолжает подсвечиваться собственным сканером (residual glowing effect).
 3. **Планируемые звуки (TODO):**
     - Звук выстрела лаунчера (тяжёлый пневматический выброс).
     - Звук полёта мины (низкочастотный гравитационный гул).
-    - Звук детонации (мощный схлопывающийся гравитационный взрыв, а не обычный TNT).
     - Звук сканирования Ship Analyzer (электронный "ping").
 **Реализовано (ранее было в TODO):**
-- ✅ Redstone signal при получении урона щитом — реализовано в Сессии 15 (`ShieldGeneratorBlock` выдаёт redstone сигнал при ударе через `BlockState` компаратор)
+- ✅ Redstone signal при получении урона щитом — реализовано в Сессии 15.
+- ✅ Звук детонации гравитационной мины — `mine_explosion` (`GravMineExplosion.ogg`), Сессия 25.
 
 ## Структура файлов (ключевые изменения)
 

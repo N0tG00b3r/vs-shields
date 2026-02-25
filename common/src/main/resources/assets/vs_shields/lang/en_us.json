@@ -49,5 +49,6 @@
   "item.vs_shields.gravitational_mine_launcher.desc": "Launches gravitational mines that hover and repulse ships on contact. Shift+Scroll to adjust deployment range.",
   "item.vs_shields.gravitational_mine_launcher.range": "Deploy range: %d blocks",
   "item.vs_shields.gravitational_mine": "Gravitational Mine",
-  "item.vs_shields.gravitational_mine.desc": "Ammo for the Gravitational Mine Launcher."
+  "item.vs_shields.gravitational_mine.desc": "Ammo for the Gravitational Mine Launcher.",
+  "entity.vs_shields.gravitational_mine": "Gravitational Mine"
 }

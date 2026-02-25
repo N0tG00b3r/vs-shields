@@ -1,14 +1,19 @@
 package com.mechanicalskies.vsshields.entity;
 
 import com.mechanicalskies.vsshields.config.ShieldConfig;
+import com.mechanicalskies.vsshields.registry.ModSounds;
 import com.mechanicalskies.vsshields.shield.ShieldInstance;
 import com.mechanicalskies.vsshields.shield.ShieldManager;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -72,7 +77,8 @@ public class GravitationalMineEntity extends Entity implements ItemSupplier {
     public Vec3 flightStartPos;
     private int deploymentDistance = 30;
     private int armedStartTick;
-    private double bobBaseY;
+    /** Ship that fired this mine — skipped during FLIGHT collision to allow launching from inside own ship. */
+    private long ownerShipId = -1L;
 
     // ── Physics callback ─────────────────────────────────────────────────────
 
@@ -113,6 +119,10 @@ public class GravitationalMineEntity extends Entity implements ItemSupplier {
 
     public void setDeploymentDistance(int d) {
         this.deploymentDistance = d;
+    }
+
+    public void setOwnerShipId(long id) {
+        this.ownerShipId = id;
     }
 
     public int getArmingTick() {
@@ -163,7 +173,6 @@ public class GravitationalMineEntity extends Entity implements ItemSupplier {
             setPhase(Phase.PRE_ARMED);
             setDeltaMovement(Vec3.ZERO);
             setArmingTick(0);
-            bobBaseY = getY();
         }
     }
 
@@ -191,36 +200,46 @@ public class GravitationalMineEntity extends Entity implements ItemSupplier {
     }
 
     private void tickArmed() {
-        // Slow bobbing oscillation (±0.04 blocks on Y axis)
-        setPos(getX(), bobBaseY + Math.sin(tickCount * 0.1) * 0.04, getZ());
-
         // Auto-discard after 2 minutes (2400 ticks)
         if (tickCount - armedStartTick > 2400) {
             discard();
             return;
         }
 
+        // Visual bobbing handled in GravitationalMineRenderer (partialTick-smooth)
         if (!level().isClientSide)
             checkShipAABBCollision(true);
     }
 
     // ── Ship collision ────────────────────────────────────────────────────────
 
-    private boolean checkShipAABBCollision(boolean shouldDetonate) {
+    /**
+     * @param armedMode true = ARMED phase (loose 8-block proximity check, all ships)
+     *                  false = FLIGHT phase (tight AABB, skips ownerShipId)
+     */
+    private boolean checkShipAABBCollision(boolean armedMode) {
         ServerLevel sl = (ServerLevel) level();
         try {
             for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(sl).getLoadedShips()) {
-                double pad = getShieldPadding(ship.getId());
+                // During FLIGHT, skip the ship we were launched from
+                if (!armedMode && ship.getId() == ownerShipId) continue;
+
+                double pad;
+                if (armedMode) {
+                    // ARMED: detonate when entering shield OR within 8 blocks of ship hull
+                    double shieldPad = getShieldPadding(ship.getId());
+                    pad = Math.max(8.0, shieldPad);
+                } else {
+                    // FLIGHT: exact hull contact only
+                    pad = 0.0;
+                }
+
                 AABBdc w = ship.getWorldAABB();
                 AABB check = new AABB(
                         w.minX() - pad, w.minY() - pad, w.minZ() - pad,
                         w.maxX() + pad, w.maxY() + pad, w.maxZ() + pad);
                 if (check.contains(getX(), getY(), getZ())) {
-                    if (shouldDetonate) {
-                        detonate(sl, ship);
-                    } else {
-                        discard();
-                    }
+                    detonate(sl, ship);
                     return true;
                 }
             }
@@ -241,26 +260,23 @@ public class GravitationalMineEntity extends Entity implements ItemSupplier {
     private void detonate(ServerLevel level, LoadedServerShip ship) {
         setPhase(Phase.DETONATING);
 
-        // Force direction: use flight velocity (FLIGHT phase) or
-        // outward vector from ship center to mine (ARMED phase)
+        // Force direction: flight velocity OR outward from ship centre to mine
         Vec3 vel = getDeltaMovement();
         if (vel.lengthSqr() < 1e-4) {
             Vector3dc ctr = ship.getTransform().getPositionInWorld();
             vel = new Vec3(getX() - ctr.x(), getY() - ctr.y(), getZ() - ctr.z()).normalize();
         }
 
-        // Convert mine world position to ship model-space (creates the lever arm for
-        // torque)
+        // Lever-arm method: transform mine world-pos into ship model-space,
+        // then amplify lever arms to create large yaw/pitch torque.
         Matrix4dc w2s = ship.getWorldToShip();
         Vector3d mineModel = w2s.transformPosition(
                 new Vector3d(getX(), getY(), getZ()), new Vector3d());
-
-        // Amplify the lever arm (x and z) to impart significant torque (yaw/pitch/roll)
         mineModel.x *= 40.0;
         mineModel.z *= 40.0;
         mineModel.y *= 10.0;
 
-        double mag = ShieldConfig.get().getGeneral().gravMineForceMagnitude * 100.0; // Boosted magnitude
+        double mag = ShieldConfig.get().getGeneral().gravMineForceMagnitude * 100.0;
 
         if (physicsApplier != null) {
             physicsApplier.apply(level, ship.getId(),
@@ -268,21 +284,46 @@ public class GravitationalMineEntity extends Entity implements ItemSupplier {
                     mineModel.x, mineModel.y, mineModel.z);
         }
 
-        // Signal clients to play particle burst (entity event 70)
-        level.broadcastEntityEvent(this, (byte) 70);
+        // ── Visual effects ──────────────────────────────────────────────────────
+        // Main blast
+        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER,
+                getX(), getY(), getZ(), 1, 0, 0, 0, 0);
+        // Gravitational portal swirl
+        level.sendParticles(ParticleTypes.PORTAL,
+                getX(), getY(), getZ(), 80, 1.2, 1.2, 1.2, 0.5);
+        // Energy sparks
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                getX(), getY(), getZ(), 30, 0.3, 0.3, 0.3, 0.6);
+        // Smoke
+        level.sendParticles(ParticleTypes.LARGE_SMOKE,
+                getX(), getY(), getZ(), 15, 0.6, 0.6, 0.6, 0.02);
+
+        // ── Sound ───────────────────────────────────────────────────────────────
+        level.playSound(null, getX(), getY(), getZ(),
+                ModSounds.MINE_EXPLOSION.get(), SoundSource.NEUTRAL, 3.0f, 1.0f);
+
         discard();
     }
 
     // ── Damage override ───────────────────────────────────────────────────────
 
     /**
-     * Armed mine hit by arrow/bullet — destroy safely without triggering impulse.
+     * Mine can be destroyed by weapons but NOT by a single bare-hand hit.
+     * Bare hand deals 1 damage; swords deal 4+; arrows deal 3+.
+     * Any projectile or explosion instantly destroys the mine.
+     * Melee with a weapon (damage >= 2) also destroys it.
      */
     @Override
     public boolean hurt(DamageSource source, float amount) {
-        if (getPhase() == Phase.ARMED) {
-            discard();
-            return true;
+        if (isRemoved()) return false;
+        Phase p = getPhase();
+        if (p == Phase.ARMED || p == Phase.PRE_ARMED) {
+            if (source.is(DamageTypeTags.IS_PROJECTILE) || source.is(DamageTypeTags.IS_EXPLOSION) || amount >= 2.0f) {
+                discard();
+                return true;
+            }
+            // Bare-hand punch (1 damage) — ignore
+            return false;
         }
         return false;
     }
@@ -291,7 +332,39 @@ public class GravitationalMineEntity extends Entity implements ItemSupplier {
 
     @Override
     public boolean isPickable() {
-        return getPhase() == Phase.ARMED;
+        return getPhase() == Phase.ARMED || getPhase() == Phase.PRE_ARMED;
+    }
+
+    /** Prevents players from walking through the mine when it is armed. */
+    @Override
+    public boolean canBeCollidedWith() {
+        Phase p = getPhase();
+        return p == Phase.ARMED || p == Phase.PRE_ARMED;
+    }
+
+    /**
+     * WAILA-style name tag: visible whenever the mine is visible to players.
+     * Shows arming progress (PRE_ARMED) or danger warning (ARMED).
+     */
+    @Override
+    public boolean shouldShowName() {
+        Phase p = getPhase();
+        return p == Phase.PRE_ARMED || p == Phase.ARMED;
+    }
+
+    @Override
+    public Component getDisplayName() {
+        Phase p = getPhase();
+        if (p == Phase.PRE_ARMED) {
+            int pct = Math.min(100, (getArmingTick() * 100) / 60);
+            return Component.literal("\u26A1 ARMING " + pct + "%")
+                    .withStyle(s -> s.withColor(ChatFormatting.GOLD));
+        }
+        if (p == Phase.ARMED) {
+            return Component.literal("\u26A0 GRAVITATIONAL MINE")
+                    .withStyle(s -> s.withColor(ChatFormatting.RED));
+        }
+        return super.getDisplayName();
     }
 
     @Override
@@ -303,7 +376,7 @@ public class GravitationalMineEntity extends Entity implements ItemSupplier {
     protected void readAdditionalSaveData(CompoundTag tag) {
         deploymentDistance = tag.getInt("deploymentDistance");
         armedStartTick = tag.getInt("armedStartTick");
-        bobBaseY = tag.getDouble("bobBaseY");
+        ownerShipId = tag.getLong("ownerShipId");
         if (tag.contains("startX")) {
             flightStartPos = new Vec3(
                     tag.getDouble("startX"),
@@ -316,7 +389,7 @@ public class GravitationalMineEntity extends Entity implements ItemSupplier {
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putInt("deploymentDistance", deploymentDistance);
         tag.putInt("armedStartTick", armedStartTick);
-        tag.putDouble("bobBaseY", bobBaseY);
+        tag.putLong("ownerShipId", ownerShipId);
         if (flightStartPos != null) {
             tag.putDouble("startX", flightStartPos.x);
             tag.putDouble("startY", flightStartPos.y);
