@@ -5,6 +5,7 @@ import com.mechanicalskies.vsshields.menu.CloakGeneratorMenu;
 import com.mechanicalskies.vsshields.menu.GravityFieldMenu;
 import com.mechanicalskies.vsshields.menu.ShieldBatteryMenu;
 import com.mechanicalskies.vsshields.menu.ShieldGeneratorMenu;
+import com.mechanicalskies.vsshields.menu.SolidProjectionModuleMenu;
 import dev.architectury.registry.menu.MenuRegistry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
@@ -30,6 +31,10 @@ public class ModMenus {
         public static final RegistrySupplier<MenuType<com.mechanicalskies.vsshields.menu.ShieldJammerMenu>> shield_jammer_MENU = MENUS
                         .register("shield_jammer", () -> MenuRegistry
                                         .ofExtended(com.mechanicalskies.vsshields.menu.ShieldJammerMenu::new));
+
+        public static final RegistrySupplier<MenuType<SolidProjectionModuleMenu>> SOLID_PROJECTION_MODULE_MENU = MENUS
+                        .register("solid_projection_module",
+                                        () -> MenuRegistry.ofExtended(SolidProjectionModuleMenu::new));
 
         public static void register() {
                 MENUS.register();

@@ -2,7 +2,7 @@
 
 ## Обзор
 Аддон для Valkyrien Skies 2 — система энергетических щитов для кораблей.
-**ModID:** `vs_shields` | **Пакет:** `com.mechanicalskies.vsshields` | **MC:** 1.20.1 | **VS2:** 2.4.10 | **Версия:** 0.0.6
+**ModID:** `vs_shields` | **Пакет:** `com.mechanicalskies.vsshields` | **MC:** 1.20.1 | **VS2:** 2.4.10 | **Версия:** 0.0.7
 **Автор:** LennyPane
 
 ## Архитектура
@@ -593,16 +593,139 @@ entity is Projectile || isCbcEntity(entity)
 
 ---
 
+### Сессия 27 — Исследование маскировки: Create/Flywheel путь 🔄
+
+**Проблема:** `MixinShipEmbeddingManager` — логинится `active`, но корабль не исчезает.
+
+**Установлено:**
+- Когда Create установлен, VS2 рендерит корабли через `ShipEmbeddingManager` (Flywheel), а не через `MixinLevelRendererVanilla`.
+- `VSGameEvents.renderShip` **никогда не стреляет** в Flywheel-пути — `CloakRenderSuppressor.kt` не работает при наличии Create.
+- Реализован `MixinShipEmbeddingManager`: инжектируется в `updateAllShips()` RETURN, ищет `vs$shipEmbedding` через reflection, вызывает `transforms(scale(0.0001f), Matrix3f())` для замаскированных кораблей.
+- Миксин регистрируется (в логах `MixinShipEmbeddingManager active`), но корабль **не исчезает**.
+
+---
+
+### Сессия 28 — Глубокий анализ render pipeline, диагностика без результата ❌
+
+**Что сделано:**
+- Декомпиляция байткода `MixinLevelRendererVanilla` — подтверждено: `shipsStartRendering` эмитируется ОДИН раз на `renderChunkLayer`, ДО цикла `shipRenderChunks.forEach`.
+- `CloakRenderSuppressor.kt` полностью переписан: добавлен primary listener на `shipsStartRendering`, удаляющий замаскированные корабли из `shipRenderChunks` через `Iterator.remove()`.
+- `MixinEmbeddingShipVisual` + `MixinRenderingShipVisual` — диагностические пробы подтвердили: mixin ПРИМЕНЁН, но методы `update/planFrame/updateEmbedding` НИКОГДА не вызываются.
+- Добавлен `hasAnyCloakedShips()` в `CloakedShipsRegistry`.
+
+**Результат тестирования:**
+Ни одна ожидаемая log-строка не появилась:
+- `shipsStartRendering fired` — **НЕТ**
+- `renderShip event` — **НЕТ**
+- `shipRenderChunks field not found` — **НЕТ**
+- Flywheel-пробы — **НЕТ**
+
+**Наиболее вероятная причина:** Установлен Rubidium / Embeddium (Forge-порт Sodium). VS2 определяет их как `VSRenderer.SODIUM` → не загружает пакет `vanilla_renderer` (включая `MixinLevelRendererVanilla`) → события никогда не эмитируются. Корабельные чанки рендерятся Rubidium-системой через `MixinViewArea`.
+
+**Текущее состояние:**
+- Маскировка поставлена на паузу.
+- `CloakingFieldGenerator` убран из рецептов и творческой вкладки.
+- Полный разбор проблемы задокументирован в `CLOAK_BUG.md`.
+
+---
+
+
+---
+
+### Сессия 29 — Solid Projection Module + FrequencyIDCard ✅
+
+**Новый блок: `SolidProjectionModuleBlock` + `SolidProjectionModuleBlockEntity`**
+- Размещается на корабле VS2, **1 штука на корабль** (через `SolidModuleRegistry` — аналог `GravityFieldRegistry`).
+- Собственный FE-буфер (1,000,000 FE), принимает Create SU через `CreateCompat.tickSolidModuleInput()`.
+- GUI: полоска FE, статус (ACTIVE / OFFLINE / GROUNDED / DUPLICATE / NO ENERGY), поле ввода **ACCESS CODE** (до 8 символов `[a-zA-Z0-9]`, регистр важен), кнопка Activate/Deactivate.
+- Пакеты C2S: `SOLID_TOGGLE_ID` (вкл/выкл), `SOLID_CODE_SET_ID` (установить пароль).
+- `SolidProjectionModuleEnergyCapability.kt` — FE-capability для BE.
+
+**Новый предмет: `FrequencyIDCardItem`**
+- Стакается до 8 штук. NBT-поле `accessCode` — до 8 символов `[a-zA-Z0-9]`, **регистрозависимый**.
+- **Shift+ПКМ** → открывает `FrequencyIDCardScreen` (минималистичный EditBox, кнопки Save/Cancel).
+- При сохранении: C2S пакет `CARD_PROGRAM_ID` → сервер валидирует и пишет в NBT карточки в руке игрока.
+- Curios: зарегистрирован как charm через `data/curios/tags/items/charm.json` — можно носить в Curios-слоте аксессуара.
+
+**Новая механика: Твёрдый щит (Solid Mode)**
+- `ShieldInstance` расширен: поля `solidMode` (boolean) и `accessCode` (String). Метод `setSolidMode(bool, code)`.
+- `SolidProjectionModuleBlockEntity.tick()`: если `active && !duplicate && energyStored >= solidModuleEnergyCost` → вызывает `shield.setSolidMode(true, accessCode)`, тратит `solidModuleEnergyCost` FE/тик из собственного буфера.
+
+**`ShieldSolidBarrier.kt` (forge, новый файл) — физический барьер сущностей**
+- Запускается в `LevelTickEvent.Phase.END` (server).
+- **Дедовство (Grandfathering):** Сущности, уже находящиеся ВНУТРИ зоны в момент включения solid mode, автоматически записываются в `knownInside` — им не нужна карточка.
+- **Отслеживание:** `knownInside` / `knownOutside` HashMap'ы (по `shipId → Set<UUID>`). При выходе из зоны — переносит из `knownInside` → `knownOutside`. При повторном входе — проверяет карточку; если совпадает — возвращает в `knownInside`, иначе `pushBack()`.
+- **`pushBack(entity)`**: телепортирует сущность к ближайшей точке на поверхности AABB щита + 0.5 блока наружу.
+- **`CuriosIntegration.kt`**: проверяет карточку в инвентаре, офхенде и Curios-слотах (reflection).
+
+**Столкновение с чужими кораблями (approach-only):**
+- `shipContactDistances: HashMap<Long, HashMap<Long, Double>>` — отслеживает `distSq` между CoM кораблей.
+- Импульс отталкивания применяется **только** если корабли приближаются (`distSq < prevDistSq`), останавливается при расхождении → естественный упругий отскок.
+- Сила прикладывается точно в CoM (из `ship.shipToWorld.m30/31/32()`) → нулевой крутящий момент, нет кувыркания.
+- **Пропуск для кораблей с карточкой:** `foreignShipHasMatchingCard()` проверяет слот MASTER KEY в `ShieldGeneratorBlockEntity` чужого корабля. Если карточка совпадает → нет отталкивания, проход разрешён.
+
+**Слот MASTER KEY в Shield Generator GUI:**
+- `ShieldGeneratorBlockEntity` — добавлен `SimpleContainer cardSlot` (1 предмет, только `FrequencyIDCardItem`).
+- `ShieldGeneratorMenu` — добавлен Slot + полный инвентарь игрока (3 ряда + хотбар). `imageHeight` расширена до 230.
+- `ShieldGeneratorScreen` — метка "MASTER KEY", отрисовка слота и инвентаря.
+- NBT: карточка сохраняется/загружается в BE.
+
+**Расширение `SHIELD_SYNC` пакета:**
+- Добавлен `boolean solidMode` (сериализуется перед `hasAABB`).
+- HUD: при `solidMode=true` отображается иконка `⛔ SOLID` в правом верхнем углу экрана.
+
+**Пароль: 8 символов, регистрозависимый**
+- Длина: 6 → **8 символов**.
+- Разрешённые символы: `[A-Z0-9]` → **`[a-zA-Z0-9]`** (строчные и заглавные).
+- Сравнение: `equalsIgnoreCase` → **`equals`** (точное совпадение).
+
+**Переименование мода: VS Energy Shields → VS Shields**
+- `mods.toml` `displayName`, creative tab, keybind category, README.md, README_CURSEFORGE.md.
+
+**Новые параметры конфига (`ShieldConfig.GeneralConfig`):**
+| Параметр | Дефолт | Описание |
+|----------|--------|----------|
+| `solidModuleEnergyCost` | 500 FE/тик | расход из буфера модуля |
+| `solidModuleMaxEnergy` | 1,000,000 FE | ёмкость буфера |
+| `solidModuleEnergyInput` | 50,000 FE/тик | макс. входящий поток |
+| `shipRepulsionForce` | 100,000.0 | сила отталкивания чужого корабля |
+
+**Новые пакеты:**
+| ID | Направление | Данные | Назначение |
+|---|---|---|---|
+| `solid_toggle` | C2S | BlockPos, boolean | вкл/выкл Solid Module |
+| `solid_code_set` | C2S | BlockPos, String(8) | установить пароль |
+| `card_program` | C2S | String(8) | записать пароль на карточку в руке |
+
+**Сборка:** `BUILD SUCCESSFUL`.
+
 ## Известные проблемы / TODO
-1. **Нет Fabric damage handler** — на Fabric щит не защищает (нет Forge events, нужны миксины).
-2. **Остаточный аутлайн от анализатора** — при использовании Ship Analyzer игрок иногда продолжает подсвечиваться собственным сканером (residual glowing effect).
-3. **Планируемые звуки (TODO):**
-    - Звук выстрела лаунчера (тяжёлый пневматический выброс).
-    - Звук полёта мины (низкочастотный гравитационный гул).
-    - Звук сканирования Ship Analyzer (электронный "ping").
+
+### Маскировка (высокий приоритет, заблокирована)
+**Симптом:** Корабль остаётся видимым. Ни одно render-событие VS2 не стреляет.
+**Подробности:** см. `CLOAK_BUG.md`
+
+**Первый необходимый шаг — диагностика окружения:**
+Добавить в `CloakRenderSuppressor.register()` чтение `VSRenderer.INSTANCE.getRenderer()` через reflection и залогировать результат. Это сразу покажет, используется ли Rubidium/Embeddium.
+
+**Пути решения (в порядке приоритета):**
+1. Если `VSRenderer == SODIUM` → Mixin на `ViewArea.setSection` (flywheel_renderer-пакет) — фильтровать секции замаскированных кораблей до того, как они попадут в renderer
+2. Если `VSRenderer == VANILLA` и события всё равно не стреляют → собственный `@WrapOperation` на `LevelRenderer.renderChunkLayer` — проверить, вызывается ли метод вообще
+3. Force-register `ShipEffect` для всех кораблей через `VisualizationHelper.queueAdd` чтобы активировать Flywheel-путь без Create-блоков
+4. Запрос официального API у разработчиков VS2
+
+**Статус:** Рецепт и творческая вкладка отключены. Код сохранён (`CloakRenderSuppressor`, `MixinEmbeddingShipVisual`, `MixinRenderingShipVisual`, `CloakedShipsRegistry`).
+
+---
+
+### Прочие проблемы
+- **Нет Fabric damage handler** — на Fabric щит не защищает (нет Forge events, нужны миксины).
+- **Остаточный аутлайн от анализатора** — при использовании Ship Analyzer игрок иногда продолжает подсвечиваться собственным сканером.
+- **Планируемые звуки:** выстрел лаунчера, гул полёта мины, ping анализатора.
+
 **Реализовано (ранее было в TODO):**
-- ✅ Redstone signal при получении урона щитом — реализовано в Сессии 15.
-- ✅ Звук детонации гравитационной мины — `mine_explosion` (`GravMineExplosion.ogg`), Сессия 25.
+- ✅ Redstone signal при получении урона щитом — Сессия 15.
+- ✅ Звук детонации гравитационной мины — Сессия 25.
 
 ## Структура файлов (ключевые изменения)
 

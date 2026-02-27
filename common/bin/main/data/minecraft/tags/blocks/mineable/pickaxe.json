@@ -13,6 +13,7 @@
     "vs_shields:shield_jammer_frame",
     "vs_shields:shield_jammer_input",
     "vs_shields:cloaking_field_generator",
-    "vs_shields:gravity_field_generator"
+    "vs_shields:gravity_field_generator",
+    "vs_shields:solid_projection_module"
   ]
 }

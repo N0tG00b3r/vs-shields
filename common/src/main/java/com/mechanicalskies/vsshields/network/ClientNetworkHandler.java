@@ -40,6 +40,7 @@ public class ClientNetworkHandler {
                     double[] maxHPs = new double[count];
                     boolean[] actives = new boolean[count];
                     double[] energyPercents = new double[count];
+                    boolean[] solidModes = new boolean[count];
                     double[] minXs = new double[count], minYs = new double[count], minZs = new double[count];
                     double[] maxXs = new double[count], maxYs = new double[count], maxZs = new double[count];
                     boolean[] hasAABB = new boolean[count];
@@ -49,6 +50,7 @@ public class ClientNetworkHandler {
                         maxHPs[i] = buf.readDouble();
                         actives[i] = buf.readBoolean();
                         energyPercents[i] = buf.readDouble();
+                        solidModes[i] = buf.readBoolean();
                         hasAABB[i] = buf.readBoolean();
                         if (hasAABB[i]) {
                             minXs[i] = buf.readDouble();
@@ -82,7 +84,7 @@ public class ClientNetworkHandler {
                         csm.clear();
                         for (int i = 0; i < count; i++) {
                             csm.updateShield(shipIds[i], currentHPs[i], maxHPs[i], actives[i],
-                                    energyPercents[i],
+                                    energyPercents[i], solidModes[i],
                                     minXs[i], minYs[i], minZs[i],
                                     maxXs[i], maxYs[i], maxZs[i]);
                         }
@@ -168,6 +170,7 @@ public class ClientNetworkHandler {
                     double hp    = buf.readDouble();
                     double maxHp = buf.readDouble();
                     boolean active = buf.readBoolean();
+                    boolean solid  = buf.readBoolean();
                     float energy   = buf.readFloat();
                     // Matrix (16 doubles, column-major)
                     double[] matrix = new double[16];
@@ -193,7 +196,7 @@ public class ClientNetworkHandler {
                         mines.add(new double[]{buf.readDouble(), buf.readDouble(), buf.readDouble()});
 
                     context.queue(() -> ClientAnalyzerData.getInstance()
-                            .update(shipId, hp, maxHp, active, energy, matrix, cannons, critical, crewIds, mines));
+                            .update(shipId, hp, maxHp, active, solid, energy, matrix, cannons, critical, crewIds, mines));
                 });
     }
 }

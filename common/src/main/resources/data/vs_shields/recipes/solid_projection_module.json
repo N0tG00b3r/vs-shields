@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ODO",
+    "DYD",
+    "IRI"
+  ],
+  "key": {
+    "O": { "item": "minecraft:obsidian" },
+    "D": { "item": "minecraft:diamond" },
+    "Y": { "item": "minecraft:ender_eye" },
+    "I": { "item": "minecraft:iron_block" },
+    "R": { "item": "minecraft:redstone_block" }
+  },
+  "result": {
+    "item": "vs_shields:solid_projection_module",
+    "count": 1
+  }
+}

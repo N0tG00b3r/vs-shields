@@ -19,15 +19,15 @@ public class ShieldGeneratorScreen extends AbstractContainerScreen<ShieldGenerat
     public ShieldGeneratorScreen(ShieldGeneratorMenu menu, Inventory playerInv, Component title) {
         super(menu, playerInv, title);
         this.imageWidth = 176;
-        this.imageHeight = 140;
-        this.inventoryLabelY = this.imageHeight + 1;
+        this.imageHeight = 230;
+        this.inventoryLabelY = this.imageHeight + 1; // hide default label
     }
 
     @Override
     protected void init() {
         super.init();
         int btnX = this.leftPos + (this.imageWidth - 60) / 2;
-        int btnY = this.topPos + 110;
+        int btnY = this.topPos + 116;
         toggleButton = Button.builder(getToggleText(), this::onTogglePress)
                 .bounds(btnX, btnY, 60, 20)
                 .build();
@@ -101,6 +101,35 @@ public class ShieldGeneratorScreen extends AbstractContainerScreen<ShieldGenerat
         graphics.renderOutline(barX, y, barWidth, barHeight, BORDER_COLOR);
         String energyText = String.format("%,d / %,d FE", menu.getEnergyStored(), menu.getMaxEnergy());
         graphics.drawCenteredString(font, energyText, leftPos + imageWidth / 2, y + 2, 0xFFFFFFFF);
+
+        // --- Card slot ---
+        graphics.drawString(font, "MASTER KEY", leftPos + imageWidth / 2 - font.width("MASTER KEY") / 2,
+                topPos + 83, LABEL_COLOR, false);
+        int csx = leftPos + ShieldGeneratorMenu.CARD_SLOT_X;
+        int csy = topPos + ShieldGeneratorMenu.CARD_SLOT_Y;
+        graphics.fill(csx - 1, csy - 1, csx + 17, csy + 17, 0xFF888888);
+        graphics.fill(csx, csy, csx + 16, csy + 16, 0xFF555566);
+        graphics.renderOutline(csx - 2, csy - 2, 20, 20, BORDER_COLOR);
+
+        // --- Player inventory background ---
+        int invTop = topPos + ShieldGeneratorMenu.INV_TOP;
+        graphics.fill(leftPos + 7, invTop - 1, leftPos + 169, invTop + 3 * 18 - 1, 0x60333344);
+        graphics.fill(leftPos + 7, invTop + 3 * 18 + 3, leftPos + 169, invTop + 3 * 18 + 3 + 18, 0x60333344);
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                int sx = leftPos + 8 + col * 18;
+                int sy = invTop + row * 18;
+                graphics.fill(sx, sy, sx + 16, sy + 16, 0xFF888888);
+                graphics.fill(sx + 1, sy + 1, sx + 16, sy + 16, 0xFF555566);
+            }
+        }
+        int hotbarTop = invTop + 58;
+        for (int col = 0; col < 9; col++) {
+            int sx = leftPos + 8 + col * 18;
+            graphics.fill(sx, hotbarTop, sx + 16, hotbarTop + 16, 0xFF888888);
+            graphics.fill(sx + 1, hotbarTop + 1, sx + 16, hotbarTop + 16, 0xFF555566);
+        }
+        graphics.drawString(font, "Inventory", leftPos + 8, invTop - 12, LABEL_COLOR, false);
     }
 
     @Override

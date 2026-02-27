@@ -88,6 +88,7 @@ public class AnalyzerScanHandler {
         double hp = shield != null ? shield.getCurrentHP() : 0;
         double maxHp = shield != null ? shield.getMaxHP() : 0;
         boolean active = shield != null && shield.isActive();
+        boolean solid = shield != null && shield.isSolidMode();
         float energy = shield != null ? (float) shield.getEnergyPercent() : 0f;
 
         // --- Block cache ---
@@ -150,7 +151,7 @@ public class AnalyzerScanHandler {
         } catch (Exception ignored) {
         }
 
-        ModNetwork.sendAnalyzerData(player, targetId, hp, maxHp, active, energy,
+        ModNetwork.sendAnalyzerData(player, targetId, hp, maxHp, active, solid, energy,
                 matrixArr, cannons, critical, crewIds, minePositions);
     }
 

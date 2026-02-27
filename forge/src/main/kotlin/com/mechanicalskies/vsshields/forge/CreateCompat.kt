@@ -3,6 +3,7 @@ package com.mechanicalskies.vsshields.forge
 import com.mechanicalskies.vsshields.blockentity.CloakingFieldGeneratorBlockEntity
 import com.mechanicalskies.vsshields.blockentity.ShieldBatteryInputBlockEntity
 import com.mechanicalskies.vsshields.blockentity.ShieldGeneratorBlockEntity
+import com.mechanicalskies.vsshields.blockentity.SolidProjectionModuleBlockEntity
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.world.level.Level
@@ -174,6 +175,34 @@ object CreateCompat {
 
         if (totalFE > 0) {
             gen.receiveEnergy(totalFE.toInt(), false)
+        }
+    }
+
+    /**
+     * Same as tickKineticInput but for SolidProjectionModuleBlockEntity.
+     */
+    fun tickSolidModuleInput(level: Level, pos: BlockPos, module: SolidProjectionModuleBlockEntity) {
+        init()
+        if (!available) return
+
+        var totalFE = 0.0
+
+        for (dir in Direction.values()) {
+            val adjPos = pos.relative(dir)
+            val adjBE = level.getBlockEntity(adjPos) ?: continue
+
+            if (!kineticBEClass!!.isInstance(adjBE)) continue
+
+            try {
+                val speed = getSpeedMethod!!.invoke(adjBE) as Float
+                totalFE += Math.abs(speed.toDouble()) * SU_TO_FE_RATE
+            } catch (_: Exception) {
+                // Reflection failed — skip
+            }
+        }
+
+        if (totalFE > 0) {
+            module.receiveEnergy(totalFE.toInt(), false)
         }
     }
 

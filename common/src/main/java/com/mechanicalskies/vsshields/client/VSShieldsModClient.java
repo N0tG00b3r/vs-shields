@@ -23,6 +23,8 @@ public class VSShieldsModClient {
                 com.mechanicalskies.vsshields.client.ShieldJammerScreen::new);
         MenuRegistry.registerScreenFactory(ModMenus.GRAVITY_FIELD_MENU.get(),
                 com.mechanicalskies.vsshields.client.GravityFieldScreen::new);
+        MenuRegistry.registerScreenFactory(ModMenus.SOLID_PROJECTION_MODULE_MENU.get(),
+                com.mechanicalskies.vsshields.client.SolidProjectionModuleScreen::new);
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> ShieldHudOverlay.render(graphics, delta));
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> AnalyzerHudOverlay.render(graphics, delta));
 

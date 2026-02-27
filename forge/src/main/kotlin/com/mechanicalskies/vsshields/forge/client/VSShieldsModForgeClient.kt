@@ -9,12 +9,41 @@ import com.mechanicalskies.vsshields.registry.ModEntities
 import net.minecraftforge.client.event.EntityRenderersEvent
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
+import org.slf4j.LoggerFactory
 
 class VSShieldsModForgeClient {
     companion object {
+        private val LOGGER = LoggerFactory.getLogger("vs_shields/cloak_flywheel")
+
         @JvmStatic
         fun clientInit(event: FMLClientSetupEvent) {
             VSShieldsModClient.initClient()
+            CloakRenderSuppressor.register()
+            diagnoseFlywheel()
+        }
+
+        private fun diagnoseFlywheel() {
+            try {
+                val cls = Class.forName("org.valkyrienskies.mod.compat.flywheel.EmbeddingShipVisual")
+                LOGGER.info("EmbeddingShipVisual found: {}", cls.name)
+                // Check if our mixin was applied — we inject a static 'loggedShips' field
+                val mixinField = cls.declaredFields.find { it.name == "loggedShips" }
+                if (mixinField != null) {
+                    LOGGER.info("MixinEmbeddingShipVisual was APPLIED (loggedShips field present)")
+                } else {
+                    LOGGER.warn("MixinEmbeddingShipVisual NOT applied (loggedShips field missing). Fields: {}",
+                        cls.declaredFields.map { it.name })
+                }
+                // Dump all declared methods so we can verify the target method name
+                val methods = cls.declaredMethods.map { m ->
+                    "${m.name}(${m.parameterTypes.joinToString(",") { it.simpleName }})"
+                }
+                LOGGER.info("EmbeddingShipVisual methods: {}", methods)
+            } catch (e: ClassNotFoundException) {
+                LOGGER.warn("EmbeddingShipVisual NOT found — Flywheel compat absent or VS2 lacks it: {}", e.message)
+            } catch (e: Throwable) {
+                LOGGER.warn("EmbeddingShipVisual check failed: {}", e.toString())
+            }
         }
 
         @JvmStatic

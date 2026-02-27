@@ -26,6 +26,8 @@ public class ShieldInstance {
     private int emitterCount = 0;
     private boolean regenStalled = false;
     private DamageListener damageListener;
+    private boolean solidMode = false;
+    private String accessCode = "";
 
     public ShieldInstance(long shipId, ShieldTier tier) {
         this.shipId = shipId;
@@ -196,5 +198,20 @@ public class ShieldInstance {
 
     public void setEnergyPercent(double percent) {
         this.energyPercent = Math.max(0.0, Math.min(1.0, percent));
+    }
+
+    // --- Solid Mode (Solid Projection Module) ---
+
+    public boolean isSolidMode() {
+        return solidMode;
+    }
+
+    public String getAccessCode() {
+        return accessCode;
+    }
+
+    public void setSolidMode(boolean solid, String code) {
+        this.solidMode = solid;
+        this.accessCode = (code != null) ? code : "";
     }
 }

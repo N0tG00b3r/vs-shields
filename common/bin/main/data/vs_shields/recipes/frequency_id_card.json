@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "   ",
+    "INI",
+    "PPP"
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_nugget" },
+    "N": { "item": "minecraft:name_tag" },
+    "P": { "item": "minecraft:paper" }
+  },
+  "result": {
+    "item": "vs_shields:frequency_id_card",
+    "count": 8
+  }
+}

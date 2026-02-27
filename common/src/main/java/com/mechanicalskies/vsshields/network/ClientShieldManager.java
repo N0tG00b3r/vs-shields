@@ -20,7 +20,7 @@ public class ClientShieldManager {
     }
 
     public void updateShield(long shipId, double currentHP, double maxHP, boolean active,
-            double energyPercent,
+            double energyPercent, boolean solidMode,
             double worldMinX, double worldMinY, double worldMinZ,
             double worldMaxX, double worldMaxY, double worldMaxZ) {
         shields.compute(shipId, (id, existing) -> {
@@ -32,6 +32,7 @@ public class ClientShieldManager {
             data.maxHP = maxHP;
             data.active = active;
             data.energyPercent = energyPercent;
+            data.solidMode = solidMode;
             data.worldMinX = worldMinX;
             data.worldMinY = worldMinY;
             data.worldMinZ = worldMinZ;
@@ -63,6 +64,7 @@ public class ClientShieldManager {
         public double maxHP;
         public boolean active;
         public double energyPercent;
+        public boolean solidMode;
         // Ship world-space AABB for client-side proximity checks
         public double worldMinX, worldMinY, worldMinZ;
         public double worldMaxX, worldMaxY, worldMaxZ;

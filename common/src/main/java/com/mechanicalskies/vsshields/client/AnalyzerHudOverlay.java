@@ -23,7 +23,7 @@ import com.mechanicalskies.vsshields.registry.ModItems;
 public class AnalyzerHudOverlay {
 
     private static final int PANEL_W = 200;
-    private static final int PANEL_H = 82;
+    private static final int PANEL_H = 92;
     private static final int MARGIN = 8;
     private static final int BAR_H = 8;
     private static final int LINE_HEIGHT = 10;
@@ -80,12 +80,17 @@ public class AnalyzerHudOverlay {
             graphics.drawString(mc.font, hpLabel, cx, cy, 0xFF55FF55, true);
             cy += LINE_HEIGHT;
 
-            // Status and energy — split for color
+            // Status, energy, solid indicator
             String statusStr = data.shieldActive ? "ACTIVE" : "INACTIVE";
             String statusPart = "Generator: " + statusStr + "  ";
             String energyPart = String.format("\u26A1 %.0f%%", data.energyPercent * 100);
+            String solidPart  = data.shieldSolid ? "  \uD83D\uDD12 SOLID" : "";
             graphics.drawString(mc.font, statusPart, cx, cy, 0xFF55FF55, true);
-            graphics.drawString(mc.font, energyPart, cx + mc.font.width(statusPart), cy, 0xFFFFCC00, true);
+            int afterStatus = cx + mc.font.width(statusPart);
+            graphics.drawString(mc.font, energyPart, afterStatus, cy, 0xFFFFCC00, true);
+            if (data.shieldSolid) {
+                graphics.drawString(mc.font, solidPart, afterStatus + mc.font.width(energyPart), cy, 0xFF00FFCC, true);
+            }
             cy += LINE_HEIGHT;
 
             // Crew / turrets / core counts — each segment in its own color

@@ -1,6 +1,7 @@
 package com.mechanicalskies.vsshields.registry;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
+import com.mechanicalskies.vsshields.item.FrequencyIDCardItem;
 import com.mechanicalskies.vsshields.item.GravitationalMineItem;
 import com.mechanicalskies.vsshields.item.GravitationalMineLauncherItem;
 import com.mechanicalskies.vsshields.item.ShipAnalyzerItem;
@@ -83,6 +84,14 @@ public class ModItems {
         public static final RegistrySupplier<Item> GRAVITATIONAL_MINE_ITEM = ITEMS.register(
                         "gravitational_mine",
                         GravitationalMineItem::new);
+
+        public static final RegistrySupplier<Item> SOLID_PROJECTION_MODULE = ITEMS.register(
+                        "solid_projection_module",
+                        () -> new BlockItem(ModBlocks.SOLID_PROJECTION_MODULE.get(), new Item.Properties()));
+
+        public static final RegistrySupplier<Item> FREQUENCY_ID_CARD = ITEMS.register(
+                        "frequency_id_card",
+                        FrequencyIDCardItem::new);
 
         public static void register() {
                 ITEMS.register();

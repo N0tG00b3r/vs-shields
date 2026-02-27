@@ -8,6 +8,7 @@ import com.mechanicalskies.vsshields.blockentity.ShieldBatteryInputBlockEntity;
 import com.mechanicalskies.vsshields.blockentity.ShieldCapacitorBlockEntity;
 import com.mechanicalskies.vsshields.blockentity.ShieldEmitterBlockEntity;
 import com.mechanicalskies.vsshields.blockentity.ShieldGeneratorBlockEntity;
+import com.mechanicalskies.vsshields.blockentity.SolidProjectionModuleBlockEntity;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import net.minecraft.core.registries.Registries;
@@ -72,6 +73,12 @@ public class ModBlockEntities {
                         .register("shield_jammer_input", () -> BlockEntityType.Builder.of(
                                         com.mechanicalskies.vsshields.blockentity.ShieldJammerInputBlockEntity::new,
                                         ModBlocks.shield_jammer_INPUT.get()).build(null));
+
+        @SuppressWarnings("ConstantConditions")
+        public static final RegistrySupplier<BlockEntityType<SolidProjectionModuleBlockEntity>> SOLID_PROJECTION_MODULE = BLOCK_ENTITIES
+                        .register("solid_projection_module", () -> BlockEntityType.Builder.of(
+                                        SolidProjectionModuleBlockEntity::new,
+                                        ModBlocks.SOLID_PROJECTION_MODULE.get()).build(null));
 
         public static void register() {
                 BLOCK_ENTITIES.register();

@@ -1,6 +1,8 @@
 package com.mechanicalskies.vsshields.network;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
+import com.mechanicalskies.vsshields.blockentity.SolidProjectionModuleBlockEntity;
+import com.mechanicalskies.vsshields.item.FrequencyIDCardItem;
 import com.mechanicalskies.vsshields.item.GravitationalMineLauncherItem;
 import com.mechanicalskies.vsshields.scanner.AnalyzerScanHandler;
 import com.mechanicalskies.vsshields.shield.CloakManager;
@@ -49,6 +51,9 @@ public class ModNetwork {
     public static final ResourceLocation ANALYZER_SCAN_ID          = new ResourceLocation(VSShieldsMod.MOD_ID, "analyzer_scan");
     public static final ResourceLocation ANALYZER_DATA_ID          = new ResourceLocation(VSShieldsMod.MOD_ID, "analyzer_data");
     public static final ResourceLocation MINE_SCROLL_ID            = new ResourceLocation(VSShieldsMod.MOD_ID, "mine_scroll");
+    public static final ResourceLocation SOLID_TOGGLE_ID           = new ResourceLocation(VSShieldsMod.MOD_ID, "solid_toggle");
+    public static final ResourceLocation SOLID_CODE_SET_ID         = new ResourceLocation(VSShieldsMod.MOD_ID, "solid_code_set");
+    public static final ResourceLocation CARD_PROGRAM_ID           = new ResourceLocation(VSShieldsMod.MOD_ID, "card_program");
 
     public static void init() {
         NetworkManager.registerReceiver(
@@ -111,6 +116,30 @@ public class ModNetwork {
                                 Component.translatable("item.vs_shields.gravitational_mine_launcher.range",
                                         GravitationalMineLauncherItem.getRange(held)), true);
                     });
+                });
+
+        // C2S: Solid Projection Module toggle
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, SOLID_TOGGLE_ID,
+                (buf, context) -> {
+                    BlockPos pos = buf.readBlockPos();
+                    boolean active = buf.readBoolean();
+                    context.queue(() -> handleSolidToggle(context.getPlayer(), pos, active));
+                });
+
+        // C2S: Solid Projection Module set access code
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, SOLID_CODE_SET_ID,
+                (buf, context) -> {
+                    BlockPos pos = buf.readBlockPos();
+                    String code = buf.readUtf(8);
+                    context.queue(() -> handleSolidCodeSet(context.getPlayer(), pos, code));
+                });
+
+        // C2S: Program a FrequencyIDCard in player's hand
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, CARD_PROGRAM_ID,
+                (buf, context) -> {
+                    boolean mainHand = buf.readBoolean();
+                    String code = buf.readUtf(8);
+                    context.queue(() -> handleCardProgram(context.getPlayer(), mainHand, code));
                 });
 
         // C2S: Ship Analyzer scan request
@@ -193,7 +222,7 @@ public class ModNetwork {
      */
     public static void sendAnalyzerData(ServerPlayer player, long shipId,
                                         double hp, double maxHp,
-                                        boolean active, float energy,
+                                        boolean active, boolean solid, float energy,
                                         double[] matrix,
                                         Set<BlockPos> cannons, Set<BlockPos> critical,
                                         List<Integer> crewIds,
@@ -203,6 +232,7 @@ public class ModNetwork {
         buf.writeDouble(hp);
         buf.writeDouble(maxHp);
         buf.writeBoolean(active);
+        buf.writeBoolean(solid);
         buf.writeFloat(energy);
         // Matrix: 16 doubles, column-major
         for (double v : matrix) buf.writeDouble(v);
@@ -265,6 +295,7 @@ public class ModNetwork {
             buf.writeDouble(shield.getMaxHP());
             buf.writeBoolean(shield.isActive());
             buf.writeDouble(shield.getEnergyPercent());
+            buf.writeBoolean(shield.isSolidMode());
 
             // Include ship world-space AABB for client-side proximity checks
             BlockPos ownerPos = mgr.getShieldOwnerPos(shield.getShipId());
@@ -372,6 +403,51 @@ public class ModNetwork {
         if (player.level() instanceof ServerLevel level)
             if (level.getBlockEntity(pos) instanceof com.mechanicalskies.vsshields.blockentity.GravityFieldGeneratorBlockEntity be)
                 be.setFallProtectionEnabled(enabled);
+    }
+
+    // --- Solid Projection Module ---
+
+    public static void sendSolidToggleToServer(BlockPos pos, boolean active) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeBlockPos(pos);
+        buf.writeBoolean(active);
+        NetworkManager.sendToServer(SOLID_TOGGLE_ID, buf);
+    }
+
+    public static void sendSolidCodeSetToServer(BlockPos pos, String code) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeBlockPos(pos);
+        buf.writeUtf(code, 8);
+        NetworkManager.sendToServer(SOLID_CODE_SET_ID, buf);
+    }
+
+    public static void sendCardProgramToServer(net.minecraft.world.InteractionHand hand, String code) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeBoolean(hand == net.minecraft.world.InteractionHand.MAIN_HAND);
+        buf.writeUtf(code, 8);
+        NetworkManager.sendToServer(CARD_PROGRAM_ID, buf);
+    }
+
+    private static void handleSolidToggle(Player player, BlockPos pos, boolean active) {
+        if (player.level() instanceof ServerLevel level)
+            if (level.getBlockEntity(pos) instanceof SolidProjectionModuleBlockEntity be)
+                be.setActive(active);
+    }
+
+    private static void handleSolidCodeSet(Player player, BlockPos pos, String code) {
+        if (player.level() instanceof ServerLevel level)
+            if (level.getBlockEntity(pos) instanceof SolidProjectionModuleBlockEntity be)
+                be.setAccessCode(code);
+    }
+
+    private static void handleCardProgram(Player player, boolean mainHand, String code) {
+        net.minecraft.world.InteractionHand hand = mainHand
+                ? net.minecraft.world.InteractionHand.MAIN_HAND
+                : net.minecraft.world.InteractionHand.OFF_HAND;
+        net.minecraft.world.item.ItemStack stack = player.getItemInHand(hand);
+        if (stack.getItem() instanceof FrequencyIDCardItem) {
+            FrequencyIDCardItem.setCode(stack, code);
+        }
     }
 
     private static void handleJammerEnable(Player player, BlockPos pos, boolean enable) {
