@@ -337,6 +337,27 @@ GravityFieldGeneratorBlockEntity.tick()
 ### Батареи и Кулдаун (Depletion & Rebooting)
 Емкость глушителя динамически вычисляется по количеству рамок в 3x3x3 (до 3.9M FE). Когда энергия падает до нуля, контроллер выключается и система уходит в `REBOOTING` стейт. Входные блоки `ShieldJammerInputBlockEntity` перекрывают подачу энергии из внешних сетей только в момент *Активного* глушения, позволяя системе зарядиться с нуля во время перезагрузки. В GUI отображается точный таймер и статусы ошибок (`DUPLICATE`, `GROUNDED`).
 
+---
+
+## Маскировка (Cloaking) — статус TODO
+
+Функция реализована на уровне архитектуры, но **рендер-подавление не работает** при наличии Create.
+
+### Архитектура
+
+- `CloakedShipsRegistry` (common) — ConcurrentHashMap замаскированных ship ID (S2C-пакет `cloak_status`)
+- `CloakingFieldGeneratorBlockEntity` — расходует FE, при активации отправляет `cloak_toggle` C2S
+- `CloakRenderSuppressor.kt` (forge) — слушает `VSGameEvents.renderShip`, вызывает `event.chunks.clear()` + GL colorMask. **Работает только без Create** (vanilla renderer path).
+- `MixinShipEmbeddingManager.java` (forge mixin) — перехватывает `ShipEmbeddingManager.updateAllShips()` RETURN, через reflection вызывает `VisualEmbedding.transforms(scale(0.0001f), Matrix3f())`. **Регистрируется, но корабль не исчезает**.
+
+### Почему не работает с Create
+
+VS2 выбирает рендерер через `ShipRendererKt.getShipRenderer(ship)`:
+- **VANILLA** → `MixinLevelRendererVanilla` → `VSGameEvents.renderShip` стреляет → `CloakRenderSuppressor` работает
+- **Flywheel** (когда Create установлен) → `ShipEmbeddingManager.updateAllShips()` → Flywheel `VisualEmbedding.transforms()` → `renderShip` event **не стреляет**
+
+`MixinShipEmbeddingManager` перехватывает нужный метод, но Flywheel может кэшировать трансформы и применять их позже. Нужна декомпиляция `flywheel-forge-1.20.1-1.0.5.jar` для поиска следующей точки перехвата.
+
 ### Disable/Enable Toggle
 
 Поле `isEnabled` (ContainerData слот 9) полностью выключает глушитель без разрушения структуры:
@@ -346,3 +367,131 @@ GravityFieldGeneratorBlockEntity.tick()
 - Статус в GUI: `OFFLINE (DISABLED)` отображается серым цветом, кнопки Reload/Enable-Disable активны
 - NBT backward compat: `!tag.contains("IsEnabled") || tag.getBoolean("IsEnabled")` — дефолт `true`
 - C2S пакет: `jammer_enable` (BlockPos, boolean enable)
+
+
+---
+
+## Solid Projection Module
+
+Физически блокирует вход посторонних сущностей в зону щита. Работает поверх обычного щита — не заменяет его.
+
+### Архитектура компонентов
+
+```
+SolidProjectionModuleBlockEntity.tick()
+  → VSGameUtilsKt.getShipManagingPos() → ship
+  → SolidModuleRegistry.registerOwner(shipId, pos) → duplicate check
+  → CreateCompat.tickSolidModuleInput() → SU → FE
+  → ShieldManager.getShield(shipId) → ShieldInstance
+  → если active && !duplicate && energyStored >= cost:
+      shield.setSolidMode(true, accessCode)
+      energyStored -= cost
+  → иначе: shield.setSolidMode(false, "")
+```
+
+**`SolidModuleRegistry`** — аналог `GravityFieldRegistry`:
+- `OWNERS: ConcurrentHashMap<Long, BlockPos>` — дубли через `putIfAbsent`
+- Вызов `getInstance().registerOwner()` / `unregisterOwner()` / `getShieldOwnerPos()`
+
+**`ShieldInstance`** (расширение):
+```java
+private boolean solidMode = false;
+private String  accessCode = "";
+public void setSolidMode(boolean solid, String code)
+public boolean isSolidMode()
+public String  getAccessCode()
+```
+
+### ShieldSolidBarrier.kt — барьерная логика
+
+```kotlin
+// State per shield instance:
+private val knownInside  = HashMap<Long, HashSet<UUID>>()
+private val knownOutside = HashMap<Long, HashSet<UUID>>()
+private val shipContactDistances = HashMap<Long, HashMap<Long, Double>>()
+```
+
+**Алгоритм (LevelTickEvent.Phase.END, server):**
+1. Для каждого `ShieldInstance` где `isSolidMode() && isActive()`:
+2. shieldAABB = `ship.worldAABB` + `shieldPadding`
+3. Для каждой `LivingEntity` в AABB:
+   - UUID в `knownInside` → пропустить (дед, уже разрешён)
+   - UUID в `knownOutside` → проверить карточку → `pushBack()` или → `knownInside`
+   - UUID не отслеживается → `knownInside` (дедовство при первом обнаружении)
+4. UUID из `knownInside` которые уже снаружи AABB → → `knownOutside`
+
+**Отталкивание кораблей (approach-only):**
+```kotlin
+val distSq = (comA - comB).lengthSquared()
+val prevDistSq = distMap[foreign.id]
+distMap[foreign.id] = distSq
+if (prevDistSq != null && distSq >= prevDistSq) continue  // разлетаются
+// Сила прикладывается в CoM → нулевой крутящий момент
+val shieldCom = Vector3d(ship.shipToWorld.m30(), ship.shipToWorld.m31(), ship.shipToWorld.m32())
+GTPA.applyWorldForceToModelPos(ship.id, force, shieldCom)
+```
+
+**Пропуск для чужого корабля с карточкой:**
+```kotlin
+private fun foreignShipHasMatchingCard(level: ServerLevel, foreignShipId: Long, code: String): Boolean {
+    val pos = ShieldManager.getInstance().getShieldOwnerPos(foreignShipId) ?: return false
+    val be  = level.getBlockEntity(pos) as? ShieldGeneratorBlockEntity ?: return false
+    return FrequencyIDCardItem.hasMatchingCode(be.cardSlot.getItem(0), code)
+}
+```
+
+### CuriosIntegration.kt
+
+```kotlin
+object CuriosIntegration {
+    val LOADED = runCatching {
+        Class.forName("top.theillusivec4.curios.api.CuriosApi")
+    }.isSuccess
+
+    fun hasMatchingCard(entity: LivingEntity, code: String): Boolean {
+        // 1. Проверяем основной инвентарь + офхенд
+        val inv = player.inventory.items + listOf(player.offhandItem)
+        if (inv.any { isCard(it, code) }) return true
+        // 2. Если Curios установлен — проверяем его слоты через reflection
+        return if (LOADED) checkCurios(player, code) else false
+    }
+    // isCard: stack.item is FrequencyIDCardItem && FrequencyIDCardItem.getCode(stack) == code (регистрозависимо)
+}
+```
+
+Куриос-слот: `data/curios/tags/items/charm.json` → `"vs_shields:frequency_id_card"`.
+
+### FrequencyIDCardItem
+
+```java
+// NBT key: "accessCode" (String, до 8 символов [a-zA-Z0-9])
+// stacksTo(8) — стакается при одинаковом коде
+// use() при isCrouching() → открывает FrequencyIDCardScreen
+// hasMatchingCode(stack, code): code.equals(getCode(stack)) — регистрозависимо!
+```
+
+### Сетевые пакеты (дополнение к таблице)
+
+| ID | Направление | Данные | Назначение |
+|---|---|---|---|
+| `solid_toggle` | C2S | BlockPos, boolean | вкл/выкл Solid Module |
+| `solid_code_set` | C2S | BlockPos, String(≤8) | установить пароль |
+| `card_program` | C2S | String(≤8) | записать пароль на карточку в руке |
+| `shield_sync` | S2C | ... + boolean solidMode | расширен — добавлен solidMode перед hasAABB |
+
+### Слот MASTER KEY в Shield Generator
+
+`ShieldGeneratorBlockEntity` содержит `SimpleContainer cardSlot` (1 предмет):
+- `cardSlot.addListener(inv -> setChanged())` — автоматическая грязная пометка
+- Сохраняется/загружается через `tag.put("CardSlot", card.save(new CompoundTag()))`
+- В `ShieldGeneratorMenu`: добавлен `Slot` с `mayPlace = stack.item instanceof FrequencyIDCardItem`
+- `imageHeight` расширена до 230, отображается полный инвентарь игрока (3 ряда + хотбар)
+
+### Конфиг (GeneralConfig дополнения)
+
+| Поле | Дефолт |
+|------|--------|
+| `solidModuleEnergyCost` | 500 |
+| `solidModuleMaxEnergy` | 1,000,000 |
+| `solidModuleEnergyInput` | 50,000 |
+| `shipRepulsionForce` | 100,000.0 |

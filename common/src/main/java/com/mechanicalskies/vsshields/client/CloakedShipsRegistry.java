@@ -33,6 +33,10 @@ public class CloakedShipsRegistry {
         return cloakedShips.contains(shipId);
     }
 
+    public boolean hasAnyCloakedShips() {
+        return !cloakedShips.isEmpty();
+    }
+
     public void clear() {
         cloakedShips.clear();
     }

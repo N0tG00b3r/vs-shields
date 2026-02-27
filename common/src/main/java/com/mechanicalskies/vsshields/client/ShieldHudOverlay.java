@@ -58,6 +58,13 @@ public class ShieldHudOverlay {
         String label = String.format("Shield: %.0f / %.0f (%.0f%%)", data.currentHP, data.maxHP, hpPercent * 100);
         int textWidth = mc.font.width(label);
         graphics.drawString(mc.font, label, (screenWidth - textWidth) / 2, y + barHeight + 2, 0xFFFFFFFF, true);
+
+        // Solid mode indicator
+        if (data.solidMode) {
+            String lockLabel = "\u26d4 SOLID";  // ⛔ SOLID
+            int lockWidth = mc.font.width(lockLabel);
+            graphics.drawString(mc.font, lockLabel, (screenWidth - lockWidth) / 2, y + barHeight + 13, 0xFF00FFCC, true);
+        }
     }
 
     private static int getHPColor(double percent) {

@@ -6,7 +6,7 @@ issueTrackerURL="https://github.com/Mechanical-Skies/vs-shields/issues"
 [[mods]]
 modId="vs_shields"
 version="${version}"
-displayName="VS Energy Shields"
+displayName="VS Shields"
 displayURL="https://www.curseforge.com/minecraft/mc-mods/vs-shields"
 logoFile="icon.png"
 authors="LennyPane"

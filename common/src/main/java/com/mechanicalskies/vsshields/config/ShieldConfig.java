@@ -76,7 +76,11 @@ public class ShieldConfig {
         public double hpScaleMax = 1.0;
         public int syncIntervalTicks = 10;
         public double shieldPadding = 10.0;
-        public double gravMineForceMagnitude = 120_000.0;
+        public double gravMineForceMagnitude = 10_000.0;
+        public int solidModuleEnergyCost   = 500;
+        public int solidModuleMaxEnergy    = 1_000_000;
+        public int solidModuleEnergyInput  = 50_000;
+        public double shipRepulsionForce   = 100_000.0;
     }
 
     public static class BatteryConfig {

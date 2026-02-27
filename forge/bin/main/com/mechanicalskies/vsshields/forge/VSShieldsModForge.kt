@@ -4,7 +4,9 @@ import com.mechanicalskies.vsshields.VSShieldsMod
 import com.mechanicalskies.vsshields.blockentity.CloakingFieldGeneratorBlockEntity
 import com.mechanicalskies.vsshields.blockentity.ShieldBatteryInputBlockEntity
 import com.mechanicalskies.vsshields.blockentity.ShieldGeneratorBlockEntity
+import com.mechanicalskies.vsshields.blockentity.SolidProjectionModuleBlockEntity
 import com.mechanicalskies.vsshields.entity.GravitationalMineEntity
+import com.mechanicalskies.vsshields.shield.SolidModuleRegistry
 import com.mechanicalskies.vsshields.network.ModNetwork
 import com.mechanicalskies.vsshields.scanner.AnalyzerBlockCache
 import com.mechanicalskies.vsshields.scanner.AnalyzerScanHandler
@@ -55,6 +57,8 @@ class VSShieldsModForge {
         MinecraftForge.EVENT_BUS.register(ShieldJammerEnergyCapability())
         MinecraftForge.EVENT_BUS.register(GravityFieldEnergyCapability())
         MinecraftForge.EVENT_BUS.register(GravityFieldHandler())
+        MinecraftForge.EVENT_BUS.register(ShieldSolidBarrier())
+        MinecraftForge.EVENT_BUS.register(SolidProjectionModuleEnergyCapability())
 
         ShieldGeneratorBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickKineticInput(level, pos, be)
@@ -74,6 +78,10 @@ class VSShieldsModForge {
 
         com.mechanicalskies.vsshields.blockentity.GravityFieldGeneratorBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickGravityFieldInput(level, pos, be)
+        }
+
+        SolidProjectionModuleBlockEntity.setEnergyInputHook { level, pos, be ->
+            CreateCompat.tickSolidModuleInput(level, pos, be)
         }
 
         // px/py/pz = mine model-space position (pre-amplified lever arm)
@@ -107,6 +115,7 @@ class VSShieldsModForge {
         ShieldManager.getInstance().clear()
         CloakManager.getInstance().clear()
         GravityFieldRegistry.clear()
+        SolidModuleRegistry.getInstance().clear()
         AnalyzerBlockCache.getInstance().clear()
         AnalyzerScanHandler.clear()
     }

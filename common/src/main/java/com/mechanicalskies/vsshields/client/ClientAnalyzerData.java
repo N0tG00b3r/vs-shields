@@ -21,6 +21,7 @@ public class ClientAnalyzerData {
     public double shieldHP;
     public double maxShieldHP;
     public boolean shieldActive;
+    public boolean shieldSolid;
     public float energyPercent;
     /**
      * JOML Matrix4dc shipped as double[16], column-major (col0row0, col0row1, ...)
@@ -50,13 +51,14 @@ public class ClientAnalyzerData {
         lastUpdateMs = 0;
     }
 
-    public void update(long shipId, double hp, double maxHp, boolean active, float energy,
+    public void update(long shipId, double hp, double maxHp, boolean active, boolean solid, float energy,
             double[] matrix, List<BlockPos> cannons, List<BlockPos> critical,
             List<Integer> crewIds, List<double[]> mines) {
         this.targetShipId = shipId;
         this.shieldHP = hp;
         this.maxShieldHP = maxHp;
         this.shieldActive = active;
+        this.shieldSolid = solid;
         this.energyPercent = energy;
         System.arraycopy(matrix, 0, this.shipToWorldMatrix, 0, 16);
         this.cannonPositions.clear();

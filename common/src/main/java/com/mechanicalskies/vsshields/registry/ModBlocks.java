@@ -9,6 +9,7 @@ import com.mechanicalskies.vsshields.block.ShieldBatteryInputBlock;
 import com.mechanicalskies.vsshields.block.ShieldCapacitorBlock;
 import com.mechanicalskies.vsshields.block.ShieldEmitterBlock;
 import com.mechanicalskies.vsshields.block.ShieldGeneratorBlock;
+import com.mechanicalskies.vsshields.block.SolidProjectionModuleBlock;
 import com.mechanicalskies.vsshields.shield.ShieldTier;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
@@ -133,6 +134,15 @@ public class ModBlocks {
         public static final RegistrySupplier<Block> shield_jammer_frame = BLOCKS.register(
                         "shield_jammer_frame",
                         () -> new com.mechanicalskies.vsshields.block.ShieldJammerFrameBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(5.0f, 10.0f)
+                                                        .sound(SoundType.METAL)
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
+
+        public static final RegistrySupplier<Block> SOLID_PROJECTION_MODULE = BLOCKS.register(
+                        "solid_projection_module",
+                        () -> new SolidProjectionModuleBlock(
                                         BlockBehaviour.Properties.of()
                                                         .strength(5.0f, 10.0f)
                                                         .sound(SoundType.METAL)

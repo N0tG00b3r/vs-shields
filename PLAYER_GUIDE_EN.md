@@ -30,6 +30,11 @@ The core block. Creates a protective field around the ship. It features a unique
 - After taking damage, recharge starts after a cooldown (5-10 seconds depending on tier).
 - If the shield is fully depleted (0 HP), it enters a longer cooldown before it can start regenerating.
 
+**MASTER KEY Slot:**
+The generator GUI now has a dedicated slot for a **Frequency ID Card**. Insert your own card here — it will be used for ship-to-ship passthrough: a foreign ship whose generator holds a matching card will not be repelled by your solid barrier. The slot does not change the card's code — it only stores it.
+
+---
+
 ### Shield Capacitor
 
 A simple addon block with a 3D model. Place it on the same ship to automatically add **+50 HP** to the shield's maximum health. The effect stacks: 4 capacitors = +200 HP.
@@ -205,6 +210,40 @@ A heavy-duty launcher for deploying Gravitational Mines.
 - **Cooldown:** Has a 5-second (100-tick) cooldown between shots to prevent rapid-fire bombardment.
 - **Variable Range:** Shift+Right-click to cycle through deployment distances (15, 30, 50, 70 blocks). The mine will stop and arm at exactly this distance from the firing point.
 
+### Solid Projection Module
+Turns the energy shield into a physical barrier. One per ship maximum.
+
+**How it works:**
+- Connect a power source (FE or Create rotation shaft). Buffer capacity: **1,000,000 FE**, cost: **500 FE/tick** while the barrier is active.
+- Right-click to open the GUI. Enter an **ACCESS CODE** (up to 8 characters \, case-sensitive), then press **Activate**.
+- While the module is active and powered, the shield becomes a physical wall: unauthorized entities are pushed back at the shield boundary, and foreign ships receive an elastic impulse when approaching.
+
+**Password bypass:**
+- Players carrying a **Frequency ID Card** with a matching code (in inventory, offhand, or a Curios Charm slot) **pass through the barrier freely**.
+- A foreign ship whose generator holds a matching card in its MASTER KEY slot also **will not be repelled**.
+
+**GUI Statuses:**
+| Status | Meaning |
+|--------|---------|
+| ACTIVE | Barrier is active, consuming energy |
+| OFFLINE | Manually disabled |
+| GROUNDED | Block is not on a ship |
+| DUPLICATE | A second module already exists on this ship |
+| NO ENERGY | Buffer is empty |
+
+### Frequency ID Card
+A programmable access card. Stacks up to 8 when they share the same code.
+
+**Programming a card:**
+1. Hold a blank card in your hand.
+2. Press **Shift+Right-click** — a programming screen opens.
+3. Enter a code (up to 8 characters \, case-sensitive).
+4. Press **Save** or **Enter**.
+
+Carry the programmed card in your inventory, offhand, or a Curios **Charm** slot — you will pass freely through any barrier that uses a matching code.
+
+> **Tip:** Insert your own card into the MASTER KEY slot of your ship's Shield Generator to allow allied ships with matching cards to pass through your barrier unhindered.
+
 ---
 
 ## Crafting Recipes
@@ -306,6 +345,22 @@ A heavy-duty launcher for deploying Gravitational Mines.
 [Ender Eye] [Dropper] [Ender Eye]
 [Quartz] [Netherite Ingot] [Quartz]
 [Redstone] [Piston] [Redstone]
+```
+
+### Solid Projection Module & Frequency ID Card
+
+**Solid Projection Module**
+```text
+[Obsidian]    [Diamond]        [Obsidian]
+[Diamond]     [Ender Eye]      [Diamond]
+[Iron Block]  [Redstone Block] [Iron Block]
+```
+
+**Frequency ID Card (x1)**
+```text
+[Empty]        [Empty]     [Empty]
+[Iron Nugget]  [Name Tag]  [Iron Nugget]
+[Paper]        [Paper]     [Paper]
 ```
 
 ---
@@ -414,6 +469,8 @@ When a Nuke Shell is intercepted by the shield, the full nuclear explosion visua
 
 ### HUD
 When inside the shield bubble, an HP bar appears at the top of your screen.
+
+If a Solid Projection Module is active on your ship, a **`⛔ SOLID`** indicator appears in the top-right corner of your HUD.
 
 ### Generator GUI
 Right-click the generator to see:

@@ -11,10 +11,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -28,6 +30,16 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
     }
 
     private static EnergyInputHook energyInputHook = null;
+
+    /** Single slot for storing a FrequencyIDCard (master key). */
+    private final SimpleContainer cardSlot = new SimpleContainer(1);
+    {
+        cardSlot.addListener(inv -> setChanged());
+    }
+
+    public SimpleContainer getCardSlot() {
+        return cardSlot;
+    }
 
     public static void setEnergyInputHook(EnergyInputHook hook) {
         energyInputHook = hook;
@@ -242,6 +254,10 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putInt("Energy", energyStored);
+        ItemStack card = cardSlot.getItem(0);
+        if (!card.isEmpty()) {
+            tag.put("CardSlot", card.save(new CompoundTag()));
+        }
     }
 
     @Override
@@ -249,6 +265,9 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
         super.load(tag);
         initEnergyFromTier();
         energyStored = Math.min(tag.getInt("Energy"), maxEnergy);
+        if (tag.contains("CardSlot")) {
+            cardSlot.setItem(0, ItemStack.of(tag.getCompound("CardSlot")));
+        }
     }
 
     @Override
