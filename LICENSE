@@ -1,11 +1,20 @@
-All Rights Reserved
+VS Shields License v1.0
 
-Copyright (c) ${project.inceptionYear} ${owner}
+Copyright (c) 2026 LennyPane
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+Permission is granted to view and read the source code
+of this software for educational and reference purposes.
+
+The following actions require explicit written permission
+from the copyright holder:
+
+- Redistribution of the source code or compiled binaries
+- Creation of derivative works (forks)
+- Use of substantial portions of the code in other projects
+- Commercial use of any kind
+
+Modpack inclusion: You may include the unmodified compiled
+JAR in Minecraft modpacks without additional permission,
+provided credit is given.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
