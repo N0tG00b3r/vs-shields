@@ -279,18 +279,33 @@ class ShieldDamageHandler {
 
         // Fast path: explosion directly on a ship block
         var shield: ShieldInstance? = null
-        val ship = level.getShipManagingPos(BlockPos.containing(explosionPos))
-        if (ship != null) {
-            shield = manager.getShield(ship.id)
+        var shieldShip: Ship? = null
+        val shipOnBlock = level.getShipManagingPos(BlockPos.containing(explosionPos))
+        if (shipOnBlock != null) {
+            shield = manager.getShield(shipOnBlock.id)
+            shieldShip = shipOnBlock
         }
 
         // Slow path: explosion is near a shielded ship (within padding)
         if (shield == null) {
             val result = findShieldedShipNearPos(level, explosionPos) ?: return
             shield = result.second
+            shieldShip = result.first
         }
 
         if (shield.isActive && shield.currentHP > 0) {
+            // Don't damage the shield for internal explosions (own weapon muzzle blasts,
+            // propellant charges, etc.). The shield is an OUTER barrier — only explosions
+            // originating OUTSIDE the hull (in the padding zone) should count.
+            val worldAABB = shieldShip?.worldAABB
+            if (worldAABB != null) {
+                val coreAABB = AABB(
+                    worldAABB.minX(), worldAABB.minY(), worldAABB.minZ(),
+                    worldAABB.maxX(), worldAABB.maxY(), worldAABB.maxZ()
+                )
+                if (coreAABB.contains(explosionPos.x, explosionPos.y, explosionPos.z)) return
+            }
+
             val power = explosion.radius.toDouble()
             val explosionDamage = power * power * ShieldConfig.get().damage.explosionPowerFactor
             shield.damage(explosionDamage, manager.currentTick)

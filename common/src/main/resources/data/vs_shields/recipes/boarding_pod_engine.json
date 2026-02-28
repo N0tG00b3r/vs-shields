@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IBI",
+    "BGB",
+    "IBI"
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_ingot" },
+    "B": { "item": "minecraft:blaze_powder" },
+    "G": { "item": "minecraft:gunpowder" }
+  },
+  "result": {
+    "item": "vs_shields:boarding_pod_engine",
+    "count": 1
+  }
+}

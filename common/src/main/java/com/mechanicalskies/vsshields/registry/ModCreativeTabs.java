@@ -36,6 +36,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.GRAVITATIONAL_MINE_ITEM.get());
                         output.accept(ModItems.SOLID_PROJECTION_MODULE.get());
                         output.accept(ModItems.FREQUENCY_ID_CARD.get());
+                        output.accept(ModItems.BOARDING_POD_COCKPIT.get());
+                        output.accept(ModItems.BOARDING_POD_ENGINE.get());
                     })
                     .build());
 

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IGI",
+    "SCS",
+    "IRI"
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_ingot" },
+    "G": { "item": "minecraft:glass_pane" },
+    "S": { "item": "minecraft:smooth_stone" },
+    "C": { "item": "minecraft:compass" },
+    "R": { "item": "minecraft:redstone" }
+  },
+  "result": {
+    "item": "vs_shields:boarding_pod_cockpit",
+    "count": 1
+  }
+}

@@ -25,9 +25,11 @@ Wrap your VS2 warship in a procedural energy shield that stops projectiles, abso
 - **Tactical Netherite Helm** — always-on analyzer HUD built into a helmet
 - **Gravitational Mine + Launcher** — deployable space-mines that apply massive physical torque to enemy ships on detonation
 - **Redstone output** — Shield Generator pulses a redstone signal when struck; wire it into your own alert systems
+- **Solid Projection Module** — turns the energy shield into a physical barrier; access controlled by programmable **Frequency ID Cards** (up to 8-char codes, Curios-compatible)
+- **Boarding Pod** — 2-block multiblock assault craft; player boards, aims with mouse, fires on a ballistic arc and breaches a 2×2×4 tunnel into the target ship's hull; **RCS Thrusters** allow 5 mid-flight lateral impulses (A/D keys)
 - **Forge Energy & Create SU** — power from any FE cable, or directly from Create rotation shafts
 - **Mod compatibility** — full damage tables for Create: Big Cannons (all shell types including Nuke Shell) and Create: Gunsmithing (projectile + hitscan weapons)
-- **JSON config** — every damage value, energy cost, and recharge rate is configurable in `config/vs_shields.json`
+- **JSON config** — every damage value, energy cost, recharge rate, and visual option is configurable in `config/vs_shields.json`
 
 ---
 
@@ -132,6 +134,73 @@ Heavy-duty launcher that fires Gravitational Mines.
 
 ---
 
+### Solid Projection Module
+
+A peripheral block (one per ship) that turns the energy shield into a physical wall.
+
+- Connect FE or Create rotation shaft (**1,000,000 FE** buffer, **500 FE/tick** while active)
+- Right-click to open GUI; enter an **ACCESS CODE** (up to 8 chars, case-sensitive), then Activate
+- While active: unauthorised entities are pushed back at the shield boundary; foreign ships receive an elastic repulsion impulse when approaching
+- Players carrying a **Frequency ID Card** with a matching code (inventory, offhand, or Curios Charm slot) pass through freely
+- A foreign ship whose generator holds a matching card in its **MASTER KEY** slot is also not repelled
+
+| GUI Status | Meaning |
+|------------|---------|
+| ACTIVE | Barrier on, consuming energy |
+| OFFLINE | Manually disabled |
+| GROUNDED | Not on a ship |
+| DUPLICATE | Second module on same ship |
+| NO ENERGY | Buffer empty |
+
+### Frequency ID Card
+
+A programmable access card. Shift+Right-click to open the programming screen and enter a code. Stacks up to 8 when codes match. Wearable in a Curios **Charm** slot.
+
+**Master Key Slot:** The Shield Generator GUI has a dedicated MASTER KEY slot — insert your card there so allied ships with matching cards can pass through your barrier without being repelled.
+
+---
+
+### Boarding Pod — 2×1×1 Multiblock
+
+A two-block assault craft for boarding enemy ships.
+
+**Setup:**
+1. Craft a **Boarding Pod Cockpit** and a **Boarding Pod Engine**
+2. Place them side-by-side (engine adjacent to cockpit in any horizontal direction)
+3. Right-click the cockpit to board — you mount the pod
+4. Aim with the mouse, then press the **Fire** key (unbound by default — set in Controls → VS Shields)
+5. Sneak to dismount and cancel
+
+**Flight phases:**
+
+| Phase | Duration | Description | RCS |
+|-------|----------|-------------|-----|
+| **Aiming** | Until fire | Stationary; player controls aim | — |
+| **Boost** | 40 ticks (2 sec) | Rocket burn, near-zero gravity | Active |
+| **Coast** | Until impact | Ballistic arc under full gravity | Active |
+| **Drilling** | 40 ticks (2 sec) | Attached to hull; drilling through | — |
+
+**Terminal Magnetic Lock:**
+In the last 7 blocks before reaching a ship's hull the pod automatically steers its velocity perpendicular to the nearest armour face — ensuring the breach tunnel is always straight regardless of approach angle.
+
+**RCS Thrusters:**
+- Press **A** or **D** during Boost/Coast to fire a lateral thruster burst
+- Each press consumes **1 of 5 charges** (refilled on each new launch) and rotates the pod to face its new heading
+- **0.6 s cooldown** between bursts; HUD shows remaining charges above the hotbar
+- Charges are destroyed with the pod — you cannot bank unused thrusts
+
+**On impact with a VS2 ship:**
+1. **Drilling phase** — pod locks to the hull for 2 seconds with metal-grinding sound, sparks, and camera shake; follows the ship if it moves or rotates
+2. **Breach** — drills a clean **2×2×4** tunnel into the hull at the exact angle of approach
+3. Deals **100 HP** to any active Solid Projection Module barrier on the target
+4. Passenger receives **200 ticks (10 sec)** of trusted status — bypasses solid barriers briefly
+
+**Countermeasures:**
+- The pod has **10 HP** during Boost/Coast — arrows, shells, and melee can destroy it mid-air
+- Passenger falls freely if the pod is shot down; pod cannot be damaged during Drilling
+
+---
+
 ## Mod Compatibility
 
 ### Create: Big Cannons
@@ -177,6 +246,22 @@ All CBC shell types are intercepted at the shield boundary:
 Nuclear bomb and torpedo are fully intercepted (500 HP and 80 HP respectively).
 
 > All damage values are configurable in `config/vs_shields.json`.
+
+---
+
+## Configuration
+
+All settings live in `config/vs_shields.json`. The file is auto-generated on first launch and updated automatically when new keys are added by a mod update.
+
+### `general` section — visual & gameplay
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `shieldPadding` | `10.0` | Extra blocks added to each side of the ship AABB when sizing the shield sphere |
+| `showShieldBubble` | `true` | `false` hides the hex bubble completely for all players (client-only; no effect on damage) |
+| `syncIntervalTicks` | `10` | How often (ticks) the server pushes shield HP/state to clients |
+
+> The shield uses back-face culling — it is always visible from outside but automatically invisible when the camera is inside the bubble, with no configuration required.
 
 ---
 
@@ -297,6 +382,36 @@ Place a Create **rotation shaft** adjacent to a Shield Generator, Battery Input,
 [Ender Eye] [Dropper]        [Ender Eye]
 [Quartz]    [Netherite Ingot][Quartz]
 [Redstone]  [Piston]         [Redstone]
+```
+
+**Boarding Pod Cockpit**
+```
+[Iron Ingot]   [Glass]        [Iron Ingot]
+[Smooth Stone] [Compass]      [Smooth Stone]
+[Iron Ingot]   [Redstone]     [Iron Ingot]
+```
+
+**Boarding Pod Engine**
+```
+[Iron Ingot]   [Blaze Powder] [Iron Ingot]
+[Blaze Powder] [Gunpowder]    [Blaze Powder]
+[Iron Ingot]   [Blaze Powder] [Iron Ingot]
+```
+
+### Solid Projection Module & Access Cards
+
+**Solid Projection Module**
+```
+[Obsidian]   [Diamond]        [Obsidian]
+[Diamond]    [Ender Eye]      [Diamond]
+[Iron Block] [Redstone Block] [Iron Block]
+```
+
+**Frequency ID Card**
+```
+[           ] [          ] [           ]
+[Iron Nugget] [Name Tag]   [Iron Nugget]
+[Paper]       [Paper]      [Paper]
 ```
 
 ---

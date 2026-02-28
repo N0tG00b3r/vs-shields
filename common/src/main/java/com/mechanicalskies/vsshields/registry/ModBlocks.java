@@ -1,6 +1,8 @@
 package com.mechanicalskies.vsshields.registry;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
+import com.mechanicalskies.vsshields.block.BoardingPodCockpitBlock;
+import com.mechanicalskies.vsshields.block.BoardingPodEngineBlock;
 import com.mechanicalskies.vsshields.block.CloakingFieldGeneratorBlock;
 import com.mechanicalskies.vsshields.block.GravityFieldGeneratorBlock;
 import com.mechanicalskies.vsshields.block.ShieldBatteryCellBlock;
@@ -145,6 +147,24 @@ public class ModBlocks {
                         () -> new SolidProjectionModuleBlock(
                                         BlockBehaviour.Properties.of()
                                                         .strength(5.0f, 10.0f)
+                                                        .sound(SoundType.METAL)
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
+
+        public static final RegistrySupplier<Block> BOARDING_POD_COCKPIT = BLOCKS.register(
+                        "boarding_pod_cockpit",
+                        () -> new BoardingPodCockpitBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(4.0f, 8.0f)
+                                                        .sound(SoundType.METAL)
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
+
+        public static final RegistrySupplier<Block> BOARDING_POD_ENGINE = BLOCKS.register(
+                        "boarding_pod_engine",
+                        () -> new BoardingPodEngineBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(4.0f, 8.0f)
                                                         .sound(SoundType.METAL)
                                                         .requiresCorrectToolForDrops()
                                                         .noOcclusion()));

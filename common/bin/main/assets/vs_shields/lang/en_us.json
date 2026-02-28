@@ -63,7 +63,14 @@
   "item.vs_shields.frequency_id_card.code": "Code: %s",
   "item.vs_shields.frequency_id_card.desc": "Shift+Right-Click to program",
   "gui.vs_shields.frequency_id_card.title": "Program ID Card",
-  "gui.vs_shields.frequency_id_card.code_label": "Access Code (6 chars):",
+  "gui.vs_shields.frequency_id_card.code_label": "Access Code:",
   "gui.vs_shields.frequency_id_card.save": "Save",
-  "gui.vs_shields.frequency_id_card.cancel": "Cancel"
+  "gui.vs_shields.frequency_id_card.cancel": "Cancel",
+  "block.vs_shields.boarding_pod_cockpit": "Boarding Pod Cockpit",
+  "block.vs_shields.boarding_pod_engine": "Boarding Pod Engine",
+  "entity.vs_shields.boarding_pod": "Boarding Pod",
+  "message.vs_shields.pod_no_motor": "Place a Boarding Pod Engine adjacent to the cockpit first!",
+  "key.vs_shields.pod_fire": "Fire Boarding Pod",
+  "key.vs_shields.rcs_up": "RCS Thrust Up",
+  "key.vs_shields.rcs_down": "RCS Thrust Down"
 }

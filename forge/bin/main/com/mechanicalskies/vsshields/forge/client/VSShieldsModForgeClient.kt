@@ -1,5 +1,6 @@
 package com.mechanicalskies.vsshields.forge.client
 
+import com.mechanicalskies.vsshields.client.BoardingPodClientHandler
 import com.mechanicalskies.vsshields.client.GravitationalMineModel
 import com.mechanicalskies.vsshields.client.HelmAnalyzerHandler
 import com.mechanicalskies.vsshields.client.TacticalHelmModel
@@ -8,6 +9,7 @@ import com.mechanicalskies.vsshields.item.TacticalNetheriteHelm
 import com.mechanicalskies.vsshields.registry.ModEntities
 import net.minecraftforge.client.event.EntityRenderersEvent
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent
+import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
 import org.slf4j.LoggerFactory
 
@@ -19,6 +21,7 @@ class VSShieldsModForgeClient {
         fun clientInit(event: FMLClientSetupEvent) {
             VSShieldsModClient.initClient()
             CloakRenderSuppressor.register()
+            MinecraftForge.EVENT_BUS.register(DrillShakeHandler)
             diagnoseFlywheel()
         }
 
@@ -49,6 +52,9 @@ class VSShieldsModForgeClient {
         @JvmStatic
         fun registerKeyMappings(event: RegisterKeyMappingsEvent) {
             event.register(HelmAnalyzerHandler.SCAN_KEY)
+            event.register(BoardingPodClientHandler.FIRE_KEY)
+            event.register(BoardingPodClientHandler.RCS_UP_KEY)
+            event.register(BoardingPodClientHandler.RCS_DOWN_KEY)
         }
 
         /** Register the layer definition so the model can be baked. */
@@ -61,6 +67,8 @@ class VSShieldsModForgeClient {
         @JvmStatic
         fun registerRenderers(event: EntityRenderersEvent.RegisterRenderers) {
             event.registerEntityRenderer(ModEntities.GRAVITATIONAL_MINE.get(), ::GravitationalMineRenderer)
+            event.registerEntityRenderer(ModEntities.BOARDING_POD.get(), ::BoardingPodRenderer)
+            event.registerEntityRenderer(ModEntities.COCKPIT_SEAT.get(), ::CockpitSeatRenderer)
         }
 
         /**

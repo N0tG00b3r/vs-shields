@@ -34,6 +34,30 @@ class ShieldSolidBarrier {
      */
     private val initializedShields = HashSet<Long>()
 
+    /**
+     * Passengers ejected from a Boarding Pod that breached this shield.
+     * Maps UUID → game-time tick when trust expires.
+     * Entities with an active trust entry are always granted inside status.
+     */
+    private val trustedUntil = HashMap<UUID, Long>()
+
+    companion object {
+        private var instance: ShieldSolidBarrier? = null
+
+        /**
+         * Called from [com.mechanicalskies.vsshields.entity.BoardingPodEntity]
+         * via the static TrustCallback to grant a boarding pod passenger
+         * temporary pass-through for [ticks] game ticks.
+         */
+        fun trustPassenger(uuid: UUID, gameTime: Long, ticks: Int) {
+            instance?.trustedUntil?.put(uuid, gameTime + ticks)
+        }
+    }
+
+    init {
+        instance = this
+    }
+
 
     @SubscribeEvent
     fun onLevelTick(event: TickEvent.LevelTickEvent) {
@@ -44,6 +68,11 @@ class ShieldSolidBarrier {
         val manager = ShieldManager.getInstance()
         val padding  = ShieldConfig.get().general.shieldPadding
         val repulse  = ShieldConfig.get().general.shipRepulsionForce
+
+        // Periodic cleanup of expired trust entries
+        if (level.gameTime % 20L == 0L) {
+            trustedUntil.entries.removeIf { (_, expiry) -> expiry <= level.gameTime }
+        }
 
         for ((shipId, shield) in manager.allShields) {
             if (!shield.isActive || shield.currentHP <= 0 || !shield.isSolidMode) {
@@ -79,6 +108,12 @@ class ShieldSolidBarrier {
                 val uuid = entity.uuid
                 val pos  = entity.position()
                 val insideNow = shieldAABB.contains(pos.x, pos.y, pos.z)
+
+                // Boarding pod passengers: trusted for a fixed duration after breach
+                if (trustedUntil[uuid]?.let { it > level.gameTime } == true) {
+                    inside.add(uuid)
+                    continue
+                }
 
                 when {
                     inside.contains(uuid) -> {

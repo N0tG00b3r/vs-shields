@@ -246,6 +246,66 @@ Carry the programmed card in your inventory, offhand, or a Curios **Charm** slot
 
 ---
 
+### Boarding Pod --- 2x1x1 Multiblock
+
+A two-block assault craft for boarding enemy ships.
+
+**How to deploy:**
+1. Craft a **Boarding Pod Cockpit** and a **Boarding Pod Engine**.
+2. Place them side-by-side on your ship --- the engine must be directly adjacent to the cockpit horizontally.
+3. Right-click the **cockpit** to board --- you will be seated inside the pod.
+4. Aim with your mouse. A targeting HUD appears showing your yaw/pitch.
+5. Press the **Fire** key (unbound by default --- assign it in **Options -> Controls -> VS Shields**).
+6. Press **Sneak** at any time to safely dismount without firing.
+
+**Flight phases:**
+
+| Phase | Duration | Description | RCS |
+|-------|----------|-------------|-----|
+| **Aiming** | Until you fire | Pod is stationary; you control aim | — |
+| **Boost** | 40 ticks (2 sec) | Rapid acceleration, near-zero gravity | Active |
+| **Coast** | Until impact | Ballistic arc under full gravity | Active |
+| **Drilling** | 40 ticks (2 sec) | Locked to target hull; drilling through | — |
+
+**Terminal Magnetic Lock:**
+
+In the final 7 blocks before reaching a ship, the pod automatically steers its velocity perpendicular to the nearest armour face. This guarantees the breach tunnel is always straight — no more staggered "staircase" holes from oblique approaches.
+
+**RCS Thrusters (Reaction Control System):**
+
+During Boost and Coast you can make lateral course corrections using the **strafe keys (A / D)**:
+
+- Each press fires a sideways thruster burst; the pod rotates to face its new heading
+- The pod starts every launch with **5 charges** --- unused charges are *not* carried over
+- There is a **0.6-second cooldown** (12 ticks) between bursts so you cannot spend all charges instantly
+- While in flight the HUD displays charge pips above the hotbar:
+  - **Green ●** = ready
+  - **Yellow ●** = on cooldown
+  - **Grey ○** = spent
+- A white cloud particle burst vents from the opposite side of the thrust, and a short mechanical hiss plays
+
+**On impact with a VS2 ship:**
+
+1. **Drilling phase** — the pod locks to the hull for 2 seconds. Metal-grinding sounds, sparks, and a camera shake play. If the target ship moves or rotates during this time, the pod moves with it.
+2. **Breach** — the pod cuts a clean **2×2×4** tunnel at the exact angle of approach.
+3. Deals **100 HP** to any active **Solid Projection Module** barrier on the target.
+4. The passenger receives **200 ticks (10 sec)** of trusted status — they temporarily bypass solid barriers.
+
+**Countermeasures:**
+- The pod has **10 HP** during Boost and Coast --- it can be shot down by arrows, cannon shells, or melee
+- If the pod is destroyed mid-flight, the passenger falls freely with no teleport assist
+- The pod cannot be damaged while Drilling (it is already embedded in the hull)
+
+**Tips:**
+- Aim slightly above horizontal for maximum range (the pod follows a proper ballistic trajectory)
+- The Terminal Magnetic Lock handles the final alignment — you do not need to hit perfectly straight
+- Use RCS early in Boost phase when you still have high velocity --- corrections are most effective then
+- Save 1--2 charges for late course correction if the target ship is maneuvering
+- The pod does not detonate on non-ship terrain --- it simply breaks, dropping the passenger safely
+- The engine block provides thrust; without it, the cockpit cannot be activated
+
+---
+
 ## Crafting Recipes
 
 ### Generators & Modules
@@ -345,6 +405,22 @@ Carry the programmed card in your inventory, offhand, or a Curios **Charm** slot
 [Ender Eye] [Dropper] [Ender Eye]
 [Quartz] [Netherite Ingot] [Quartz]
 [Redstone] [Piston] [Redstone]
+```
+
+### Boarding Pod
+
+**Boarding Pod Cockpit**
+```text
+[Iron Ingot]   [Glass]        [Iron Ingot]
+[Smooth Stone] [Compass]      [Smooth Stone]
+[Iron Ingot]   [Redstone]     [Iron Ingot]
+```
+
+**Boarding Pod Engine**
+```text
+[Iron Ingot]   [Blaze Powder] [Iron Ingot]
+[Blaze Powder] [Gunpowder]    [Blaze Powder]
+[Iron Ingot]   [Blaze Powder] [Iron Ingot]
 ```
 
 ### Solid Projection Module & Frequency ID Card
@@ -451,6 +527,7 @@ When a Nuke Shell is intercepted by the shield, the full nuclear explosion visua
   - **Yellow** — HP 25–50% (damaged)
   - **Red** — HP < 25% (critical)
 - **Low Energy Distortions:** If the generator's FE drops below 20%, the shield will begin to violently flicker and glitch, shifting to a red-orange hue.
+- **Inside view:** By default the hex grid is visible from both sides — crew members on the ship can see it around them. Set `hideShieldBubbleInside: true` in the config to hide it for crew.
 
 ### Impact & Destruction
 - **Hit Sparks:** Any projectile or explosion striking the shield creates a burst of electrical sparks at the point of impact. Heavier hits produce larger bursts.
@@ -484,3 +561,18 @@ Right-click the generator to see:
 ## Redstone Integration
 
 The **Shield Generator** outputs a **redstone signal** when it takes damage — the signal strength is proportional to the damage received. Place a **comparator** next to the generator to wire it into automation circuits (e.g., alert systems, auto-activating backup batteries when under attack).
+
+---
+
+## Configuration
+
+All settings are stored in `config/vs_shields.json`, generated automatically on first launch. Missing keys are back-filled on the next server start, so updating the mod never breaks your existing config.
+
+### `general` — visual & gameplay options
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `shieldPadding` | `10.0` | Extra blocks added to every side of the ship AABB when sizing the shield sphere |
+| `showShieldBubble` | `true` | Set to `false` to hide the hex bubble completely for all players (damage/logic unaffected) |
+| `hideShieldBubbleInside` | `false` | Set to `true` to hide the bubble for crew members standing inside it (outside view is unaffected) |
+| `syncIntervalTicks` | `10` | How often (in ticks) the server sends shield HP/state updates to clients |

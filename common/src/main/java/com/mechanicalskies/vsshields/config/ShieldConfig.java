@@ -2,6 +2,8 @@ package com.mechanicalskies.vsshields.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +83,10 @@ public class ShieldConfig {
         public int solidModuleMaxEnergy    = 1_000_000;
         public int solidModuleEnergyInput  = 50_000;
         public double shipRepulsionForce   = 100_000.0;
+        /** Set to false to hide the shield bubble entirely (client-side). */
+        public boolean showShieldBubble       = true;
+        /** Set to true to hide the bubble for crew standing inside it (back-face culling only). */
+        public boolean hideShieldBubbleInside = false;
     }
 
     public static class BatteryConfig {
@@ -202,7 +208,8 @@ public class ShieldConfig {
                 return;
             }
 
-            boolean needsRewrite = merge(loaded, defaults);
+            JsonObject rawJson = JsonParser.parseString(json).getAsJsonObject();
+            boolean needsRewrite = merge(loaded, defaults, rawJson);
             INSTANCE = loaded;
 
             if (needsRewrite) {
@@ -221,7 +228,7 @@ public class ShieldConfig {
         }
     }
 
-    private static boolean merge(ShieldConfig loaded, ShieldConfig defaults) {
+    private static boolean merge(ShieldConfig loaded, ShieldConfig defaults, JsonObject rawJson) {
         boolean changed = false;
         if (loaded.tiers == null) {
             loaded.tiers = defaults.tiers;
@@ -238,6 +245,40 @@ public class ShieldConfig {
         if (loaded.general == null) {
             loaded.general = defaults.general;
             changed = true;
+        } else {
+            // GSON sets missing boolean primitives to false (not the declared field default),
+            // so we must inspect the raw JSON to know which keys were truly absent.
+            JsonObject rawGeneral = rawJson.has("general")
+                    ? rawJson.getAsJsonObject("general") : new JsonObject();
+            if (!rawGeneral.has("showShieldBubble")) {
+                loaded.general.showShieldBubble = defaults.general.showShieldBubble;
+                changed = true;
+            }
+            if (!rawGeneral.has("hideShieldBubbleInside")) {
+                loaded.general.hideShieldBubbleInside = defaults.general.hideShieldBubbleInside;
+                changed = true;
+            }
+            // Backfill numeric fields that default to 0 when absent (GSON primitive default)
+            if (!rawGeneral.has("gravMineForceMagnitude")) {
+                loaded.general.gravMineForceMagnitude = defaults.general.gravMineForceMagnitude;
+                changed = true;
+            }
+            if (!rawGeneral.has("solidModuleEnergyCost")) {
+                loaded.general.solidModuleEnergyCost = defaults.general.solidModuleEnergyCost;
+                changed = true;
+            }
+            if (!rawGeneral.has("solidModuleMaxEnergy")) {
+                loaded.general.solidModuleMaxEnergy = defaults.general.solidModuleMaxEnergy;
+                changed = true;
+            }
+            if (!rawGeneral.has("solidModuleEnergyInput")) {
+                loaded.general.solidModuleEnergyInput = defaults.general.solidModuleEnergyInput;
+                changed = true;
+            }
+            if (!rawGeneral.has("shipRepulsionForce")) {
+                loaded.general.shipRepulsionForce = defaults.general.shipRepulsionForce;
+                changed = true;
+            }
         }
         if (loaded.cloak == null) {
             loaded.cloak = defaults.cloak;

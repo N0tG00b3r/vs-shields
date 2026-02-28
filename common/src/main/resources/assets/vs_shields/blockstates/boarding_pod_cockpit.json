@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "vs_shields:block/boarding_pod_cockpit" },
+    "facing=south": { "model": "vs_shields:block/boarding_pod_cockpit", "y": 180 },
+    "facing=east":  { "model": "vs_shields:block/boarding_pod_cockpit", "y": 90 },
+    "facing=west":  { "model": "vs_shields:block/boarding_pod_cockpit", "y": 270 }
+  }
+}

@@ -2,6 +2,7 @@ package com.mechanicalskies.vsshields.network;
 
 import com.mechanicalskies.vsshields.VSShieldsMod;
 import com.mechanicalskies.vsshields.blockentity.SolidProjectionModuleBlockEntity;
+import com.mechanicalskies.vsshields.entity.CockpitSeatEntity;
 import com.mechanicalskies.vsshields.item.FrequencyIDCardItem;
 import com.mechanicalskies.vsshields.item.GravitationalMineLauncherItem;
 import com.mechanicalskies.vsshields.scanner.AnalyzerScanHandler;
@@ -54,6 +55,8 @@ public class ModNetwork {
     public static final ResourceLocation SOLID_TOGGLE_ID           = new ResourceLocation(VSShieldsMod.MOD_ID, "solid_toggle");
     public static final ResourceLocation SOLID_CODE_SET_ID         = new ResourceLocation(VSShieldsMod.MOD_ID, "solid_code_set");
     public static final ResourceLocation CARD_PROGRAM_ID           = new ResourceLocation(VSShieldsMod.MOD_ID, "card_program");
+    public static final ResourceLocation BOARDING_POD_FIRE_ID      = new ResourceLocation(VSShieldsMod.MOD_ID, "boarding_pod_fire");
+    public static final ResourceLocation BOARDING_POD_RCS_ID       = new ResourceLocation(VSShieldsMod.MOD_ID, "boarding_pod_rcs");
 
     public static void init() {
         NetworkManager.registerReceiver(
@@ -150,6 +153,38 @@ public class ModNetwork {
                     context.queue(() -> AnalyzerScanHandler.handle(
                             (ServerPlayer) context.getPlayer(),
                             new Vec3(ex, ey, ez), new Vec3(lx, ly, lz)));
+                });
+
+        // C2S: Boarding Pod fire — client sends player's current yaw/pitch
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, BOARDING_POD_FIRE_ID,
+                (buf, context) -> {
+                    int entityId = buf.readInt();
+                    float yaw    = buf.readFloat();
+                    float pitch  = buf.readFloat();
+                    context.queue(() -> {
+                        Player player = context.getPlayer();
+                        if (player == null) return;
+                        if (player.getVehicle() instanceof CockpitSeatEntity seat
+                                && seat.getId() == entityId) {
+                            seat.onFire(yaw, pitch);
+                        }
+                    });
+                });
+
+        // C2S: RCS impulse + boost state — client sends each tick while riding pod in flight
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, BOARDING_POD_RCS_ID,
+                (buf, context) -> {
+                    int entityId    = buf.readInt();
+                    int lateralDir  = buf.readInt(); // -1 = left, +1 = right, 0 = none
+                    int boostActive = buf.readInt(); // 1 = Space held, 0 = released
+                    context.queue(() -> {
+                        Player player = context.getPlayer();
+                        if (player == null) return;
+                        if (player.getVehicle() instanceof CockpitSeatEntity seat
+                                && seat.getId() == entityId) {
+                            seat.onRcs(lateralDir, boostActive);
+                        }
+                    });
                 });
 
         // Register S2C Receivers (Client Only)
@@ -419,6 +454,25 @@ public class ModNetwork {
         buf.writeBlockPos(pos);
         buf.writeUtf(code, 8);
         NetworkManager.sendToServer(SOLID_CODE_SET_ID, buf);
+    }
+
+    /** C2S: fire the boarding pod the player is currently riding. */
+    public static void sendBoardingPodFire(int entityId, float yaw, float pitch) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeInt(entityId);
+        buf.writeFloat(yaw);
+        buf.writeFloat(pitch);
+        NetworkManager.sendToServer(BOARDING_POD_FIRE_ID, buf);
+    }
+
+    /** C2S: RCS lateral impulse + boost state while riding a boarding pod in flight.
+     *  lateralDir: -1=left, +1=right, 0=none. boostActive: 1=Space held, 0=released. */
+    public static void sendBoardingPodRcs(int entityId, int lateralDir, int boostActive) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeInt(entityId);
+        buf.writeInt(lateralDir);
+        buf.writeInt(boostActive);
+        NetworkManager.sendToServer(BOARDING_POD_RCS_ID, buf);
     }
 
     public static void sendCardProgramToServer(net.minecraft.world.InteractionHand hand, String code) {

@@ -8,7 +8,10 @@
     "MixinEmbeddingShipVisual",
     "MixinRenderingShipVisual"
   ],
-  "mixins": [],
+  "mixins": [
+    "MixinPlayerCockpitSize",
+    "MixinEntityCockpitEye"
+  ],
   "injectors": {
     "defaultRequire": 0
   }

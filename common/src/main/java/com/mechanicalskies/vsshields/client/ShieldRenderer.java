@@ -1,6 +1,7 @@
 package com.mechanicalskies.vsshields.client;
 
 import com.mechanicalskies.vsshields.blockentity.ShieldGeneratorBlockEntity;
+import com.mechanicalskies.vsshields.config.ShieldConfig;
 import com.mechanicalskies.vsshields.network.ClientShieldManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -11,6 +12,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.phys.AABB;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.primitives.AABBdc;
 import org.joml.primitives.AABBic;
 import org.valkyrienskies.core.api.ships.Ship;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
@@ -35,9 +37,15 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
         if (ship == null)
             return;
 
+        // Config: bubble rendering can be disabled globally
+        if (!ShieldConfig.get().getGeneral().showShieldBubble)
+            return;
+
         ClientShieldManager.ClientShieldData data = ClientShieldManager.getInstance().getShield(ship.getId());
         if (data == null || !data.active || data.currentHP <= 0)
             return;
+
+        float padding = (float) ShieldConfig.get().getGeneral().shieldPadding;
 
         AABBic shipAABB = ship.getShipAABB();
         if (shipAABB == null)
@@ -119,14 +127,14 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
 
         poseStack.translate(center.x(), center.y(), center.z());
 
-        float padding = (float) com.mechanicalskies.vsshields.config.ShieldConfig.get().getGeneral().shieldPadding;
         float sizeX = (float) (renderBounds.getXsize() / 2.0) + padding;
         float sizeY = (float) (renderBounds.getYsize() / 2.0) + padding;
         float sizeZ = (float) (renderBounds.getZsize() / 2.0) + padding;
         poseStack.scale(sizeX, sizeY, sizeZ);
 
         boolean isCloaked = CloakedShipsRegistry.getInstance().isCloaked(ship.getId());
-        renderSphere(poseStack, 1.0f, r, g, b, alpha, isCloaked);
+        boolean hideInside = ShieldConfig.get().getGeneral().hideShieldBubbleInside;
+        renderSphere(poseStack, 1.0f, r, g, b, alpha, isCloaked, hideInside);
 
         poseStack.popPose();
     }
@@ -138,10 +146,16 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
     private static final float FILL_ALPHA_MULT = 0.2f; // Alpha multiplier for hex cell interiors
 
     private void renderSphere(PoseStack poseStack, float radius, float r, float g, float b, float alpha,
-            boolean isCloaked) {
+            boolean isCloaked, boolean hideInside) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.disableCull();
+        // hideInside=true: enableCull keeps only front faces (CCW from outside) → invisible from inside
+        // hideInside=false: disableCull renders both sides → crew inside can see the grid
+        if (hideInside) {
+            RenderSystem.enableCull();
+        } else {
+            RenderSystem.disableCull();
+        }
         RenderSystem.depthMask(false);
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
@@ -181,13 +195,16 @@ public class ShieldRenderer implements BlockEntityRenderer<ShieldGeneratorBlockE
                 float[] c3 = hexColor(phi2, theta2 + rotOffset, r, g, b, alpha);
                 float[] c4 = hexColor(phi2, theta1 + rotOffset, r, g, b, alpha);
 
+                // CCW winding from outside → front-facing. With hideInside=true (enableCull),
+                // inside faces are automatically culled. With hideInside=false (disableCull),
+                // both sides render so crew inside see the hex grid.
                 builder.vertex(matrix, x1, y1, z1).color(c1[0], c1[1], c1[2], c1[3]).endVertex();
-                builder.vertex(matrix, x2, y2, z2).color(c2[0], c2[1], c2[2], c2[3]).endVertex();
                 builder.vertex(matrix, x3, y3, z3).color(c3[0], c3[1], c3[2], c3[3]).endVertex();
+                builder.vertex(matrix, x2, y2, z2).color(c2[0], c2[1], c2[2], c2[3]).endVertex();
 
                 builder.vertex(matrix, x1, y1, z1).color(c1[0], c1[1], c1[2], c1[3]).endVertex();
-                builder.vertex(matrix, x3, y3, z3).color(c3[0], c3[1], c3[2], c3[3]).endVertex();
                 builder.vertex(matrix, x4, y4, z4).color(c4[0], c4[1], c4[2], c4[3]).endVertex();
+                builder.vertex(matrix, x3, y3, z3).color(c3[0], c3[1], c3[2], c3[3]).endVertex();
             }
         }
 

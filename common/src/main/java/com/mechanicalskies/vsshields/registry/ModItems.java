@@ -93,6 +93,14 @@ public class ModItems {
                         "frequency_id_card",
                         FrequencyIDCardItem::new);
 
+        public static final RegistrySupplier<Item> BOARDING_POD_COCKPIT = ITEMS.register(
+                        "boarding_pod_cockpit",
+                        () -> new BlockItem(ModBlocks.BOARDING_POD_COCKPIT.get(), new Item.Properties()));
+
+        public static final RegistrySupplier<Item> BOARDING_POD_ENGINE = ITEMS.register(
+                        "boarding_pod_engine",
+                        () -> new BlockItem(ModBlocks.BOARDING_POD_ENGINE.get(), new Item.Properties()));
+
         public static void register() {
                 ITEMS.register();
         }

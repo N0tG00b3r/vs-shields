@@ -5,6 +5,8 @@ import com.mechanicalskies.vsshields.blockentity.CloakingFieldGeneratorBlockEnti
 import com.mechanicalskies.vsshields.blockentity.ShieldBatteryInputBlockEntity
 import com.mechanicalskies.vsshields.blockentity.ShieldGeneratorBlockEntity
 import com.mechanicalskies.vsshields.blockentity.SolidProjectionModuleBlockEntity
+import com.mechanicalskies.vsshields.entity.BoardingPodEntity
+import com.mechanicalskies.vsshields.entity.CockpitSeatEntity
 import com.mechanicalskies.vsshields.entity.GravitationalMineEntity
 import com.mechanicalskies.vsshields.shield.SolidModuleRegistry
 import com.mechanicalskies.vsshields.network.ModNetwork
@@ -22,6 +24,7 @@ import org.valkyrienskies.mod.common.dimensionId
 import net.minecraftforge.api.distmarker.Dist
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.TickEvent
+import net.minecraftforge.event.entity.player.AttackEntityEvent
 import net.minecraftforge.event.entity.player.PlayerEvent
 import net.minecraftforge.event.level.BlockEvent
 import net.minecraftforge.event.server.ServerStartedEvent
@@ -59,6 +62,7 @@ class VSShieldsModForge {
         MinecraftForge.EVENT_BUS.register(GravityFieldHandler())
         MinecraftForge.EVENT_BUS.register(ShieldSolidBarrier())
         MinecraftForge.EVENT_BUS.register(SolidProjectionModuleEnergyCapability())
+        MinecraftForge.EVENT_BUS.register(PodShipManager)
 
         ShieldGeneratorBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickKineticInput(level, pos, be)
@@ -82,6 +86,25 @@ class VSShieldsModForge {
 
         SolidProjectionModuleBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickSolidModuleInput(level, pos, be)
+        }
+
+        // Legacy boarding pod trust callback (for old BoardingPodEntity if still present)
+        BoardingPodEntity.setTrustCallback { uuid, gameTime, ticks ->
+            ShieldSolidBarrier.trustPassenger(uuid, gameTime, ticks)
+        }
+
+        // VS2-ship boarding pod callbacks — wire PodShipManager to CockpitSeatEntity
+        CockpitSeatEntity.setRegisterCallback { podShipId, seatEntityId, ignoredShipId, dimensionId ->
+            PodShipManager.register(podShipId, seatEntityId, ignoredShipId, dimensionId)
+        }
+        CockpitSeatEntity.setFireCallback { seatEntityId, yaw, pitch ->
+            PodShipManager.fire(seatEntityId, yaw, pitch)
+        }
+        CockpitSeatEntity.setRcsCallback { seatEntityId, lateralDir, boostActive ->
+            PodShipManager.tryRcs(seatEntityId, lateralDir, boostActive)
+        }
+        CockpitSeatEntity.setTrustCallback { uuid, gameTime, ticks ->
+            ShieldSolidBarrier.trustPassenger(uuid, gameTime, ticks)
         }
 
         // px/py/pz = mine model-space position (pre-amplified lever arm)
@@ -132,6 +155,28 @@ class VSShieldsModForge {
         val level = event.level as? ServerLevel ?: return
         val ship = level.getShipManagingPos(event.pos) ?: return
         AnalyzerBlockCache.getInstance().onBlockRemoved(ship.id, event.pos)
+    }
+
+    /**
+     * Allow players to break a parked (AIMING) boarding pod with bare hand hits.
+     * After MAX_HITS punches the pod breaks and drops both multiblock items.
+     */
+    @SubscribeEvent
+    fun onAttackPod(event: AttackEntityEvent) {
+        val target = event.target as? BoardingPodEntity ?: return
+        if (target.getPhase() != BoardingPodEntity.Phase.AIMING) return
+        if (target.level().isClientSide) return
+        event.isCanceled = true  // suppress default attack (no knockback / living-entity damage)
+        if (target.onHit()) {
+            val level = target.level() as ServerLevel
+            fun drop(item: net.minecraft.world.item.Item) =
+                level.addFreshEntity(net.minecraft.world.entity.item.ItemEntity(
+                    level, target.x, target.y + 0.3, target.z,
+                    net.minecraft.world.item.ItemStack(item)))
+            drop(com.mechanicalskies.vsshields.registry.ModItems.BOARDING_POD_COCKPIT.get())
+            drop(com.mechanicalskies.vsshields.registry.ModItems.BOARDING_POD_ENGINE.get())
+            target.discard()
+        }
     }
 
     @SubscribeEvent

@@ -27,6 +27,7 @@ public class VSShieldsModClient {
                 com.mechanicalskies.vsshields.client.SolidProjectionModuleScreen::new);
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> ShieldHudOverlay.render(graphics, delta));
         ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> AnalyzerHudOverlay.render(graphics, delta));
+        ClientGuiEvent.RENDER_HUD.register((graphics, delta) -> BoardingPodHudOverlay.render(graphics, delta));
 
         EntityRendererRegistry.register(ModEntities.GRAVITATIONAL_MINE, ThrownItemRenderer::new);
 
@@ -35,6 +36,7 @@ public class VSShieldsModClient {
             ShieldAmbientSoundHandler.tick();
             ShieldEffectHandler.tick();
             HelmAnalyzerHandler.tick(instance);
+            BoardingPodClientHandler.tick();
         });
     }
 
