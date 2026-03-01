@@ -1,5 +1,8 @@
 {
   "variants": {
-    "": { "model": "vs_shields:block/boarding_pod_engine" }
+    "facing=east":  { "model": "vs_shields:block/boarding_pod_engine" },
+    "facing=south": { "model": "vs_shields:block/boarding_pod_engine", "y": 90 },
+    "facing=west":  { "model": "vs_shields:block/boarding_pod_engine", "y": 180 },
+    "facing=north": { "model": "vs_shields:block/boarding_pod_engine", "y": 270 }
   }
 }

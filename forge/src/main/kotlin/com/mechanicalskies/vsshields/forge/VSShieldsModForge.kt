@@ -94,14 +94,14 @@ class VSShieldsModForge {
         }
 
         // VS2-ship boarding pod callbacks — wire PodShipManager to CockpitSeatEntity
-        CockpitSeatEntity.setRegisterCallback { podShipId, seatEntityId, ignoredShipId, dimensionId ->
-            PodShipManager.register(podShipId, seatEntityId, ignoredShipId, dimensionId)
+        CockpitSeatEntity.setRegisterCallback { podShipId, seatEntityId, ignoredShipId, dimensionId, facingOrdinal ->
+            PodShipManager.register(podShipId, seatEntityId, ignoredShipId, dimensionId, facingOrdinal)
         }
         CockpitSeatEntity.setFireCallback { seatEntityId, yaw, pitch ->
             PodShipManager.fire(seatEntityId, yaw, pitch)
         }
-        CockpitSeatEntity.setRcsCallback { seatEntityId, lateralDir, boostActive ->
-            PodShipManager.tryRcs(seatEntityId, lateralDir, boostActive)
+        CockpitSeatEntity.setRcsCallback { seatEntityId, yaw, pitch, boostActive ->
+            PodShipManager.tryRcs(seatEntityId, yaw, pitch, boostActive)
         }
         CockpitSeatEntity.setTrustCallback { uuid, gameTime, ticks ->
             ShieldSolidBarrier.trustPassenger(uuid, gameTime, ticks)

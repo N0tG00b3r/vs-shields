@@ -8,82 +8,63 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 
 /**
- * Client-side handler for Boarding Pod aiming, fire key, and RCS impulses.
+ * Client-side handler for Boarding Pod aiming, fire key, and mouse steering.
  * Registered via {@link VSShieldsModClient#initClient()}.
  *
  * Each tick:
- * - AIMING phase: if FIRE key is pressed → sends BOARDING_POD_FIRE packet.
- * - BOOST/COAST phase: if A or D is held → sends RCS impulse packet + applies
- *   local client-side prediction to avoid rubberbanding.
+ * - AIMING phase: detect fresh Space press (edge, not queued) → send BOARDING_POD_FIRE.
+ * - BOOST/COAST phase: send yaw/pitch + boostActive every tick → server rotates launchDir.
  */
 public class BoardingPodClientHandler {
 
-    /** Default: comma key (,) — can be rebound by the player. */
+    /** Fire / launch key — Space bar. Also used to hold for boost thrust. */
     public static final KeyMapping FIRE_KEY = new KeyMapping(
             "key.vs_shields.pod_fire",
-            InputConstants.Type.KEYSYM,
-            InputConstants.KEY_COMMA,
-            "key.categories.vs_shields");
-
-    /** RCS thrust upward (default: Space). */
-    public static final KeyMapping RCS_UP_KEY = new KeyMapping(
-            "key.vs_shields.rcs_up",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_SPACE,
             "key.categories.vs_shields");
 
-    /** RCS thrust downward (default: C). */
-    public static final KeyMapping RCS_DOWN_KEY = new KeyMapping(
-            "key.vs_shields.rcs_down",
-            InputConstants.Type.KEYSYM,
-            InputConstants.KEY_C,
-            "key.categories.vs_shields");
-
-    /**
-     * Client-side cooldown mirror — prevents sending repeated RCS packets
-     * before the server-side cooldown expires.
-     */
-    private static int localRcsCooldown = 0;
+    /** Edge-detect for Space in AIMING — prevents queued pre-board presses from auto-firing. */
+    private static boolean prevFireDown = false;
 
     public static void tick() {
-        // Always tick down so it resets even if the player isn't in a pod
-        if (localRcsCooldown > 0) localRcsCooldown--;
-
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
         Entity vehicle = mc.player.getVehicle();
-        if (!(vehicle instanceof CockpitSeatEntity seat)) return;
+        if (!(vehicle instanceof CockpitSeatEntity seat)) {
+            prevFireDown = false;
+            return;
+        }
 
         CockpitSeatEntity.Phase phase = seat.getPhase();
 
         if (phase == CockpitSeatEntity.Phase.AIMING) {
-            // ── Fire key ──────────────────────────────────────────────────────
-            while (FIRE_KEY.consumeClick()) {
+            // ── Fire: only on fresh key-down edge, ignores queued presses ────
+            boolean fireDown = FIRE_KEY.isDown();
+            if (fireDown && !prevFireDown) {
                 ModNetwork.sendBoardingPodFire(seat.getId(),
                         mc.player.getYRot(), mc.player.getXRot());
             }
+            prevFireDown = fireDown;
 
         } else {
-            // ── RCS: A/D (lateral) + Space/C (vertical) while in flight ──────
-            boolean pressLeft  = mc.options.keyLeft.isDown();
-            boolean pressRight = mc.options.keyRight.isDown();
-            boolean pressUp    = RCS_UP_KEY.isDown();
-            boolean pressDown  = RCS_DOWN_KEY.isDown();
+            prevFireDown = false; // reset so re-entry to AIMING can't auto-fire
 
-            // Resolve lateral: cancel if both pressed
-            int lateralDir  = (pressRight && !pressLeft) ? 1 : (pressLeft && !pressRight) ? -1 : 0;
-            // Resolve vertical: cancel if both pressed
-            int verticalDir = (pressUp && !pressDown)    ? 1 : (pressDown && !pressUp)    ? -1 : 0;
-
-            if ((lateralDir != 0 || verticalDir != 0)
-                    && localRcsCooldown == 0
-                    && seat.getRcsCharges() > 0) {
-
-                localRcsCooldown = 12; // mirrors RCS_COOLDOWN_TICKS on server
-
-                // Tell the server — PodShipManager applies momentum burst to VS2 ship physics
-                ModNetwork.sendBoardingPodRcs(seat.getId(), lateralDir, verticalDir);
+            if (phase == CockpitSeatEntity.Phase.BOOST || phase == CockpitSeatEntity.Phase.COAST) {
+                // ── Steering: send look direction + boost state every tick ───
+                // Server rotates launchDir toward player look at ≤3°/tick.
+                // Use camera's actual look vector — VS2 applies pod ship rotation to the camera
+                // via setupWithShipMounted, so mc.player.getYRot/XRot() (raw world angles) don't
+                // match what the crosshair actually points at when the ship has any rotation.
+                boolean boostDown = FIRE_KEY.isDown();
+                org.joml.Vector3f look = mc.gameRenderer.getMainCamera().getLookVector();
+                float cameraYaw   = (float) Math.toDegrees(Math.atan2(-look.x(), look.z()));
+                float cameraPitch = (float) Math.toDegrees(
+                        Math.asin(net.minecraft.util.Mth.clamp(-look.y(), -1.0, 1.0)));
+                ModNetwork.sendBoardingPodRcs(seat.getId(),
+                        cameraYaw, cameraPitch,
+                        boostDown ? 1 : 0);
             }
         }
     }

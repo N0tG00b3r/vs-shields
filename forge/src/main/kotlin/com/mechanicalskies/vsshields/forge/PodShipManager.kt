@@ -9,11 +9,8 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.level.ClipContext
 import net.minecraft.world.level.Level
 import net.minecraft.world.phys.AABB
-import net.minecraft.world.phys.HitResult
-import net.minecraft.world.phys.Vec3
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import org.joml.Quaterniond
@@ -23,6 +20,7 @@ import org.valkyrienskies.core.internal.joints.VSFixedJoint
 import org.valkyrienskies.core.internal.joints.VSJointPose
 import org.valkyrienskies.mod.common.ValkyrienSkiesMod
 import org.valkyrienskies.mod.common.assembly.ShipAssembler
+import org.valkyrienskies.mod.common.util.IEntityDraggingInformationProvider
 import org.valkyrienskies.mod.common.dimensionId
 import org.valkyrienskies.mod.common.getShipsIntersecting
 import org.valkyrienskies.mod.common.shipObjectWorld
@@ -51,7 +49,6 @@ object PodShipManager {
         /** Dimension in which this pod lives — used to skip ticks from other dimensions. */
         val dimensionId: String,
         var phase: CockpitSeatEntity.Phase = CockpitSeatEntity.Phase.AIMING,
-        var boostTicks: Int = 0,
         /** Cached velocity (m/s in VS2 units) — updated from VS2 physics each tick. */
         var velocity: Vector3d = Vector3d(),
         /**
@@ -65,8 +62,12 @@ object PodShipManager {
         var drillingLocalPos: Vector3d? = null,
         /** Normalized world-space approach direction at drill start. */
         var drillingDirection: Vector3d? = null,
-        /** Pending lateral RCS direction (+1 = right, -1 = left, 0 = none). */
-        var pendingRcs: Int = 0,
+        /**
+         * Latest player look yaw/pitch (degrees) received each tick via BOARDING_POD_RCS packet.
+         * Used by applyMouseSteering() to rotate launchDir at ≤STEER_RATE_DEG per tick.
+         */
+        var steerYaw: Float = 0f,
+        var steerPitch: Float = 0f,
         /**
          * True while the client is holding Space — enables thrust in BOOST phase.
          * Set by tryRcs() from the BOARDING_POD_RCS packet each tick.
@@ -79,12 +80,6 @@ object PodShipManager {
          * [boostActive] == true.  When it hits 0 the phase transitions to COAST.
          */
         var boostFuelTicks: Int = BOOST_TICKS,
-        /**
-         * Decaying lateral/vertical offset added to desiredVel each tick.
-         * Set by applyPendingRcs() and decays by RCS_BURST_DECAY per tick.
-         * Gives a physical "momentum burst" feel without permanently changing launchDir.
-         */
-        var rcsOffset: Vector3d = Vector3d(),
         /** World position at fire time — used to abort flight if pod drifts too far. */
         var launchPos: Vector3d = Vector3d(),
         /**
@@ -98,7 +93,30 @@ object PodShipManager {
          * startDrilling() at the moment of contact — before any hull shake or movement.
          * Converted to world coords in breach() via shipToWorld.transformPosition().
          */
-        var precomputedEjectLocal: Vector3d? = null
+        var precomputedEjectLocal: Vector3d? = null,
+        /**
+         * Pre-computed breach tunnel: 4 depth layers, each containing the 2×2 = 4 block
+         * positions for that depth slice, in target ship's shipyard coordinates.
+         * Computed in [startDrilling] at contact time; one layer is broken every
+         * [DRILL_TICKS] / 4 = 10 ticks during [tickDrilling].
+         * null → fallback to [breachHull] at breach time (should not normally happen).
+         */
+        var breachLayers: List<List<BlockPos>>? = null,
+        /** Index of the next layer in [breachLayers] that has not yet been broken. */
+        var breachLayerIndex: Int = 0,
+        /**
+         * Seat entity's world position mapped into shipyard space, computed once on the first tick
+         * after registration, then synced to the client as a String via COCKPIT_SY_POS.
+         * Passed as the constant mountPosInShip by MixinCockpitSeatShipMount so VS2 uses
+         * renderTransform × constant for perfectly smooth camera at any speed.
+         */
+        var cockpitShipyardPos: Vector3d? = null,
+        /**
+         * Normalized horizontal world-space vector in the cockpit block's FACING direction.
+         * Set at registration time from the block's Direction ordinal; used by [fire] as the
+         * initial launchDir so the pod always launches nose-forward regardless of player look.
+         */
+        val launchFacingDir: Vector3d = Vector3d(0.0, 0.0, 1.0),
     )
 
     private val pods = ConcurrentHashMap<Long, PodState>()
@@ -132,26 +150,27 @@ object PodShipManager {
      * Torque = -ANGULAR_DRAG × mass × ω  keeps the pod flying nose-forward.
      * Scales with ship mass so it works for any pod size.
      */
-    private const val ANGULAR_DRAG        = 10.0   // doubled — eliminates tumbling in flight
-    private const val MAG_LOCK_RANGE      = 7.0
-    private const val MAG_LOCK_LERP       = 0.25   // slightly smoother alignment
-    /** Lateral burst speed added to rcsOffset per RCS fire (m/s). */
-    private const val RCS_BURST_SPEED = 4.0
-    /** rcsOffset decay factor per tick (~3.5 ticks to reach < 0.01 m/s). */
-    private const val RCS_BURST_DECAY = 0.82
-    private const val RCS_COOLDOWN_TICKS  = 12
+    private const val ANGULAR_DRAG   = 10.0   // angular damping — keeps pod flying nose-forward
+    /** Max steering rotation per tick in degrees (3°/tick = 60°/s). */
+    private const val STEER_RATE_DEG = 3.0
     /** Abort flight if pod travels further than this from its launch point (blocks). */
-    private const val MAX_RANGE           = 100.0
+    private const val MAX_RANGE      = 100.0
     private const val DRILL_TICKS      = 40
 
     // ── Registry ──────────────────────────────────────────────────────────────
 
-    fun register(podShipId: Long, seatEntityId: Int, ignoredShipId: Long, dimensionId: String) {
+    fun register(podShipId: Long, seatEntityId: Int, ignoredShipId: Long, dimensionId: String, facingOrdinal: Int) {
+        // Convert Direction ordinal to a normalized horizontal world-space vector.
+        // Direction ordinals: DOWN=0 UP=1 NORTH=2(0,0,-1) SOUTH=3(0,0,1) WEST=4(-1,0,0) EAST=5(1,0,0)
+        val facing = net.minecraft.core.Direction.from3DDataValue(facingOrdinal)
+        val facingDir = Vector3d(facing.stepX.toDouble(), 0.0, facing.stepZ.toDouble()).normalize()
+
         pods[podShipId] = PodState(
-            seatEntityId  = seatEntityId,
-            podShipId     = podShipId,
-            ignoredShipId = ignoredShipId,
-            dimensionId   = dimensionId
+            seatEntityId   = seatEntityId,
+            podShipId      = podShipId,
+            ignoredShipId  = ignoredShipId,
+            dimensionId    = dimensionId,
+            launchFacingDir = facingDir
         )
     }
 
@@ -165,14 +184,9 @@ object PodShipManager {
     fun fire(seatEntityId: Int, yaw: Float, pitch: Float) {
         val state = pods.values.find { it.seatEntityId == seatEntityId } ?: return
         if (state.phase != CockpitSeatEntity.Phase.AIMING) return
-        val radY = Math.toRadians(yaw.toDouble())
-        val radP = Math.toRadians(pitch.toDouble())
-        val dir = Vector3d(
-            -sin(radY) * cos(radP),
-            -sin(radP) * 1.15,    // slight vertical amplification so pod tracks aimed altitude
-             cos(radY) * cos(radP)
-        )
-        dir.normalize()
+        // Use the cockpit block's FACING direction — pod always launches nose-forward.
+        // Ignore player yaw/pitch for initial direction (player can still steer with mouse after launch).
+        val dir = Vector3d(state.launchFacingDir)
         // Fix launch direction at fire time — thrust and RCS axes stay locked to this
         state.launchDir  = dir
         state.velocity   = Vector3d(dir)   // unit vec; speed built up by tickBoost
@@ -185,16 +199,18 @@ object PodShipManager {
         state.drillingDirection     = null
         state.drillingJointId       = null
         state.precomputedEjectLocal = null
-        state.pendingRcs            = 0
+        state.breachLayers          = null
+        state.breachLayerIndex      = 0
     }
 
     /** Called via CockpitSeatEntity.rcsCallback every client tick during BOOST/COAST.
-     *  [boostActive] == 1 means Space is held → apply thrust (BOOST phase only, uses fuel). */
-    fun tryRcs(seatEntityId: Int, lateralDir: Int, boostActive: Int) {
+     *  Stores yaw/pitch for mouse steering; [boostActive]==1 means Space held → thrust. */
+    fun tryRcs(seatEntityId: Int, yaw: Float, pitch: Float, boostActive: Int) {
         val state = pods.values.find { it.seatEntityId == seatEntityId } ?: return
         if (state.phase == CockpitSeatEntity.Phase.AIMING ||
             state.phase == CockpitSeatEntity.Phase.DRILLING) return
-        if (lateralDir != 0) state.pendingRcs = lateralDir
+        state.steerYaw   = yaw
+        state.steerPitch = pitch
         if (state.phase == CockpitSeatEntity.Phase.BOOST)
             state.boostActive = boostActive != 0
     }
@@ -246,9 +262,23 @@ object PodShipManager {
                 continue
             }
 
-            // Sync seat position to pod ship center each tick
-            val podPos = podShip.transform.positionInWorld
-            seat.setPos(podPos.x(), podPos.y(), podPos.z())
+            // Compute cockpit shipyard pos once on the first tick (world → ship transform).
+            // Synced to client as COCKPIT_SY_POS string; used by MixinCockpitSeatShipMount
+            // as a stable constant mountPosInShip so VS2's renderTransform × constant is smooth.
+            if (state.cockpitShipyardPos == null) {
+                state.cockpitShipyardPos = podShip.worldToShip
+                    .transformPosition(Vector3d(seat.x, seat.y, seat.z), Vector3d())
+                val cp = state.cockpitShipyardPos!!
+                seat.setCockpitShipyardPosStr("${cp.x},${cp.y},${cp.z}")
+            }
+
+            // VS2-native entity tracking: drag the seat with the pod ship each tick.
+            // Keeps the seat entity at the correct world position via VS2's EntityDragger.
+            // Must be called every tick — dragging expires after TICKS_TO_DRAG_ENTITIES (25) ticks.
+            (seat as? IEntityDraggingInformationProvider)?.`vs$dragImmediately`(podShip)
+
+            // Sync pod speed to seat entity so the client HUD can display it
+            seat.setSpeedMps(podShip.velocity.length().roundToInt())
 
             when (state.phase) {
                 CockpitSeatEntity.Phase.AIMING   -> tickAiming(state, podShip, gtpa)
@@ -278,16 +308,10 @@ object PodShipManager {
                 level.explode(null, pos.x(), pos.y(), pos.z(), 1.0f, Level.ExplosionInteraction.BLOCK)
             }
         } else {
-            level.explode(null, pos.x(), pos.y(), pos.z(), 5.0f, Level.ExplosionInteraction.BLOCK)
-            // Fallback cleanup if explosion left the VS2 ship intact
-            val shipId = podShip.id
-            level.server.tell(net.minecraft.server.TickTask(level.server.tickCount + 2) {
-                try {
-                    val remaining = level.shipObjectWorld.loadedShips.getById(shipId)
-                    if (remaining != null)
-                        ShipAssembler.deleteShip(level, remaining as LoadedServerShip, true, false)
-                } catch (_: Exception) {}
-            })
+            // Visual-only explosion (sound + particles) — no block damage, no item drops
+            level.explode(null, pos.x(), pos.y(), pos.z(), 5.0f, Level.ExplosionInteraction.NONE)
+            // Silently remove the VS2 ship (no block drops)
+            try { ShipAssembler.deleteShip(level, podShip, false, false) } catch (_: Exception) {}
         }
     }
 
@@ -335,13 +359,14 @@ object PodShipManager {
         // Liftoff burst: first few ticks after launch regardless of Space state
         val liftoff = if (state.boostPhaseTick <= LIFTOFF_TICKS) LIFTOFF_FORCE else 0.0
 
+        // Steering: rotate launchDir toward player look direction ≤STEER_RATE_DEG/tick
+        applyMouseSteering(state)
+
         if (state.boostActive && state.boostFuelTicks > 0) {
             // ── Thrusting (Space held, fuel available) ───────────────────────
-            // Ramp: speed increases as fuel is consumed (0 → TARGET_SPEED over BOOST_RAMP_TICKS).
             val fuelConsumed = (BOOST_TICKS - state.boostFuelTicks).toDouble()
             val t = (fuelConsumed / BOOST_RAMP_TICKS).coerceIn(0.0, 1.0)
-            decayRcsOffset(state)
-            val desiredVel = Vector3d(state.launchDir).mul(TARGET_SPEED * t).add(state.rcsOffset)
+            val desiredVel = Vector3d(state.launchDir).mul(TARGET_SPEED * t)
             gtpa.applyInvariantForce(state.podShipId, Vector3d(
                 (desiredVel.x - curVel.x()) * VEL_KP,
                 (desiredVel.y - curVel.y()) * VEL_KP + antiGrav + liftoff,
@@ -349,25 +374,20 @@ object PodShipManager {
             ))
 
             state.boostFuelTicks--
-            // Engine sound — pitch varies slightly for a less robotic feel
+            seat.setBoostFuel(state.boostFuelTicks)
             if (state.boostFuelTicks % 4 == 0) {
                 level.playSound(null, pos.x(), pos.y(), pos.z(),
                     SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS,
                     0.9f, 0.85f + level.random.nextFloat() * 0.3f)
             }
-            // Auto-aim toward detected target hull while thrusting
-            tryMagneticAlign(state, podShip, gtpa, level)
-            // Fuel exhausted → COAST
             if (state.boostFuelTicks <= 0) {
                 state.phase = CockpitSeatEntity.Phase.COAST
                 seat.setPhase(CockpitSeatEntity.Phase.COAST)
             }
         } else {
-            // ── Coasting (Space released or no fuel) ─────────────────────────
-            // Maintain current speed and direction — pod glides until Space is pressed again.
-            decayRcsOffset(state)
+            // ── Gliding (Space released or no fuel) ──────────────────────────
             val speed = Vector3d(curVel.x(), 0.0, curVel.z()).length().coerceAtLeast(0.1)
-            val desiredVel = Vector3d(state.launchDir).mul(speed).add(state.rcsOffset)
+            val desiredVel = Vector3d(state.launchDir).mul(speed)
             gtpa.applyInvariantForce(state.podShipId, Vector3d(
                 (desiredVel.x - curVel.x()) * VEL_KP,
                 antiGrav + liftoff,
@@ -375,7 +395,6 @@ object PodShipManager {
             ))
         }
 
-        // Angular damping — keeps pod flying nose-forward regardless of thrust state
         val omega = podShip.angularVelocity
         gtpa.applyInvariantTorque(state.podShipId, Vector3d(
             -ANGULAR_DRAG * mass * omega.x(),
@@ -383,11 +402,8 @@ object PodShipManager {
             -ANGULAR_DRAG * mass * omega.z()
         ))
 
-        applyPendingRcs(state, seat, level, pos)
         state.velocity = Vector3d(curVel)
         seat.setPhase(CockpitSeatEntity.Phase.BOOST)
-
-        // Always check for hull contact so drilling can start in any thrust state
         checkShipCollision(state, podShip, level)
     }
 
@@ -413,13 +429,13 @@ object PodShipManager {
         state.velocity = Vector3d(podShip.velocity)
         seat.setPhase(CockpitSeatEntity.Phase.COAST)
 
-        // No more fuel — pod glides at current speed.
-        // Maintain XZ speed in launchDir so magnetic align can still steer it.
-        // AntiGrav on Y prevents gravity from pulling the pod into the ground.
+        // Steering: rotate launchDir toward player look direction
+        applyMouseSteering(state)
+
+        // Glide at current speed; maintain XZ direction via launchDir; antiGrav on Y.
         val curVelCoast = podShip.velocity
-        decayRcsOffset(state)
         val coastSpeed = Vector3d(curVelCoast.x(), 0.0, curVelCoast.z()).length().coerceAtLeast(0.1)
-        val desiredVelCoast = Vector3d(state.launchDir).mul(coastSpeed).add(state.rcsOffset)
+        val desiredVelCoast = Vector3d(state.launchDir).mul(coastSpeed)
         gtpa.applyInvariantForce(state.podShipId, Vector3d(
             (desiredVelCoast.x - curVelCoast.x()) * VEL_KP,
             mass * 9.81,
@@ -433,9 +449,6 @@ object PodShipManager {
             -ANGULAR_DRAG * mass * omega.z()
         ))
 
-        applyPendingRcs(state, seat, level, pos)
-
-        tryMagneticAlign(state, podShip, gtpa, level)
         checkShipCollision(state, podShip, level)
 
         if (pos.y() < level.minBuildHeight.toDouble() - 30.0) {
@@ -444,92 +457,31 @@ object PodShipManager {
         }
     }
 
-    // ── RCS impulse ───────────────────────────────────────────────────────────
+    // ── Mouse steering ────────────────────────────────────────────────────────
 
     /**
-     * Consumes [PodState.pendingRcs]/[PodState.pendingRcsV] and adds a momentum burst to
-     * [PodState.rcsOffset].  The velocity controller in tickBoost/tickCoast uses
-     * `desiredVel + rcsOffset` as its target, so the burst is applied each tick until it
-     * decays to zero (≈3–4 ticks at RCS_BURST_DECAY=0.82).
+     * Rotates [PodState.launchDir] toward the player's current look direction at a
+     * maximum of [STEER_RATE_DEG] degrees per tick.  This replaces RCS + magnetic align:
+     * the VEL_KP controller then naturally follows the updated launchDir.
      *
-     * launchDir is intentionally NOT modified — the pod returns to its original course after
-     * the burst fades.  Charge/cooldown are consumed here (not in ModNetwork).
+     * When the angular delta is ≤ STEER_RATE_DEG the pod snaps exactly to the target.
+     * At larger angles it turns at exactly STEER_RATE_DEG/tick regardless of deviation.
      */
-    private fun applyPendingRcs(state: PodState, seat: CockpitSeatEntity,
-                                 level: ServerLevel, pos: org.joml.Vector3dc) {
-        val latDir = state.pendingRcs; state.pendingRcs = 0
-        if (latDir == 0) return
-        if (seat.rcsCharges <= 0 || seat.rcsCooldown > 0) return
+    private fun applyMouseSteering(state: PodState) {
+        val yaw = Math.toRadians(state.steerYaw.toDouble())
+        val pit = Math.toRadians(state.steerPitch.toDouble())
+        val desiredDir = Vector3d(
+            -sin(yaw) * cos(pit),
+            -sin(pit),
+             cos(yaw) * cos(pit)
+        ).normalize()
 
-        val forward = Vector3d(state.launchDir)
-        val worldUp = if (abs(forward.y) < 0.9) Vector3d(0.0, 1.0, 0.0)
-                      else                       Vector3d(1.0, 0.0, 0.0)
-        // forward × worldUp = right-hand direction relative to flight direction
-        val right = Vector3d(forward).cross(worldUp, Vector3d()).normalize()
+        val cosAngle = state.launchDir.dot(desiredDir).coerceIn(-1.0, 1.0)
+        if (cosAngle >= 1.0 - 1e-6) return  // already aligned
 
-        state.rcsOffset.add(Vector3d(right).mul(latDir.toDouble() * RCS_BURST_SPEED))
-
-        seat.setRcsCharges(seat.rcsCharges - 1)
-        seat.setRcsCooldown(RCS_COOLDOWN_TICKS)
-        level.playSound(null, pos.x(), pos.y(), pos.z(),
-            SoundEvents.PISTON_EXTEND, SoundSource.PLAYERS, 0.5f, 1.2f)
-    }
-
-    /** Decays rcsOffset each tick and zeroes it when negligible. */
-    private fun decayRcsOffset(state: PodState) {
-        state.rcsOffset.mul(RCS_BURST_DECAY)
-        if (state.rcsOffset.lengthSquared() < 0.01) state.rcsOffset.set(0.0, 0.0, 0.0)
-    }
-
-    // ── Terminal Magnetic Align ────────────────────────────────────────────────
-
-    private fun tryMagneticAlign(state: PodState, podShip: LoadedServerShip,
-                                  gtpa: GameToPhysicsAdapter,
-                                  level: ServerLevel) {
-        val vel = state.velocity
-        if (vel.lengthSquared() < 1e-4) return
-
-        val podPos = podShip.transform.positionInWorld
-        val velNorm = vel.normalize(Vector3d())
-        val rayEnd = Vector3d(podPos).add(Vector3d(velNorm).mul(MAG_LOCK_RANGE))
-
-        // lockAABB is a sphere-like box around rayEnd: ships whose AABB intersects this
-        // are candidates for magnetic alignment (same logic as the old expanded-AABB check)
-        val lockAABB = AABB(
-            rayEnd.x - MAG_LOCK_RANGE, rayEnd.y - MAG_LOCK_RANGE, rayEnd.z - MAG_LOCK_RANGE,
-            rayEnd.x + MAG_LOCK_RANGE, rayEnd.y + MAG_LOCK_RANGE, rayEnd.z + MAG_LOCK_RANGE
-        )
-        for (ship in level.getShipsIntersecting(lockAABB)) {
-            if (ship.id == state.podShipId || ship.id == state.ignoredShipId) continue
-
-            // Raycast in shipyard space
-            val w2s = ship.worldToShip
-            val spStart = w2s.transformPosition(Vector3d(podPos.x(), podPos.y(), podPos.z()), Vector3d())
-            val spEnd   = w2s.transformPosition(Vector3d(rayEnd.x, rayEnd.y, rayEnd.z),       Vector3d())
-            val clipCtx = ClipContext(
-                Vec3(spStart.x, spStart.y, spStart.z),
-                Vec3(spEnd.x,   spEnd.y,   spEnd.z),
-                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null)
-            val bhr = level.clip(clipCtx)
-            if (bhr.type == HitResult.Type.MISS) continue
-
-            // Transform face normal to world space
-            val face = bhr.direction
-            val nShip = Vector3d(face.stepX.toDouble(), face.stepY.toDouble(), face.stepZ.toDouble())
-            ship.shipToWorld.transformDirection(nShip).normalize()
-
-            // Lerp launchDir toward -nShip (into hull) so the velocity controller
-            // steers the pod toward the hull face on its own — no separate corrective force needed.
-            val speed = vel.length()
-            val target = nShip.negate(Vector3d())
-            val aligned = Vector3d(velNorm)
-                .lerp(target, MAG_LOCK_LERP)
-                .normalize()
-
-            state.velocity  = Vector3d(aligned).mul(speed)
-            state.launchDir = Vector3d(aligned)   // controller will steer to hull face
-            break
-        }
+        val angleDeg = Math.toDegrees(acos(cosAngle))
+        val t = (STEER_RATE_DEG / angleDeg).coerceIn(0.0, 1.0)
+        state.launchDir = Vector3d(state.launchDir).lerp(desiredDir, t).normalize()
     }
 
     // ── Collision check (AABB overlap) ────────────────────────────────────────
@@ -578,6 +530,10 @@ object PodShipManager {
         // Converted to world coords in breach() so ship movement during drilling is handled.
         state.precomputedEjectLocal = computeEjectLocal(level, targetShip, attachLocalPos, approachDir)
 
+        // Precompute the 4 breach layers so they can be broken progressively during tickDrilling.
+        state.breachLayers     = precomputeBreachLayers(level, targetShip, attachLocalPos, approachDir)
+        state.breachLayerIndex = 0
+
         // Attach pod rigidly to target ship via VSFixedJoint.
         // The joint attachment point on the target IS attachLocalPos — no extra computation.
         val poseOnPod    = VSJointPose(podShip.worldToShip.transformPosition(podPosVec, Vector3d()), Quaterniond())
@@ -618,9 +574,28 @@ object PodShipManager {
         seat.setPhase(CockpitSeatEntity.Phase.DRILLING)
 
         val timer = seat.getDrillTimer()
+        val pos = podShip.transform.positionInWorld
+
+        // Progressive hull breach: break one 2×2 depth layer every (DRILL_TICKS / 4) ticks.
+        // elapsed=0 on the first drilling tick (timer==DRILL_TICKS), rises to DRILL_TICKS-1.
+        val elapsed = DRILL_TICKS - timer
+        val targetLayerIdx = elapsed / (DRILL_TICKS / 4)  // 0, 1, 2, 3
+        val layers = state.breachLayers
+        if (layers != null &&
+            state.breachLayerIndex <= targetLayerIdx &&
+            state.breachLayerIndex < layers.size) {
+            val layer = layers[state.breachLayerIndex]
+            for (bp in layer) {
+                if (!level.getBlockState(bp).isAir) level.destroyBlock(bp, false)
+            }
+            level.playSound(null, pos.x(), pos.y(), pos.z(),
+                SoundEvents.STONE_BREAK, SoundSource.PLAYERS,
+                1.0f, 0.65f + level.random.nextFloat() * 0.3f)
+            state.breachLayerIndex++
+        }
+
         seat.setDrillTimer(timer - 1)
 
-        val pos = podShip.transform.positionInWorld
         if (timer % 8 == 0) {
             level.playSound(null, pos.x(), pos.y(), pos.z(),
                 SoundEvents.GRINDSTONE_USE, SoundSource.PLAYERS,
@@ -661,9 +636,10 @@ object PodShipManager {
                 ?.trustPassenger(passenger.uuid, level.gameTime, 200)
         }
 
-        // Breach hull in target ship (eject position was precomputed before this call)
+        // Breach hull in target ship — layers were broken progressively during tickDrilling;
+        // only fall back to breachHull() if precomputeBreachLayers() returned nothing.
         val drillingLocalPos = state.drillingLocalPos
-        if (drillingLocalPos != null && drillingDirection != null) {
+        if (drillingLocalPos != null && drillingDirection != null && state.breachLayers.isNullOrEmpty()) {
             breachHull(level, targetShip, drillingLocalPos, drillingDirection)
         }
 
@@ -721,6 +697,61 @@ object PodShipManager {
         }
         // Fallback: 2 blocks past contact (nothing solid found in search range)
         return Vector3d(drillingLocalPos).add(Vector3d(fwdShip).mul(2.0))
+    }
+
+    // ── Breach layer pre-computation ──────────────────────────────────────────
+
+    /**
+     * Pre-computes the 4 depth layers of a 2×2×4 breach tunnel in the target ship's
+     * shipyard coordinate space.  Called once from [startDrilling] so the block positions
+     * are stable even if the target ship moves or rotates during the 40-tick drilling window.
+     *
+     * Uses the same ray-march as [breachHull] to find the first solid contact block, then
+     * returns four lists of [BlockPos] (one per depth slice, each with up to 4 blocks).
+     */
+    private fun precomputeBreachLayers(level: ServerLevel, targetShip: LoadedServerShip,
+                                        localPos: Vector3d, worldDir: Vector3d): List<List<BlockPos>> {
+        return try {
+            val fwd = targetShip.worldToShip.transformDirection(Vector3d(worldDir), Vector3d()).normalize()
+
+            // Ray-march to find first solid block (same search range as breachHull)
+            var hitX = 0; var hitY = 0; var hitZ = 0
+            var foundBlock = false
+            for (step in -6..8) {
+                val tx = Math.round(localPos.x + fwd.x * step).toInt()
+                val ty = Math.round(localPos.y + fwd.y * step).toInt()
+                val tz = Math.round(localPos.z + fwd.z * step).toInt()
+                if (!level.getBlockState(BlockPos(tx, ty, tz)).isAir) {
+                    hitX = tx; hitY = ty; hitZ = tz
+                    foundBlock = true
+                    break
+                }
+            }
+            if (!foundBlock) return emptyList()
+
+            val worldUp = if (abs(fwd.y) < 0.9) Vector3d(0.0, 1.0, 0.0)
+                          else                   Vector3d(1.0, 0.0, 0.0)
+            val right  = worldUp.cross(fwd,  Vector3d()).normalize()
+            val upPerp = fwd.cross   (right, Vector3d()).normalize()
+
+            // Build 4 depth layers, each containing the 2×2 cross-section at that depth
+            (0..3).map { d ->
+                val bx = hitX + Math.round(fwd.x * d).toInt()
+                val by = hitY + Math.round(fwd.y * d).toInt()
+                val bz = hitZ + Math.round(fwd.z * d).toInt()
+                listOf(-1, 0).flatMap { i ->
+                    listOf(-1, 0).map { j ->
+                        BlockPos(
+                            bx + Math.round(right.x * i + upPerp.x * j).toInt(),
+                            by + Math.round(right.y * i + upPerp.y * j).toInt(),
+                            bz + Math.round(right.z * i + upPerp.z * j).toInt()
+                        )
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 
     // ── Hull breach ───────────────────────────────────────────────────────────

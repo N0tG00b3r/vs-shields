@@ -1,0 +1,6 @@
+# Made in Blockbench 5.0.7
+newmtl m_9a603c68-2320-2e4a-3158-bf9481055bba
+Kd 1.0 1.0 1.0
+d 1.0
+map_Kd vs_shields:block/cockpit
+newmtl none

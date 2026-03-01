@@ -23,7 +23,7 @@ public class MixinEntityCockpitEye {
     private void cockpitEyeHeight(CallbackInfoReturnable<Float> cir) {
         Entity self = (Entity)(Object)this;
         if (self instanceof Player && self.getVehicle() instanceof CockpitSeatEntity) {
-            cir.setReturnValue(0.6f);
+            cir.setReturnValue(0.7f);
         }
     }
 }

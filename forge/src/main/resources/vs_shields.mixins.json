@@ -6,7 +6,8 @@
   "client": [
     "TacticalNetheriteHelmForgeMixin",
     "MixinEmbeddingShipVisual",
-    "MixinRenderingShipVisual"
+    "MixinRenderingShipVisual",
+    "MixinCockpitSeatShipMount"
   ],
   "mixins": [
     "MixinPlayerCockpitSize",

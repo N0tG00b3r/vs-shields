@@ -1,12 +1,10 @@
 package com.mechanicalskies.vsshields.forge.client
 
 import com.mechanicalskies.vsshields.entity.CockpitSeatEntity
-import net.minecraft.client.CameraType
 import net.minecraft.client.Minecraft
 import net.minecraft.util.Mth
 import net.minecraftforge.client.event.RenderPlayerEvent
 import net.minecraftforge.client.event.ViewportEvent
-import net.minecraftforge.event.TickEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import kotlin.random.Random
 
@@ -15,41 +13,10 @@ import kotlin.random.Random
  * in the DRILLING phase. Intensity decreases linearly as the drill timer
  * counts down from DRILL_TOTAL_TICKS to 0.
  *
- * Also forces first-person view while riding a [CockpitSeatEntity] so the camera
- * doesn't clip through pod geometry in third-person mode. The previous camera type
- * is restored on dismount.
+ * Third-person view (F5) works freely — VS2 handles it natively via
+ * ShipMountedToDataProvider on CockpitSeatEntity.
  */
 object DrillShakeHandler {
-
-    private var savedCameraType: CameraType? = null
-    private var wasRidingPod = false
-
-    @SubscribeEvent
-    fun onClientTick(event: TickEvent.ClientTickEvent) {
-        if (event.phase != TickEvent.Phase.START) return
-        val mc = Minecraft.getInstance()
-        val player = mc.player ?: return
-        val isRiding = player.vehicle is CockpitSeatEntity
-
-        if (isRiding) {
-            if (!wasRidingPod) {
-                // Just mounted — save the current camera type and switch to first-person
-                savedCameraType = mc.options.cameraType
-                wasRidingPod = true
-            }
-            if (mc.options.cameraType != CameraType.FIRST_PERSON) {
-                mc.options.cameraType = CameraType.FIRST_PERSON
-            }
-        } else if (wasRidingPod) {
-            // Just dismounted — restore previous camera type
-            wasRidingPod = false
-            val saved = savedCameraType
-            if (saved != null && saved != CameraType.FIRST_PERSON) {
-                mc.options.cameraType = saved
-            }
-            savedCameraType = null
-        }
-    }
 
     /**
      * Scales the player's rendered model down while seated in a cockpit so they look

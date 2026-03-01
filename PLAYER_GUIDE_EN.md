@@ -252,56 +252,50 @@ A two-block assault craft for boarding enemy ships.
 
 **How to deploy:**
 1. Craft a **Boarding Pod Cockpit** and a **Boarding Pod Engine**.
-2. Place them side-by-side on your ship --- the engine must be directly adjacent to the cockpit horizontally.
-3. Right-click the **cockpit** to board --- you will be seated inside the pod.
-4. Aim with your mouse. A targeting HUD appears showing your yaw/pitch.
-5. Press the **Fire** key (unbound by default --- assign it in **Options -> Controls -> VS Shields**).
+2. Place them side-by-side on your ship — the engine must be directly adjacent to the cockpit horizontally.
+3. Orient your ship so the **cockpit faces the target** — the pod always launches in the cockpit block's **FACING** direction.
+4. Right-click the **cockpit** to board. A HUD shows your current yaw/pitch.
+5. Press the **Fire** key (unbound by default — assign it in **Options → Controls → VS Shields**).
 6. Press **Sneak** at any time to safely dismount without firing.
+7. Press **F5** at any time to toggle between first-person and third-person view.
 
 **Flight phases:**
 
-| Phase | Duration | Description | RCS |
-|-------|----------|-------------|-----|
-| **Aiming** | Until you fire | Pod is stationary; you control aim | — |
-| **Boost** | 40 ticks (2 sec) | Rapid acceleration, near-zero gravity | Active |
-| **Coast** | Until impact | Ballistic arc under full gravity | Active |
-| **Drilling** | 40 ticks (2 sec) | Locked to target hull; drilling through | — |
+| Phase | Duration | Description |
+|-------|----------|-------------|
+| **Aiming** | Until you fire | Pod is frozen in place (VS2 static); initial launch direction = cockpit **FACING** |
+| **Boost** | Up to 80 ticks (4 sec) | Hold **Space** to fire the rocket; pod ramps up to 40 m/s |
+| **Coast** | Until impact | Ballistic arc under full gravity |
+| **Drilling** | 40 ticks (2 sec) | Rigidly attached to the target hull via VS2 joint; drilling through |
 
-**Terminal Magnetic Lock:**
+**Mouse Steering:**
 
-In the final 7 blocks before reaching a ship, the pod automatically steers its velocity perpendicular to the nearest armour face. This guarantees the breach tunnel is always straight — no more staggered "staircase" holes from oblique approaches.
+During **Boost** and **Coast** the pod automatically turns toward where your crosshair is pointing — up to **3° per tick** (60°/sec). Works correctly regardless of how the pod ship is physically oriented (VS2-native camera). Simply look at your target and the pod curves toward it. The HUD shows:
+- **Speed** — current velocity in m/s at the top of the flight display
+- **BOOST fuel bar** — green → yellow → red; empties if you hold Space continuously for 4 seconds
 
-**RCS Thrusters (Reaction Control System):**
-
-During Boost and Coast you can make lateral course corrections using the **strafe keys (A / D)**:
-
-- Each press fires a sideways thruster burst; the pod rotates to face its new heading
-- The pod starts every launch with **5 charges** --- unused charges are *not* carried over
-- There is a **0.6-second cooldown** (12 ticks) between bursts so you cannot spend all charges instantly
-- While in flight the HUD displays charge pips above the hotbar:
-  - **Green ●** = ready
-  - **Yellow ●** = on cooldown
-  - **Grey ○** = spent
-- A white cloud particle burst vents from the opposite side of the thrust, and a short mechanical hiss plays
+**Hold Space to thrust:**
+- While in Boost phase, holding **Space** applies rocket force and consumes fuel
+- Release Space to glide at current speed (no deceleration, gravity still applies)
+- When fuel runs out the pod transitions to Coast automatically
 
 **On impact with a VS2 ship:**
 
-1. **Drilling phase** — the pod locks to the hull for 2 seconds. Metal-grinding sounds, sparks, and a camera shake play. If the target ship moves or rotates during this time, the pod moves with it.
+1. **Drilling phase** — the pod locks rigidly to the hull via a VS2 fixed joint for 2 seconds. Metal-grinding sounds, sparks, and a camera shake play. If the target ship moves or rotates during drilling, the pod follows it exactly.
 2. **Breach** — the pod cuts a clean **2×2×4** tunnel at the exact angle of approach.
 3. Deals **100 HP** to any active **Solid Projection Module** barrier on the target.
 4. The passenger receives **200 ticks (10 sec)** of trusted status — they temporarily bypass solid barriers.
 
 **Countermeasures:**
-- The pod has **10 HP** during Boost and Coast --- it can be shot down by arrows, cannon shells, or melee
+- The pod has **10 HP** during Boost and Coast — it can be shot down by arrows, cannon shells, or melee
 - If the pod is destroyed mid-flight, the passenger falls freely with no teleport assist
 - The pod cannot be damaged while Drilling (it is already embedded in the hull)
 
 **Tips:**
-- Aim slightly above horizontal for maximum range (the pod follows a proper ballistic trajectory)
-- The Terminal Magnetic Lock handles the final alignment — you do not need to hit perfectly straight
-- Use RCS early in Boost phase when you still have high velocity --- corrections are most effective then
-- Save 1--2 charges for late course correction if the target ship is maneuvering
-- The pod does not detonate on non-ship terrain --- it simply breaks, dropping the passenger safely
+- Aim slightly above horizontal for maximum range
+- Use short Space bursts early in flight to conserve fuel for final approach corrections
+- Keep looking at the target — the mouse steering handles the rest
+- The pod does not detonate on non-ship terrain — it simply breaks, dropping the passenger safely
 - The engine block provides thrust; without it, the cockpit cannot be activated
 
 ---

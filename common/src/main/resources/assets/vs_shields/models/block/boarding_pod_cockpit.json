@@ -1,6 +1,37 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "loader": "forge:composite",
   "textures": {
-    "all": "vs_shields:block/boarding_pod_cockpit"
+    "particle": "vs_shields:block/cockpit"
+  },
+  "children": {
+    "frame": {
+      "loader": "forge:obj",
+      "flip_v": true,
+      "model": "vs_shields:models/block/cockpit_frame_model.obj",
+      "render_type": "minecraft:solid",
+      "textures": {
+        "particle": "vs_shields:block/cockpit",
+        "m_9a603c68-2320-2e4a-3158-bf9481055bba": "vs_shields:block/cockpit"
+      }
+    },
+    "glass": {
+      "loader": "forge:obj",
+      "flip_v": true,
+      "model": "vs_shields:models/block/cockpit_glass_model.obj",
+      "render_type": "minecraft:translucent",
+      "textures": {
+        "particle": "vs_shields:block/cockpit",
+        "m_9a603c68-2320-2e4a-3158-bf9481055bba": "vs_shields:block/cockpit"
+      }
+    }
+  },
+  "display": {
+    "gui":                   { "rotation": [30, 225, 0], "translation": [0, 0, 0], "scale": [0.625, 0.625, 0.625] },
+    "ground":                { "rotation": [0,  0,   0], "translation": [0, 3, 0], "scale": [0.25,  0.25,  0.25]  },
+    "fixed":                 { "rotation": [0,  0,   0], "translation": [0, 0, 0], "scale": [0.5,   0.5,   0.5]   },
+    "thirdperson_righthand": { "rotation": [75, 45,  0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375] },
+    "thirdperson_lefthand":  { "rotation": [75, 225, 0], "translation": [0, 2.5, 0], "scale": [0.375, 0.375, 0.375] },
+    "firstperson_righthand": { "rotation": [0,  45,  0], "translation": [0, 0, 0], "scale": [0.40,  0.40,  0.40]  },
+    "firstperson_lefthand":  { "rotation": [0,  225, 0], "translation": [0, 0, 0], "scale": [0.40,  0.40,  0.40]  }
   }
 }

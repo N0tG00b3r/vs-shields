@@ -26,7 +26,7 @@ Wrap your VS2 warship in a procedural energy shield that stops projectiles, abso
 - **Gravitational Mine + Launcher** — deployable space-mines that apply massive physical torque to enemy ships on detonation
 - **Redstone output** — Shield Generator pulses a redstone signal when struck; wire it into your own alert systems
 - **Solid Projection Module** — turns the energy shield into a physical barrier; access controlled by programmable **Frequency ID Cards** (up to 8-char codes, Curios-compatible)
-- **Boarding Pod** — 2-block multiblock assault craft; player boards, aims with mouse, fires on a ballistic arc and breaches a 2×2×4 tunnel into the target ship's hull; **RCS Thrusters** allow 5 mid-flight lateral impulses (A/D keys)
+- **Boarding Pod** — 2-block multiblock assault craft that assembles into a full VS2 physics ship; aim with the mouse, hold **Space** to fire the rocket booster, steer mid-flight by looking where you want to go (crosshair-accurate steering at any ship rotation); breaches a 2×2×4 tunnel into the target hull
 - **Forge Energy & Create SU** — power from any FE cable, or directly from Create rotation shafts
 - **Mod compatibility** — full damage tables for Create: Big Cannons (all shell types including Nuke Shell) and Create: Gunsmithing (projectile + hitscan weapons)
 - **JSON config** — every damage value, energy cost, recharge rate, and visual option is configurable in `config/vs_shields.json`
@@ -173,24 +173,18 @@ A two-block assault craft for boarding enemy ships.
 
 **Flight phases:**
 
-| Phase | Duration | Description | RCS |
-|-------|----------|-------------|-----|
-| **Aiming** | Until fire | Stationary; player controls aim | — |
-| **Boost** | 40 ticks (2 sec) | Rocket burn, near-zero gravity | Active |
-| **Coast** | Until impact | Ballistic arc under full gravity | Active |
-| **Drilling** | 40 ticks (2 sec) | Attached to hull; drilling through | — |
+| Phase | Duration | Description |
+|-------|----------|-------------|
+| **Aiming** | Until fire | Stationary (VS2 frozen); aim with the mouse |
+| **Boost** | Up to 80 ticks (4 sec) | Hold **Space** to thrust; pod ramps to 40 m/s and steers toward your look direction |
+| **Coast** | Until impact | Ballistic arc; continue steering with the mouse |
+| **Drilling** | 40 ticks (2 sec) | VS2 FixedJoint to hull; follows target if it moves |
 
-**Terminal Magnetic Lock:**
-In the last 7 blocks before reaching a ship's hull the pod automatically steers its velocity perpendicular to the nearest armour face — ensuring the breach tunnel is always straight regardless of approach angle.
-
-**RCS Thrusters:**
-- Press **A** or **D** during Boost/Coast to fire a lateral thruster burst
-- Each press consumes **1 of 5 charges** (refilled on each new launch) and rotates the pod to face its new heading
-- **0.6 s cooldown** between bursts; HUD shows remaining charges above the hotbar
-- Charges are destroyed with the pod — you cannot bank unused thrusts
+**Mouse Steering:**
+The pod turns up to **3°/tick** toward where the player is looking during Boost and Coast — no separate keybinds needed. The HUD shows current speed (m/s) and remaining boost fuel.
 
 **On impact with a VS2 ship:**
-1. **Drilling phase** — pod locks to the hull for 2 seconds with metal-grinding sound, sparks, and camera shake; follows the ship if it moves or rotates
+1. **Drilling phase** — pod locks rigidly to the hull for 2 seconds with metal-grinding sound, sparks, and camera shake; follows the ship if it moves or rotates
 2. **Breach** — drills a clean **2×2×4** tunnel into the hull at the exact angle of approach
 3. Deals **100 HP** to any active Solid Projection Module barrier on the target
 4. Passenger receives **200 ticks (10 sec)** of trusted status — bypasses solid barriers briefly
@@ -259,9 +253,8 @@ All settings live in `config/vs_shields.json`. The file is auto-generated on fir
 |-----|---------|-------------|
 | `shieldPadding` | `10.0` | Extra blocks added to each side of the ship AABB when sizing the shield sphere |
 | `showShieldBubble` | `true` | `false` hides the hex bubble completely for all players (client-only; no effect on damage) |
+| `hideShieldBubbleInside` | `false` | `true` hides the bubble for crew standing inside the shield; outside view is unaffected |
 | `syncIntervalTicks` | `10` | How often (ticks) the server pushes shield HP/state to clients |
-
-> The shield uses back-face culling — it is always visible from outside but automatically invisible when the camera is inside the bubble, with no configuration required.
 
 ---
 

@@ -23,6 +23,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
+import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.core.api.ships.Ship;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
@@ -53,7 +54,7 @@ public class BoardingPodCockpitBlock extends HorizontalDirectionalBlock {
     @Nullable
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection());
     }
 
     @SuppressWarnings("deprecation")
@@ -91,6 +92,10 @@ public class BoardingPodCockpitBlock extends HorizontalDirectionalBlock {
             return InteractionResult.FAIL;
         }
 
+        // Capture FACING before assembly — blocks move to shipyard but we need the world direction.
+        // Direction.ordinal(): DOWN=0, UP=1, NORTH=2, SOUTH=3, WEST=4, EAST=5
+        final int facingOrdinal = state.getValue(FACING).ordinal();
+
         // Delay seat spawn by 2 ticks — gives VS2 time to finish assembly before the
         // player is seated inside the pod, avoiding a solid-block collision on mount.
         final Vec3   finalSpawnPos      = spawnPos;
@@ -103,13 +108,15 @@ public class BoardingPodCockpitBlock extends HorizontalDirectionalBlock {
                 sl.getServer().getTickCount() + 2, () -> {
             if (!player.isAlive()) return;  // player logged off in 2 ticks — skip
             CockpitSeatEntity delayedSeat = new CockpitSeatEntity(ModEntities.COCKPIT_SEAT.get(), sl);
-            // Lower Y by 0.2 so entity centre sits deeper inside the cockpit block
-            // Combined with getPassengersRidingOffset()=-1.15, eyes land at ~blockY+0.77
+            // Lower Y by 0.2 so entity centre sits deeper inside the cockpit block.
+            // Seat lives in WORLD space — VS2's ShipMountedToDataProvider (mixin) supplies
+            // the constant cockpitShipyardPos to setupWithShipMounted for smooth camera.
             delayedSeat.moveTo(finalSpawnPos.x, finalSpawnPos.y - 0.2, finalSpawnPos.z, yRot, xRot);
+            delayedSeat.setPodShipId(finalPodShipId);
             sl.addFreshEntity(delayedSeat);
             player.startRiding(delayedSeat, true);
             CockpitSeatEntity.notifyPodRegistered(finalPodShipId, delayedSeat.getId(), finalIgnoredShipId,
-                    org.valkyrienskies.mod.common.VSGameUtilsKt.getDimensionId(sl));
+                    org.valkyrienskies.mod.common.VSGameUtilsKt.getDimensionId(sl), facingOrdinal);
         }));
 
         return InteractionResult.CONSUME;

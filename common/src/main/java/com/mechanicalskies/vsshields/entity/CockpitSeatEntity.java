@@ -29,22 +29,41 @@ import java.util.UUID;
  */
 public class CockpitSeatEntity extends Entity {
 
-    // ── RCS constant (mirrored from BoardingPodEntity for HUD use) ───────────
-    public static final int RCS_MAX_CHARGES = 5;
+    /** Total boost fuel ticks (mirrors PodShipManager.BOOST_TICKS). */
+    public static final int BOOST_TICKS_MAX = 80;
 
     // ── Synced data ───────────────────────────────────────────────────────────
 
     private static final EntityDataAccessor<Integer> PHASE_ID =
             SynchedEntityData.defineId(CockpitSeatEntity.class, EntityDataSerializers.INT);
 
-    private static final EntityDataAccessor<Integer> RCS_CHARGES =
-            SynchedEntityData.defineId(CockpitSeatEntity.class, EntityDataSerializers.INT);
-
-    private static final EntityDataAccessor<Integer> RCS_COOLDOWN =
-            SynchedEntityData.defineId(CockpitSeatEntity.class, EntityDataSerializers.INT);
-
     private static final EntityDataAccessor<Integer> DRILL_TIMER =
             SynchedEntityData.defineId(CockpitSeatEntity.class, EntityDataSerializers.INT);
+
+    /** Remaining boost fuel ticks (0–80). Synced for HUD display. */
+    private static final EntityDataAccessor<Integer> BOOST_FUEL =
+            SynchedEntityData.defineId(CockpitSeatEntity.class, EntityDataSerializers.INT);
+
+    /** Current pod speed in m/s (rounded). Synced from server each tick for HUD display. */
+    private static final EntityDataAccessor<Integer> SPEED_MPS =
+            SynchedEntityData.defineId(CockpitSeatEntity.class, EntityDataSerializers.INT);
+
+    /**
+     * VS2 pod ship ID encoded as a String (MC 1.20.1 has no LONG serializer).
+     * Empty string = no ship assigned yet.
+     */
+    private static final EntityDataAccessor<String> POD_SHIP_ID_STR =
+            SynchedEntityData.defineId(CockpitSeatEntity.class, EntityDataSerializers.STRING);
+
+    /**
+     * Cockpit block's shipyard-space position encoded as "x,y,z" (Double precision).
+     * Computed once on the server from the seat's world position at spawn time, synced to client.
+     * Never changes while the pod is alive.
+     * Used by MixinCockpitSeatShipMount as the stable mountPosInShip for setupWithShipMounted.
+     */
+    private static final EntityDataAccessor<String> COCKPIT_SY_POS =
+            SynchedEntityData.defineId(CockpitSeatEntity.class, EntityDataSerializers.STRING);
+
 
     // ── Phase enum (same IDs as BoardingPodEntity.Phase) ─────────────────────
 
@@ -63,7 +82,8 @@ public class CockpitSeatEntity extends Entity {
     }
 
     public interface RcsCallback {
-        void onRcs(int seatEntityId, int lateralDir, int boostActive);
+        /** Called each tick during BOOST/COAST. yaw/pitch = player look angles (degrees). boostActive: 1=Space held. */
+        void onRcs(int seatEntityId, float yaw, float pitch, int boostActive);
     }
 
     public interface TrustCallback {
@@ -71,7 +91,7 @@ public class CockpitSeatEntity extends Entity {
     }
 
     public interface RegisterCallback {
-        void onPodRegistered(long podShipId, int seatEntityId, long ignoredShipId, String dimensionId);
+        void onPodRegistered(long podShipId, int seatEntityId, long ignoredShipId, String dimensionId, int facingOrdinal);
     }
 
     private static FireCallback     fireCallback     = null;
@@ -88,8 +108,8 @@ public class CockpitSeatEntity extends Entity {
     public static TrustCallback getTrustCallback() { return trustCallback; }
 
     /** Called from BoardingPodCockpitBlock.use() to notify forge-side PodShipManager. */
-    public static void notifyPodRegistered(long podShipId, int seatEntityId, long ignoredShipId, String dimensionId) {
-        if (registerCallback != null) registerCallback.onPodRegistered(podShipId, seatEntityId, ignoredShipId, dimensionId);
+    public static void notifyPodRegistered(long podShipId, int seatEntityId, long ignoredShipId, String dimensionId, int facingOrdinal) {
+        if (registerCallback != null) registerCallback.onPodRegistered(podShipId, seatEntityId, ignoredShipId, dimensionId, facingOrdinal);
     }
 
     // ── Construction ──────────────────────────────────────────────────────────
@@ -101,10 +121,12 @@ public class CockpitSeatEntity extends Entity {
 
     @Override
     protected void defineSynchedData() {
-        entityData.define(PHASE_ID,     Phase.AIMING.id);
-        entityData.define(RCS_CHARGES,  RCS_MAX_CHARGES);
-        entityData.define(RCS_COOLDOWN, 0);
-        entityData.define(DRILL_TIMER,  0);
+        entityData.define(PHASE_ID,       Phase.AIMING.id);
+        entityData.define(DRILL_TIMER,    0);
+        entityData.define(BOOST_FUEL,     BOOST_TICKS_MAX);
+        entityData.define(SPEED_MPS,      0);
+        entityData.define(POD_SHIP_ID_STR, "");
+        entityData.define(COCKPIT_SY_POS, "");
     }
 
     // ── Dimensions / physics ─────────────────────────────────────────────────
@@ -124,30 +146,57 @@ public class CockpitSeatEntity extends Entity {
      * Positions the passenger inside the cockpit block so the camera sits
      * just behind the windshield glass.
      *
-     * <p>Math (with MixinPlayerCockpitSize active, eyeHeight = 0.6):
+     * <p>Math (with MixinPlayerCockpitSize active, dims=0.6×0.9, eyeHeight=0.7):
      * <pre>
      *   seatY   = blockY + 0.5 − 0.2 (BoardingPodCockpitBlock spawn offset)
      *           = blockY + 0.3
-     *   playerY = seatY + ridingOffset = blockY + 0.3 + (−0.2) = blockY + 0.1
-     *   eyeY    = playerY + 0.6       = blockY + 0.7  (70 % of block height)
+     *   playerY = seatY + ridingOffset = blockY + 0.3 + (−0.3) = blockY + 0.0
+     *   eyeY    = playerY + 0.7       = blockY + 0.7  (camera unchanged)
+     *   player model spans blockY+0.0 → blockY+0.9, butt at ~blockY+0.33
      * </pre>
      */
     @Override
-    public double getPassengersRidingOffset() { return -0.2; }
+    public double getPassengersRidingOffset() { return -0.3; }
 
     // ── Accessors ─────────────────────────────────────────────────────────────
 
-    public Phase getPhase()                  { return Phase.byId(entityData.get(PHASE_ID)); }
-    public void  setPhase(Phase p)           { entityData.set(PHASE_ID, p.id); }
+    public Phase getPhase()          { return Phase.byId(entityData.get(PHASE_ID)); }
+    public void  setPhase(Phase p)   { entityData.set(PHASE_ID, p.id); }
 
-    public int  getRcsCharges()              { return entityData.get(RCS_CHARGES); }
-    public void setRcsCharges(int n)         { entityData.set(RCS_CHARGES, n); }
+    public int  getDrillTimer()      { return entityData.get(DRILL_TIMER); }
+    public void setDrillTimer(int n) { entityData.set(DRILL_TIMER, n); }
 
-    public int  getRcsCooldown()             { return entityData.get(RCS_COOLDOWN); }
-    public void setRcsCooldown(int n)        { entityData.set(RCS_COOLDOWN, n); }
+    public int  getBoostFuel()       { return entityData.get(BOOST_FUEL); }
+    public void setBoostFuel(int n)  { entityData.set(BOOST_FUEL, n); }
 
-    public int  getDrillTimer()              { return entityData.get(DRILL_TIMER); }
-    public void setDrillTimer(int n)         { entityData.set(DRILL_TIMER, n); }
+    public int  getSpeedMps()        { return entityData.get(SPEED_MPS); }
+    public void setSpeedMps(int n)   { entityData.set(SPEED_MPS, n); }
+
+    /** Returns the VS2 pod ship ID, or {@link Long#MIN_VALUE} if not yet assigned. */
+    public long getPodShipId() {
+        String s = entityData.get(POD_SHIP_ID_STR);
+        return s.isEmpty() ? Long.MIN_VALUE : Long.parseLong(s);
+    }
+    public void setPodShipId(long id) {
+        entityData.set(POD_SHIP_ID_STR, id == Long.MIN_VALUE ? "" : Long.toString(id));
+    }
+
+    public String getCockpitShipyardPosStr() { return entityData.get(COCKPIT_SY_POS); }
+    public void   setCockpitShipyardPosStr(String s) { entityData.set(COCKPIT_SY_POS, s); }
+
+    /**
+     * Returns the cockpit block's shipyard-space position, or null if not yet synced from server.
+     * Used by MixinCockpitSeatShipMount as the stable mountPosInShip for VS2's camera pipeline.
+     */
+    @org.jetbrains.annotations.Nullable
+    public org.joml.Vector3d getCockpitShipyardPos() {
+        String s = entityData.get(COCKPIT_SY_POS);
+        if (s.isEmpty()) return null;
+        String[] p = s.split(",");
+        return new org.joml.Vector3d(Double.parseDouble(p[0]),
+                                     Double.parseDouble(p[1]),
+                                     Double.parseDouble(p[2]));
+    }
 
     // ── Network delegates (called from ModNetwork) ────────────────────────────
 
@@ -156,9 +205,9 @@ public class CockpitSeatEntity extends Entity {
         if (fireCallback != null) fireCallback.onFire(getId(), yaw, pitch);
     }
 
-    /** Delegates RCS packet to forge-side PodShipManager. */
-    public void onRcs(int lateralDir, int boostActive) {
-        if (rcsCallback != null) rcsCallback.onRcs(getId(), lateralDir, boostActive);
+    /** Delegates steering/boost packet to forge-side PodShipManager. */
+    public void onRcs(float yaw, float pitch, int boostActive) {
+        if (rcsCallback != null) rcsCallback.onRcs(getId(), yaw, pitch, boostActive);
     }
 
     // ── Tick ──────────────────────────────────────────────────────────────────
@@ -166,13 +215,7 @@ public class CockpitSeatEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-
-        if (!level().isClientSide) {
-            // RCS cooldown ticks down each game tick (synced automatically)
-            if (getRcsCooldown() > 0) setRcsCooldown(getRcsCooldown() - 1);
-        } else {
-            spawnPhaseParticles();
-        }
+        if (level().isClientSide) spawnPhaseParticles();
     }
 
     private void spawnPhaseParticles() {
@@ -223,17 +266,17 @@ public class CockpitSeatEntity extends Entity {
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
-        entityData.set(PHASE_ID,     tag.getInt("Phase"));
-        entityData.set(RCS_CHARGES,  tag.getInt("RcsCharges"));
-        entityData.set(RCS_COOLDOWN, tag.getInt("RcsCooldown"));
-        entityData.set(DRILL_TIMER,  tag.getInt("DrillTimer"));
+        entityData.set(PHASE_ID,        tag.getInt("Phase"));
+        entityData.set(DRILL_TIMER,     tag.getInt("DrillTimer"));
+        entityData.set(BOOST_FUEL,      tag.getInt("BoostFuel"));
+        entityData.set(POD_SHIP_ID_STR, tag.getString("PodShipId"));
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putInt("Phase",      getPhase().id);
-        tag.putInt("RcsCharges", getRcsCharges());
-        tag.putInt("RcsCooldown", getRcsCooldown());
         tag.putInt("DrillTimer", getDrillTimer());
+        tag.putInt("BoostFuel",  getBoostFuel());
+        tag.putString("PodShipId", entityData.get(POD_SHIP_ID_STR));
     }
 }
