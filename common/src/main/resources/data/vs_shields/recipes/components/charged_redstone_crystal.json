@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:redstone_block" },
+    { "item": "minecraft:amethyst_shard" },
+    { "item": "minecraft:glowstone_dust" }
+  ],
+  "result": { "item": "vs_shields:charged_redstone_crystal", "count": 1 }
+}

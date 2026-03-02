@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "R V R",
+    "V A V",
+    "R V R"
+  ],
+  "key": {
+    "R": { "item": "vs_shields:resonance_lens" },
+    "V": { "item": "vs_shields:void_capacitor" },
+    "A": { "item": "vs_shields:ship_analyzer" }
+  },
+  "result": { "item": "vs_shields:tactical_goggles", "count": 1 }
+}

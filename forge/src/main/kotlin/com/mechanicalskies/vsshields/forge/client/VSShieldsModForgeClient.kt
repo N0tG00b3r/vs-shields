@@ -3,12 +3,14 @@ package com.mechanicalskies.vsshields.forge.client
 import com.mechanicalskies.vsshields.client.BoardingPodClientHandler
 import com.mechanicalskies.vsshields.client.GravitationalMineModel
 import com.mechanicalskies.vsshields.client.HelmAnalyzerHandler
-import com.mechanicalskies.vsshields.client.TacticalHelmModel
 import com.mechanicalskies.vsshields.client.VSShieldsModClient
-import com.mechanicalskies.vsshields.item.TacticalNetheriteHelm
+import com.mechanicalskies.vsshields.forge.CuriosIntegration
+import com.mechanicalskies.vsshields.item.TacticalGogglesItem
 import com.mechanicalskies.vsshields.registry.ModEntities
+import com.mechanicalskies.vsshields.registry.ModItems
 import net.minecraftforge.client.event.EntityRenderersEvent
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent
+import top.theillusivec4.curios.api.client.CuriosRendererRegistry
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
 import org.slf4j.LoggerFactory
@@ -22,6 +24,10 @@ class VSShieldsModForgeClient {
             VSShieldsModClient.initClient()
             CloakRenderSuppressor.register()
             MinecraftForge.EVENT_BUS.register(DrillShakeHandler)
+            HelmAnalyzerHandler.setGogglesChecker { player -> CuriosIntegration.hasGogglesInHeadSlot(player) }
+            if (CuriosIntegration.LOADED) {
+                CuriosRendererRegistry.register(ModItems.TACTICAL_GOGGLES.get()) { TacticalGogglesRenderer() }
+            }
             diagnoseFlywheel()
         }
 
@@ -58,8 +64,8 @@ class VSShieldsModForgeClient {
         /** Register the layer definition so the model can be baked. */
         @JvmStatic
         fun registerLayers(event: EntityRenderersEvent.RegisterLayerDefinitions) {
-            event.registerLayerDefinition(TacticalHelmModel.LAYER_LOCATION, TacticalHelmModel<*>::createLayer)
             event.registerLayerDefinition(GravitationalMineModel.LAYER_LOCATION, GravitationalMineModel<*>::createBodyLayer)
+            event.registerLayerDefinition(TacticalGogglesModel.LAYER_LOCATION, TacticalGogglesModel.Companion::createBodyLayer)
         }
 
         @JvmStatic
@@ -70,14 +76,14 @@ class VSShieldsModForgeClient {
         }
 
         /**
-         * Bake the model once all layers are ready and hand it to TacticalNetheriteHelm
+         * Bake the model once all layers are ready and hand it to TacticalGogglesItem
          * via a supplier so the item class stays free of client-only imports.
          */
         @JvmStatic
         fun addLayers(event: EntityRenderersEvent.AddLayers) {
-            val root = event.entityModels.bakeLayer(TacticalHelmModel.LAYER_LOCATION)
-            val model = TacticalHelmModel<net.minecraft.world.entity.LivingEntity>(root)
-            TacticalNetheriteHelm.setModelSupplier { model }
+            val gogglesRoot = event.entityModels.bakeLayer(TacticalGogglesModel.LAYER_LOCATION)
+            val gogglesModel = TacticalGogglesModel<net.minecraft.world.entity.LivingEntity>(gogglesRoot)
+            TacticalGogglesItem.setModelSupplier { gogglesModel }
         }
     }
 }

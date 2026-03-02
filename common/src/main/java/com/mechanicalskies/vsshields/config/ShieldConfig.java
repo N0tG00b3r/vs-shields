@@ -49,8 +49,8 @@ public class ShieldConfig {
     }
 
     public static class BonusConfig {
-        public double capacitorMaxHp = 50.0;
-        public double emitterRechargeRate = 0.5;
+        public double capacitorMaxHp = 100.0;
+        public double emitterRechargeRate = 1.0;
         public int emitterRegenCost = 50;
     }
 
@@ -87,6 +87,14 @@ public class ShieldConfig {
         public boolean showShieldBubble       = true;
         /** Set to true to hide the bubble for crew standing inside it (back-face culling only). */
         public boolean hideShieldBubbleInside = false;
+        /** Chance (0.0–1.0) for an Enderman to drop 1 Void Shard on death. */
+        public float   voidShardEndermanChance = 0.05f;
+        /** Minimum Void Shards dropped by the Ender Dragon. */
+        public int     voidShardDragonMin      = 4;
+        /** Maximum Void Shards dropped by the Ender Dragon. */
+        public int     voidShardDragonMax      = 8;
+        /** FE added to a Shield Generator when one Energy Cell is used on it. */
+        public int     energyCellFE            = 25_000;
     }
 
     public static class BatteryConfig {
@@ -126,9 +134,9 @@ public class ShieldConfig {
     private static ShieldConfig createDefault() {
         ShieldConfig cfg = new ShieldConfig();
         cfg.tiers = new LinkedHashMap<>();
-        cfg.tiers.put("iron", new TierConfig(100, 0.5, 100, 50000, 20, 200)); // 10s
-        cfg.tiers.put("diamond", new TierConfig(250, 1.0, 60, 200000, 50, 140)); // 7s
-        cfg.tiers.put("netherite", new TierConfig(500, 2.0, 40, 500000, 100, 100)); // 5s
+        cfg.tiers.put("iron", new TierConfig(200, 1.0, 100, 50000, 20, 200)); // 10s
+        cfg.tiers.put("diamond", new TierConfig(500, 2.0, 60, 200000, 50, 140)); // 7s
+        cfg.tiers.put("netherite", new TierConfig(1000, 4.0, 40, 500000, 100, 100)); // 5s
 
         cfg.bonuses = new BonusConfig();
 
@@ -277,6 +285,22 @@ public class ShieldConfig {
             }
             if (!rawGeneral.has("shipRepulsionForce")) {
                 loaded.general.shipRepulsionForce = defaults.general.shipRepulsionForce;
+                changed = true;
+            }
+            if (!rawGeneral.has("voidShardEndermanChance")) {
+                loaded.general.voidShardEndermanChance = defaults.general.voidShardEndermanChance;
+                changed = true;
+            }
+            if (!rawGeneral.has("voidShardDragonMin")) {
+                loaded.general.voidShardDragonMin = defaults.general.voidShardDragonMin;
+                changed = true;
+            }
+            if (!rawGeneral.has("voidShardDragonMax")) {
+                loaded.general.voidShardDragonMax = defaults.general.voidShardDragonMax;
+                changed = true;
+            }
+            if (!rawGeneral.has("energyCellFE")) {
+                loaded.general.energyCellFE = defaults.general.energyCellFE;
                 changed = true;
             }
         }

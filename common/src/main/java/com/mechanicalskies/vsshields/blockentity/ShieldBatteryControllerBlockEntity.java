@@ -39,7 +39,7 @@ public class ShieldBatteryControllerBlockEntity extends BlockEntity
 
     private long trackedShipId = -1;
     private int energyStored = 0;
-    private int maxEnergy = 200000;
+    private int maxEnergy = 400000;
     private int cellCount = 0;
     private int storageCellCount = 0;
     private boolean formed = false;

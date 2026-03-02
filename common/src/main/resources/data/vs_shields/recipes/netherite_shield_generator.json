@@ -1,12 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "NNN",
-    "NGN",
-    "NNN"
-  ],
+  "pattern": ["VHV", "HGH", "VHV"],
   "key": {
-    "N": { "item": "minecraft:netherite_ingot" },
+    "V": { "item": "vs_shields:void_capacitor" },
+    "H": { "item": "vs_shields:hardened_casing" },
     "G": { "item": "vs_shields:diamond_shield_generator" }
   },
   "result": {

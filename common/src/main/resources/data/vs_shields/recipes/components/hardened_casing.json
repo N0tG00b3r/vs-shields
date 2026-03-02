@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["POP", "ONO", "POP"],
+  "key": {
+    "P": { "item": "vs_shields:reinforced_plate" },
+    "O": { "item": "minecraft:obsidian" },
+    "N": { "item": "minecraft:netherite_ingot" }
+  },
+  "result": { "item": "vs_shields:hardened_casing", "count": 1 }
+}

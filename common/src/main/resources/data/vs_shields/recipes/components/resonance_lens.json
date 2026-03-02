@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [" A ", "ATA", " A "],
+  "key": {
+    "A": { "item": "minecraft:amethyst_shard" },
+    "T": { "item": "vs_shields:tempered_glass_pane" }
+  },
+  "result": { "item": "vs_shields:resonance_lens", "count": 1 }
+}

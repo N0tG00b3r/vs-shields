@@ -27,9 +27,9 @@ import org.valkyrienskies.mod.common.getShipManagingPos
  * 1. External barrier: projectiles entering the shield zone from outside
  * 2. Friendly fire: projectiles inside the shield entering the ship's core AABB
  *
- * CBC shells (Create Big Cannons) extend rbasamoyai.createbigcannons…FuzedBigCannonProjectile
- * which is NOT a subclass of net.minecraft.world.entity.projectile.Projectile — so they are
- * detected via the separate isCbcEntity() check on the entity type registry namespace.
+ * CBC shells (Create Big Cannons) and CGS/NTGL projectiles (nail, blaze_ball, etc.) do NOT
+ * extend net.minecraft.world.entity.projectile.Projectile — so ProjectileImpactEvent never
+ * fires for them. They are detected via isCbcEntity() which checks the entity namespace.
  */
 class ShieldBarrierHandler {
 
@@ -59,8 +59,8 @@ class ShieldBarrierHandler {
                 worldAABB.maxX() + padding, worldAABB.maxY() + padding, worldAABB.maxZ() + padding
             )
 
-            // Catch both standard Minecraft projectiles AND CBC cannon shells
-            // (CBC shells extend FuzedBigCannonProjectile, not Projectile)
+            // Catch standard Minecraft projectiles, CBC cannon shells,
+            // AND CGS/NTGL projectiles (none of which extend vanilla Projectile)
             val entities = level.getEntities(null, shieldAABB) { entity ->
                 entity is Projectile || isCbcEntity(entity)
             }
@@ -70,11 +70,34 @@ class ShieldBarrierHandler {
                 val curPos  = Vec3(entity.x,    entity.y,    entity.z)
                 val prevPos = Vec3(entity.xOld, entity.yOld, entity.zOld)
 
+                // === OUTGOING CREW SHOT — skip if owner is inside the shield zone ===
+                // Handles arrows, snowballs, and any standard MC Projectile fired from crew.
+                if (entity is Projectile) {
+                    val owner = entity.owner
+                    if (owner != null && shieldAABB.contains(owner.x, owner.y, owner.z)) continue
+                }
+
                 val curInShield  = shieldAABB.contains(curPos.x,  curPos.y,  curPos.z)
                 val prevInShield = shieldAABB.contains(prevPos.x, prevPos.y, prevPos.z)
 
                 if (curInShield && !prevInShield) {
                     // === EXTERNAL BARRIER: entity just crossed the shield boundary ===
+                    //
+                    // Sanity-check: reject entities whose previous position is suspiciously far
+                    // from the ship. This catches mods (e.g., CBC) that use setPos() instead of
+                    // moveTo() when spawning projectiles — leaving entity.xOld at the Entity
+                    // constructor default (0, 0, 0). For ships not near world origin, that default
+                    // is hundreds of blocks away and would falsely trigger the external barrier
+                    // against crew-fired shells.
+                    //
+                    // However, some modded projectiles (e.g., NTGL nailgun) also have uninitialized
+                    // xOld but are legitimate INCOMING projectiles. To distinguish:
+                    //  - CBC shell spawned at cannon muzzle → curPos is inside the core AABB → skip
+                    //  - External projectile entering shield → curPos is in shield zone, NOT in core → intercept
+                    if (!shieldAABB.inflate(200.0).contains(prevPos.x, prevPos.y, prevPos.z)) {
+                        if (coreAABB.contains(curPos.x, curPos.y, curPos.z)) continue
+                    }
+
                     val interceptPos = computeInterceptPoint(prevPos, curPos, shieldAABB)
                     interceptEntity(entity, shield, manager, server, shipId, interceptPos)
                     continue
@@ -96,16 +119,21 @@ class ShieldBarrierHandler {
     }
 
     /**
-     * Returns true for CBC cannon shells and nuke shells that are NOT subclasses of
+     * Returns true for modded projectile entities that are NOT subclasses of
      * net.minecraft.world.entity.projectile.Projectile but must still be blocked by the shield.
      *
-     * Excludes living entities, item entities, and anything outside known CBC namespaces.
+     * Covers:
+     *  - CBC cannon shells (createbigcannons, cbc, cbc_nukes) — extend FuzedBigCannonProjectile
+     *  - CGS / NTGL projectiles (cgs, ntgl) — nail, blaze_ball, etc. don't extend vanilla Projectile
+     *
+     * Excludes living entities and item entities.
      */
     private fun isCbcEntity(entity: Entity): Boolean {
         if (entity is LivingEntity) return false
         if (entity is ItemEntity)   return false
         val namespace = ForgeRegistries.ENTITY_TYPES.getKey(entity.type)?.namespace ?: return false
         return namespace == "createbigcannons" || namespace == "cbc" || namespace == "cbc_nukes"
+            || namespace == "cgs" || namespace == "ntgl"
     }
 
     private fun interceptEntity(

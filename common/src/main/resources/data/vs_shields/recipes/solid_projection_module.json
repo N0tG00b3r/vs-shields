@@ -1,15 +1,11 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "ODO",
-    "DYD",
-    "IRI"
-  ],
+  "pattern": ["OHO", "HEH", "WRW"],
   "key": {
     "O": { "item": "minecraft:obsidian" },
-    "D": { "item": "minecraft:diamond" },
-    "Y": { "item": "minecraft:ender_eye" },
-    "I": { "item": "minecraft:iron_block" },
+    "H": { "item": "vs_shields:hardened_casing" },
+    "E": { "item": "minecraft:ender_eye" },
+    "W": { "item": "vs_shields:copper_coil" },
     "R": { "item": "minecraft:redstone_block" }
   },
   "result": {

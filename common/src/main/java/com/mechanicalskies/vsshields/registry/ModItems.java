@@ -5,7 +5,7 @@ import com.mechanicalskies.vsshields.item.FrequencyIDCardItem;
 import com.mechanicalskies.vsshields.item.GravitationalMineItem;
 import com.mechanicalskies.vsshields.item.GravitationalMineLauncherItem;
 import com.mechanicalskies.vsshields.item.ShipAnalyzerItem;
-import com.mechanicalskies.vsshields.item.TacticalNetheriteHelm;
+import com.mechanicalskies.vsshields.item.TacticalGogglesItem;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import net.minecraft.core.registries.Registries;
@@ -73,9 +73,9 @@ public class ModItems {
                         "ship_analyzer",
                         () -> new ShipAnalyzerItem(new Item.Properties().stacksTo(1)));
 
-        public static final RegistrySupplier<Item> TACTICAL_HELM = ITEMS.register(
-                        "tactical_helm",
-                        TacticalNetheriteHelm::new);
+        public static final RegistrySupplier<Item> TACTICAL_GOGGLES = ITEMS.register(
+                        "tactical_goggles",
+                        TacticalGogglesItem::new);
 
         public static final RegistrySupplier<Item> GRAVITATIONAL_MINE_LAUNCHER = ITEMS.register(
                         "gravitational_mine_launcher",
@@ -100,6 +100,41 @@ public class ModItems {
         public static final RegistrySupplier<Item> BOARDING_POD_ENGINE = ITEMS.register(
                         "boarding_pod_engine",
                         () -> new BlockItem(ModBlocks.BOARDING_POD_ENGINE.get(), new Item.Properties()));
+
+        // === Crafting Components ===
+
+        // Base tier
+        public static final RegistrySupplier<Item> CHARGED_REDSTONE_CRYSTAL = ITEMS.register(
+                        "charged_redstone_crystal", () -> new Item(new Item.Properties()));
+        public static final RegistrySupplier<Item> COPPER_COIL = ITEMS.register(
+                        "copper_coil", () -> new Item(new Item.Properties()));
+        public static final RegistrySupplier<Item> INSULATED_WIRE = ITEMS.register(
+                        "insulated_wire", () -> new Item(new Item.Properties()));
+        public static final RegistrySupplier<Item> TEMPERED_GLASS_PANE = ITEMS.register(
+                        "tempered_glass_pane", () -> new Item(new Item.Properties()));
+        public static final RegistrySupplier<Item> REINFORCED_PLATE = ITEMS.register(
+                        "reinforced_plate", () -> new Item(new Item.Properties()));
+
+        // Mid tier
+        public static final RegistrySupplier<Item> SIGNAL_BOARD = ITEMS.register(
+                        "signal_board", () -> new Item(new Item.Properties()));
+        public static final RegistrySupplier<Item> RESONANCE_LENS = ITEMS.register(
+                        "resonance_lens", () -> new Item(new Item.Properties()));
+        public static final RegistrySupplier<Item> ENERGY_CELL = ITEMS.register(
+                        "energy_cell",
+                        () -> new com.mechanicalskies.vsshields.item.EnergyCellItem(new Item.Properties()));
+        public static final RegistrySupplier<Item> HARDENED_CASING = ITEMS.register(
+                        "hardened_casing", () -> new Item(new Item.Properties().stacksTo(4)));
+
+        // Advanced tier
+        public static final RegistrySupplier<Item> STABILIZED_CORE = ITEMS.register(
+                        "stabilized_core", () -> new Item(new Item.Properties().stacksTo(1)));
+        public static final RegistrySupplier<Item> FREQUENCY_OSCILLATOR = ITEMS.register(
+                        "frequency_oscillator", () -> new Item(new Item.Properties().stacksTo(16)));
+        public static final RegistrySupplier<Item> VOID_SHARD = ITEMS.register(
+                        "void_shard", () -> new Item(new Item.Properties().stacksTo(16)));
+        public static final RegistrySupplier<Item> VOID_CAPACITOR = ITEMS.register(
+                        "void_capacitor", () -> new Item(new Item.Properties().stacksTo(1)));
 
         public static void register() {
                 ITEMS.register();

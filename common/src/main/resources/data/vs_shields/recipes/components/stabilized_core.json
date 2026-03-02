@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["CEC", "SNS", "CEC"],
+  "key": {
+    "C": { "item": "vs_shields:charged_redstone_crystal" },
+    "E": { "item": "minecraft:ender_pearl" },
+    "S": { "item": "minecraft:echo_shard" },
+    "N": { "item": "minecraft:nether_star" }
+  },
+  "result": { "item": "vs_shields:stabilized_core", "count": 1 }
+}

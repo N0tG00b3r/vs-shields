@@ -71,15 +71,41 @@ public class BoardingPodCockpitBlock extends HorizontalDirectionalBlock {
         Ship launchShip = VSGameUtilsKt.getShipManagingPos(sl, pos);
         long ignoredShipId = launchShip != null ? launchShip.getId() : Long.MIN_VALUE;
 
-        // BFS-collect all connected pod blocks (cockpit + engine) and assemble into a VS2 ship
-        Set<BlockPos> blocks = BoardingPodAssembler.collectPodBlocks(sl, pos);
+        // BFS-collect all connected pod blocks and detect any unrecognised adjacent vs_shields blocks
+        BoardingPodAssembler.CollectResult collected = BoardingPodAssembler.collectPodBlocks(sl, pos);
+        Set<BlockPos> blocks = collected.podBlocks;
 
-        // Require at least one engine block — cockpit alone cannot launch or RCS
-        boolean hasEngine = blocks.stream()
-                .anyMatch(bp -> sl.getBlockState(bp).getBlock() == ModBlocks.BOARDING_POD_ENGINE.get());
-        if (!hasEngine) {
+        // Reject if any adjacent vs_shields block is not in the allowed whitelist
+        if (!collected.invalidBlocks.isEmpty()) {
+            player.sendSystemMessage(
+                    Component.translatable("message.vs_shields.pod_invalid_block")
+                            .withStyle(ChatFormatting.RED));
+            return InteractionResult.FAIL;
+        }
+
+        // Count cockpits and engines — exactly 1 of each is required
+        Block cockpitBlock = ModBlocks.BOARDING_POD_COCKPIT.get();
+        Block engineBlock  = ModBlocks.BOARDING_POD_ENGINE.get();
+        long cockpitCount = blocks.stream()
+                .filter(bp -> sl.getBlockState(bp).getBlock() == cockpitBlock).count();
+        long engineCount  = blocks.stream()
+                .filter(bp -> sl.getBlockState(bp).getBlock() == engineBlock).count();
+
+        if (cockpitCount > 1) {
+            player.sendSystemMessage(
+                    Component.translatable("message.vs_shields.pod_too_many_cockpits")
+                            .withStyle(ChatFormatting.RED));
+            return InteractionResult.FAIL;
+        }
+        if (engineCount == 0) {
             player.sendSystemMessage(
                     Component.translatable("message.vs_shields.pod_no_motor")
+                            .withStyle(ChatFormatting.RED));
+            return InteractionResult.FAIL;
+        }
+        if (engineCount > 1) {
+            player.sendSystemMessage(
+                    Component.translatable("message.vs_shields.pod_too_many_engines")
                             .withStyle(ChatFormatting.RED));
             return InteractionResult.FAIL;
         }

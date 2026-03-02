@@ -1,13 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "IBI",
-    "BGB",
-    "IBI"
-  ],
+  "pattern": ["PWP", "WGW", "PWP"],
   "key": {
-    "I": { "item": "minecraft:iron_ingot" },
-    "B": { "item": "minecraft:blaze_powder" },
+    "P": { "item": "vs_shields:reinforced_plate" },
+    "W": { "item": "vs_shields:copper_coil" },
     "G": { "item": "minecraft:gunpowder" }
   },
   "result": {

@@ -52,6 +52,9 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
     private long lastKnownHitTick = 0; // mirrors ShieldInstance.lastHitTick
     private long damageSignalTick = -1; // level.getGameTime() when last hit detected
 
+    /** Last known state of incoming redstone signal — used to detect rising/falling edge. */
+    private boolean prevRedstoneSignal = false;
+
     private int energyStored = 0;
     private int maxEnergy = 50000;
     private int energyPerTick = 20;
@@ -136,6 +139,16 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
         }
 
         ShieldInstance shield = ShieldManager.getInstance().getShield(shipId);
+
+        // Redstone activation control — rising edge activates, falling edge deactivates
+        boolean redstoneSignal = level.hasNeighborSignal(pos);
+        if (redstoneSignal != prevRedstoneSignal) {
+            prevRedstoneSignal = redstoneSignal;
+            if (shield != null) {
+                shield.setActive(redstoneSignal);
+            }
+        }
+
         if (shield != null) {
             if (shield.isActive()) {
                 int baseCost = energyPerTick;

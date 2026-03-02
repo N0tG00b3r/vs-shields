@@ -5,6 +5,7 @@ import com.mechanicalskies.vsshields.blockentity.CloakingFieldGeneratorBlockEnti
 import com.mechanicalskies.vsshields.blockentity.ShieldBatteryInputBlockEntity
 import com.mechanicalskies.vsshields.blockentity.ShieldGeneratorBlockEntity
 import com.mechanicalskies.vsshields.blockentity.SolidProjectionModuleBlockEntity
+import com.mechanicalskies.vsshields.item.TacticalGogglesItem
 import com.mechanicalskies.vsshields.entity.BoardingPodEntity
 import com.mechanicalskies.vsshields.entity.CockpitSeatEntity
 import com.mechanicalskies.vsshields.entity.GravitationalMineEntity
@@ -23,6 +24,8 @@ import org.valkyrienskies.mod.common.ValkyrienSkiesMod
 import org.valkyrienskies.mod.common.dimensionId
 import net.minecraftforge.api.distmarker.Dist
 import net.minecraftforge.common.MinecraftForge
+import net.minecraft.world.effect.MobEffectInstance
+import net.minecraft.world.effect.MobEffects
 import net.minecraftforge.event.TickEvent
 import net.minecraftforge.event.entity.player.AttackEntityEvent
 import net.minecraftforge.event.entity.player.PlayerEvent
@@ -63,6 +66,7 @@ class VSShieldsModForge {
         MinecraftForge.EVENT_BUS.register(ShieldSolidBarrier())
         MinecraftForge.EVENT_BUS.register(SolidProjectionModuleEnergyCapability())
         MinecraftForge.EVENT_BUS.register(PodShipManager)
+        MinecraftForge.EVENT_BUS.register(VoidShardDropHandler)
 
         ShieldGeneratorBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickKineticInput(level, pos, be)
@@ -141,6 +145,18 @@ class VSShieldsModForge {
         SolidModuleRegistry.getInstance().clear()
         AnalyzerBlockCache.getInstance().clear()
         AnalyzerScanHandler.clear()
+    }
+
+    @SubscribeEvent
+    fun onPlayerTick(event: TickEvent.PlayerTickEvent) {
+        if (event.phase != TickEvent.Phase.END) return
+        val player = event.player as? ServerPlayer ?: return
+        if (player.tickCount % 100 != 0) return
+        val helmetSlot = player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD)
+        val wearingInArmor = !helmetSlot.isEmpty && helmetSlot.item is TacticalGogglesItem
+        val wearingInCurios = CuriosIntegration.hasGogglesInHeadSlot(player)
+        if (!wearingInArmor && !wearingInCurios) return
+        player.addEffect(MobEffectInstance(MobEffects.NIGHT_VISION, 300, 0, false, false))
     }
 
     @SubscribeEvent

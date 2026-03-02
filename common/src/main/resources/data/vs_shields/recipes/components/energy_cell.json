@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["CRC", "EIE", "CRC"],
+  "key": {
+    "C": { "item": "vs_shields:copper_coil" },
+    "R": { "item": "minecraft:redstone_block" },
+    "E": { "item": "vs_shields:charged_redstone_crystal" },
+    "I": { "item": "minecraft:iron_block" }
+  },
+  "result": { "item": "vs_shields:energy_cell", "count": 1 }
+}

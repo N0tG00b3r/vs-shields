@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["VSV", "ECE", "VSV"],
+  "key": {
+    "V": { "item": "vs_shields:void_shard" },
+    "S": { "item": "vs_shields:energy_cell" },
+    "E": { "item": "minecraft:echo_shard" },
+    "C": { "item": "vs_shields:stabilized_core" }
+  },
+  "result": { "item": "vs_shields:void_capacitor", "count": 1 }
+}

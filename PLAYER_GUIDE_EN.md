@@ -18,9 +18,9 @@ The core block. Creates a protective field around the ship. It features a unique
 
 | Tier | HP | Radius (Coverage) | Regen | FE/tick | FE Capacity |
 |------|-----|--------|-------|---------|-------------|
-| **Iron** | 100 | Dynamic | 0.5/tick | 20 | 50,000 |
-| **Diamond** | 250 | Dynamic | 1.0/tick | 50 | 200,000 |
-| **Netherite** | 500 | Dynamic | 2.0/tick | 100 | 500,000 |
+| **Iron** | 200 | Dynamic | 1.0/tick | 20 | 50,000 |
+| **Diamond** | 500 | Dynamic | 2.0/tick | 50 | 200,000 |
+| **Netherite** | 1000 | Dynamic | 4.0/tick | 100 | 500,000 |
 
 **Rules:**
 - Only **one generator per ship**. A second one will show a red "Duplicate" message.
@@ -37,11 +37,11 @@ The generator GUI now has a dedicated slot for a **Frequency ID Card**. Insert y
 
 ### Shield Capacitor
 
-A simple addon block with a 3D model. Place it on the same ship to automatically add **+50 HP** to the shield's maximum health. The effect stacks: 4 capacitors = +200 HP.
+A simple addon block with a 3D model. Place it on the same ship to automatically add **+100 HP** to the shield's maximum health. The effect stacks: 4 capacitors = +400 HP.
 
 ### Shield Emitter
 
-Place on the same ship to add **+0.5 HP/tick** to the shield's recharge rate. The effect stacks.
+Place on the same ship to add **+1.0 HP/tick** to the shield's recharge rate. The effect stacks.
 **Note:** Each emitter increases the generator's energy consumption by **50 FE/tick**, but *only* while the shield is actively recharging. If your generator does not have enough FE to support the emitters, recharge will stall.
 
 ---
@@ -100,9 +100,9 @@ When the shield's HP drops below **20%**, the battery immediately dumps as much 
 
 | Scenario | Battery FE | HP restored |
 |----------|-----------|-------------|
-| Iron shield at 0 HP, battery full (200k FE) | −25,000 FE | 100 HP (fully restored) |
-| Diamond shield at 0 HP, battery full | −62,500 FE | 250 HP (fully restored) |
-| Netherite shield at 0 HP, battery full | −125,000 FE | 500 HP (fully restored) |
+| Iron shield at 0 HP, battery full (400k FE) | −50,000 FE | 200 HP (fully restored) |
+| Diamond shield at 0 HP, battery full | −125,000 FE | 500 HP (fully restored) |
+| Netherite shield at 0 HP, battery full | −250,000 FE | 1000 HP (fully restored) |
 | Any shield, battery at 50k FE | −50,000 FE | 200 HP |
 
 - **Cooldown:** 30 seconds between emergency bursts — the battery will not fire again until the cooldown expires, even if HP stays below 20%. This prevents the unit from getting stuck in a loop at 0 HP.
@@ -170,9 +170,9 @@ A high-energy device that creates an artificial gravity field around your ship, 
 
 **Gravity Field Generator**
 ```
-[Ender Pearl]    [Netherite Block] [Ender Pearl]
-[Netherite Block] [Nether Star]    [Netherite Block]
-[Ender Pearl]    [Netherite Block] [Ender Pearl]
+[Copper Coil]     [Void Capacitor]  [Copper Coil]
+[Void Capacitor]  [Stabilized Core] [Void Capacitor]
+[Copper Coil]     [Void Capacitor]  [Copper Coil]
 ```
 
 ### GUI
@@ -194,10 +194,22 @@ A handheld scanning device used to identify ships and shielded structures.
 - **HUD Info:** While scanning, a temporary HUD appears showing the name and distance of the ship you are looking at.
 - **Glowing Effect:** Scanned ships and their shield generators will briefly glow through blocks, making them visible to you and your teammates.
 
-### Tactical Netherite Helm
-An advanced helmet with integrated Ship Analyzer circuitry.
-- **Passive HUD:** Simply wearing the helmet provides a constant HUD readout of the ship you are currently looking at (no scanning required).
-- **Auto-Glow:** Provides a subtle, constant highlight for shielded generators within line of sight.
+### Tactical Goggles
+Wearable headgear that can be equipped in the **regular helmet armor slot** or the **Curios head slot**. EPIC rarity, Leather-tier armor.
+
+**Abilities (all work in either slot):**
+- **Night Vision** — passive effect applied automatically every 5 seconds while worn (15-second duration, no flicker).
+- **Ship Analyzer HUD** — press **Y** to toggle the same analyzer overlay as the handheld Ship Analyzer. Press **Y** again to turn it off. While active, the HUD refreshes every 0.5 seconds.
+- **Zoom** — hold **Shift+V** for 4x zoom while goggles are equipped. Release to return to normal FOV.
+
+**Custom 3D model** renders on the player's head — visible in third-person, multiplayer, and Curios slot rendering.
+
+**Crafting Recipe:**
+```
+[Resonance Lens]  [Void Capacitor]  [Resonance Lens]
+[Void Capacitor]  [Ship Analyzer]   [Void Capacitor]
+[Resonance Lens]  [Void Capacitor]  [Resonance Lens]
+```
 
 ### Gravitational Mine
 A deployable space-mine designed to destabilize enemy ships.
@@ -251,8 +263,8 @@ Carry the programmed card in your inventory, offhand, or a Curios **Charm** slot
 A two-block assault craft for boarding enemy ships.
 
 **How to deploy:**
-1. Craft a **Boarding Pod Cockpit** and a **Boarding Pod Engine**.
-2. Place them side-by-side on your ship — the engine must be directly adjacent to the cockpit horizontally.
+1. Craft a **Boarding Pod Cockpit** and a **Boarding Pod Engine** — exactly **one of each**.
+2. Place them side-by-side on your ship — the engine must be directly adjacent to the cockpit horizontally. More than one cockpit or engine in a connected group, or any other VS Shields block touching the structure, will prevent assembly.
 3. Orient your ship so the **cockpit faces the target** — the pod always launches in the cockpit block's **FACING** direction.
 4. Right-click the **cockpit** to board. A HUD shows your current yaw/pitch.
 5. Press the **Fire** key (unbound by default — assign it in **Options → Controls → VS Shields**).
@@ -297,6 +309,45 @@ During **Boost** and **Coast** the pod automatically turns toward where your cro
 - Keep looking at the target — the mouse steering handles the rest
 - The pod does not detonate on non-ship terrain — it simply breaks, dropping the passenger safely
 - The engine block provides thrust; without it, the cockpit cannot be activated
+- Only **1 cockpit + 1 engine** per pod — extra adjacent blocks of either type, or any other VS Shields mod block touching the structure, will show an error and block assembly
+
+---
+
+## Crafting Components
+
+All recipes in VS Shields use custom intermediate components instead of raw vanilla materials. This creates a structured progression path.
+
+### Base Components (Tier 1)
+
+| Component | Recipe | Yields |
+|-----------|--------|--------|
+| **Charged Redstone Crystal** | Shapeless: Redstone Block + Amethyst Shard + Glowstone Dust | 1 |
+| **Copper Coil** | 8× Copper Ingot around Iron Ingot | 2 |
+| **Insulated Wire** | 3× Copper Ingot over 3× Leather | 6 |
+| **Tempered Glass Pane** | Smelt Glass Pane in furnace | 1 |
+| **Reinforced Plate** | Iron Ingot, Iron Block, Obsidian (3×3) | 2 |
+
+### Mid Components (Tier 2)
+
+| Component | Key Ingredients | Yields |
+|-----------|----------------|--------|
+| **Signal Board** | Insulated Wire, Charged Redstone Crystal, Gold Ingot, Redstone Torch, Quartz | 1 |
+| **Resonance Lens** | 4× Amethyst Shard around Tempered Glass Pane | 1 |
+| **Energy Cell** | Copper Coil, Charged Redstone Crystal, Redstone Block, Iron Block | 1 |
+| **Frequency Oscillator** | Signal Board, Copper Coil, Amethyst Shard, Quartz | 1 |
+
+### Advanced Components (Tier 3)
+
+| Component | Key Ingredients | Yields | Notes |
+|-----------|----------------|--------|-------|
+| **Hardened Casing** | Reinforced Plate, Obsidian, **Netherite Ingot** | 1 (stack 4) | Netherite gate for all endgame recipes |
+| **Stabilized Core** | Charged Redstone Crystal, Ender Pearl, Echo Shard, **Nether Star** | 1 (stack 1) | Requires Wither kill |
+| **Void Shard** | *Drop only* — Enderman (5% chance, 1 shard), Ender Dragon (4–8 shards) | — (stack 16) | Drop rates configurable |
+| **Void Capacitor** | Void Shard, Energy Cell, Stabilized Core, Echo Shard | 1 (stack 1) | Ultimate endgame component |
+
+### Special: Energy Cell
+
+Right-click a **Shield Generator** with an Energy Cell to instantly inject **25,000 FE** into it. The cell is consumed on use. The FE amount is configurable in `config/vs_shields.json` → `general.energyCellFE`.
 
 ---
 
@@ -306,131 +357,153 @@ During **Boost** and **Coast** the pod automatically turns toward where your cro
 
 **Iron Shield Generator**
 ```
-[Iron Block] [Redstone]   [Iron Block]
-[Iron Block] [Glass]      [Iron Block]
-[Iron Block] [Redstone]   [Iron Block]
+[Reinforced Plate] [Copper Coil]       [Reinforced Plate]
+[Copper Coil]      [Tempered Glass]    [Copper Coil]
+[Reinforced Plate] [Copper Coil]       [Reinforced Plate]
+```
+
+**Diamond Shield Generator** *(upgrade — requires Iron Generator)*
+```
+[Diamond]       [Resonance Lens] [Diamond]
+[Energy Cell]   [Iron Generator] [Energy Cell]
+[Diamond]       [Resonance Lens] [Diamond]
+```
+
+**Netherite Shield Generator** *(upgrade — requires Diamond Generator)*
+```
+[Void Capacitor]  [Hardened Casing]    [Void Capacitor]
+[Hardened Casing] [Diamond Generator]  [Hardened Casing]
+[Void Capacitor]  [Hardened Casing]    [Void Capacitor]
 ```
 
 **Shield Capacitor**
 ```
-[Iron Ingot]   [Gold Ingot]      [Iron Ingot]
-[Redstone Block] [Redstone Block] [Redstone Block]
-[Iron Ingot]   [Gold Ingot]      [Iron Ingot]
+[Copper Coil]      [Charged Redstone] [Copper Coil]
+[Reinforced Plate] [Reinforced Plate] [Reinforced Plate]
+[Copper Coil]      [Charged Redstone] [Copper Coil]
 ```
 
 **Shield Emitter**
 ```
-[Iron Ingot] [Redstone Torch] [Iron Ingot]
-[Gold Ingot] [Glass]          [Gold Ingot]
-[Iron Ingot] [Redstone Torch] [Iron Ingot]
+[Copper Coil]     [Insulated Wire]    [Copper Coil]
+[Insulated Wire]  [Tempered Glass]    [Insulated Wire]
+[Copper Coil]     [Insulated Wire]    [Copper Coil]
 ```
 
 ### Shield Battery
 
 **Shield Battery Cell (x4)**
 ```
-[Iron Ingot] [Redstone] [Iron Ingot]
-[Redstone]   [Glass]    [Redstone]
-[Iron Ingot] [Redstone] [Iron Ingot]
+[Insulated Wire]    [Charged Redstone] [Insulated Wire]
+[Charged Redstone]  [Tempered Glass]   [Charged Redstone]
+[Insulated Wire]    [Charged Redstone] [Insulated Wire]
 ```
 
 **Shield Battery Input**
 ```
-[Gold Ingot] [Diamond]          [Gold Ingot]
-[Iron Ingot] [Battery Cell]     [Iron Ingot]
-[Gold Ingot] [Diamond]          [Gold Ingot]
+[Energy Cell]    [Insulated Wire]  [Energy Cell]
+[Insulated Wire] [Battery Cell]   [Insulated Wire]
+[Energy Cell]    [Insulated Wire]  [Energy Cell]
 ```
 
 **Shield Battery Controller**
 ```
-[Echo Shard] [Battery Input] [Echo Shard]
-[Battery Input] [Netherite Ingot] [Battery Input]
-[Echo Shard] [Battery Input] [Echo Shard]
+[Echo Shard]     [Battery Input]    [Echo Shard]
+[Battery Input]  [Hardened Casing]  [Battery Input]
+[Echo Shard]     [Battery Input]    [Echo Shard]
 ```
 
 ### Electronic Warfare Station (Shield Jammer)
 
-**Shield Jammer Controller**
-```text
-[Diamond Block] [End Crystal]     [Diamond Block]
-[Redstone Block] [Netherite Block] [Redstone Block]
-[Diamond Block] [Obsidian]        [Diamond Block]
-```
-
 **Shield Jammer Frame (x4)**
-```text
-[Iron Block] [Obsidian]   [Iron Block]
-[Obsidian]   [Iron Block] [Obsidian]
-[Iron Block] [Obsidian]   [Iron Block]
+```
+[Reinforced Plate] [Obsidian]         [Reinforced Plate]
+[Obsidian]         [Reinforced Plate] [Obsidian]
+[Reinforced Plate] [Obsidian]         [Reinforced Plate]
 ```
 
 **Shield Jammer Input**
-```text
-[Empty]    [Iron Block] [Empty]
-[Obsidian] [Jammer Frame] [Obsidian]
-[Empty]    [Iron Block] [Empty]
+```
+[     ]     [Reinforced Plate]   [     ]
+[Obsidian]  [Jammer Frame]      [Obsidian]
+[     ]     [Reinforced Plate]   [     ]
+```
+
+**Shield Jammer Controller**
+```
+[Hardened Casing]    [Freq. Oscillator]  [Hardened Casing]
+[Freq. Oscillator]   [Stabilized Core]  [Freq. Oscillator]
+[Hardened Casing]    [Freq. Oscillator]  [Hardened Casing]
+```
+
+### Gravity Field Generator
+
+```
+[Copper Coil]     [Void Capacitor]  [Copper Coil]
+[Void Capacitor]  [Stabilized Core] [Void Capacitor]
+[Copper Coil]     [Void Capacitor]  [Copper Coil]
 ```
 
 ### Tools & Weapons
 
 **Ship Analyzer**
-```text
-[Ender Eye] [Amethyst Shard] [Ender Eye]
-[Netherite Ingot] [Spyglass] [Netherite Ingot]
-[Redstone] [Compass] [Redstone]
+```
+[Freq. Oscillator] [Resonance Lens]   [Freq. Oscillator]
+[Resonance Lens]   [Signal Board]     [Resonance Lens]
+[Freq. Oscillator] [Resonance Lens]   [Freq. Oscillator]
 ```
 
-**Tactical Netherite Helm**
-```text
-[Echo Shard] [Spyglass] [Echo Shard]
-[Ender Eye] [Netherite Helmet] [Ender Eye]
-[Netherite Ingot] [Ship Analyzer] [Netherite Ingot]
+**Tactical Goggles**
+```
+[Resonance Lens]  [Void Capacitor]  [Resonance Lens]
+[Void Capacitor]  [Ship Analyzer]   [Void Capacitor]
+[Resonance Lens]  [Void Capacitor]  [Resonance Lens]
 ```
 
 **Gravitational Mine (x4)**
-```text
-[Ender Pearl] [Phantom Membrane] [Ender Pearl]
-[Blaze Powder] [Iron Ingot] [Blaze Powder]
-[Gunpowder] [Iron Ingot] [Gunpowder]
+```
+[Charged Redstone]  [Freq. Oscillator] [Charged Redstone]
+[Freq. Oscillator]  [Iron Ingot]       [Freq. Oscillator]
+[Charged Redstone]  [Freq. Oscillator] [Charged Redstone]
 ```
 
 **Gravitational Mine Launcher**
-```text
-[Ender Eye] [Dropper] [Ender Eye]
-[Quartz] [Netherite Ingot] [Quartz]
-[Redstone] [Piston] [Redstone]
+```
+[Copper Coil]      [Reinforced Plate] [Copper Coil]
+[Reinforced Plate] [Signal Board]     [Reinforced Plate]
+[Copper Coil]      [Reinforced Plate] [Copper Coil]
 ```
 
 ### Boarding Pod
 
 **Boarding Pod Cockpit**
-```text
-[Iron Ingot]   [Glass]        [Iron Ingot]
-[Smooth Stone] [Compass]      [Smooth Stone]
-[Iron Ingot]   [Redstone]     [Iron Ingot]
+```
+[Reinforced Plate] [Tempered Glass]  [Reinforced Plate]
+[Copper Coil]      [Compass]         [Copper Coil]
+[Reinforced Plate] [Redstone]        [Reinforced Plate]
 ```
 
 **Boarding Pod Engine**
-```text
-[Iron Ingot]   [Blaze Powder] [Iron Ingot]
-[Blaze Powder] [Gunpowder]    [Blaze Powder]
-[Iron Ingot]   [Blaze Powder] [Iron Ingot]
+```
+[Reinforced Plate] [Copper Coil]      [Reinforced Plate]
+[Copper Coil]      [Gunpowder]        [Copper Coil]
+[Reinforced Plate] [Copper Coil]      [Reinforced Plate]
 ```
 
 ### Solid Projection Module & Frequency ID Card
 
 **Solid Projection Module**
-```text
-[Obsidian]    [Diamond]        [Obsidian]
-[Diamond]     [Ender Eye]      [Diamond]
-[Iron Block]  [Redstone Block] [Iron Block]
+```
+[Obsidian]        [Hardened Casing]  [Obsidian]
+[Hardened Casing] [Ender Eye]        [Hardened Casing]
+[Copper Coil]     [Redstone Block]   [Copper Coil]
 ```
 
-**Frequency ID Card (x1)**
-```text
-[Empty]        [Empty]     [Empty]
-[Iron Nugget]  [Name Tag]  [Iron Nugget]
-[Paper]        [Paper]     [Paper]
+**Frequency ID Card (x8)**
+```
+[              ] [              ] [              ]
+[Insulated Wire] [Signal Board]  [Insulated Wire]
+[Paper]          [Paper]         [Paper]
 ```
 
 ---
@@ -554,7 +627,26 @@ Right-click the generator to see:
 
 ## Redstone Integration
 
-The **Shield Generator** outputs a **redstone signal** when it takes damage — the signal strength is proportional to the damage received. Place a **comparator** next to the generator to wire it into automation circuits (e.g., alert systems, auto-activating backup batteries when under attack).
+The **Shield Generator** supports both redstone **input** and **output**.
+
+### Redstone Input — Activation Control
+
+Apply a **redstone signal** to the Shield Generator to control shield activation:
+
+- **Signal HIGH** → shield **activates**
+- **Signal LOW** → shield **deactivates**
+
+The generator detects the rising and falling edge each server tick. Use a lever for a simple on/off switch, a comparator output to react to another block's state, or any other redstone circuit.
+
+> **Tip:** This interacts with the GUI toggle — the shield state follows whichever control acted last. If you wire up redstone control, leave the GUI toggle as-is.
+
+### Redstone Output — Hit Detection
+
+The generator also **emits** a redstone signal when struck. Signal strength is proportional to the damage received. Place a **comparator** next to the generator to wire it into automation circuits (e.g., alert systems, auto-activating backup generators or lights when under attack).
+
+### Combining Both
+
+You can use both at the same time. For example: route the generator's output signal through an inverter (NOT gate) back into its input — the shield shuts off for one second every time it's hit (emergency-vent behaviour).
 
 ---
 

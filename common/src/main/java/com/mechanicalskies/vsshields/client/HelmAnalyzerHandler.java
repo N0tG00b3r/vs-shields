@@ -1,15 +1,17 @@
 package com.mechanicalskies.vsshields.client;
 
-import com.mechanicalskies.vsshields.item.TacticalNetheriteHelm;
+import com.mechanicalskies.vsshields.item.TacticalGogglesItem;
 import com.mechanicalskies.vsshields.network.ModNetwork;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import java.util.function.Predicate;
 
 /**
- * Handles the Ship Analyzer keybind for the Tactical Netherite Helm.
+ * Handles the Ship Analyzer keybind for the Tactical Goggles.
  * Toggle mode: press once to activate, press again to deactivate.
  * Tick this from VSShieldsModClient CLIENT_POST event (client-side only).
  */
@@ -23,6 +25,13 @@ public class HelmAnalyzerHandler {
             "key.categories.vs_shields"
     );
 
+    /** Set from forge module to check Curios head slot for TacticalGoggles. */
+    private static Predicate<Player> gogglesChecker = p -> false;
+
+    public static void setGogglesChecker(Predicate<Player> checker) {
+        gogglesChecker = checker;
+    }
+
     private static boolean isActive   = false;
     private static boolean keyWasDown = false;
     private static int     cooldown   = 0;
@@ -30,11 +39,12 @@ public class HelmAnalyzerHandler {
     public static void tick(Minecraft mc) {
         if (mc.player == null || mc.level == null) return;
 
-        // Must be wearing the tactical helm
+        // Must be wearing goggles in helmet slot OR goggles in Curios head slot
         ItemStack helmet = mc.player.getItemBySlot(EquipmentSlot.HEAD);
-        boolean wearingHelm = !helmet.isEmpty() && helmet.getItem() instanceof TacticalNetheriteHelm;
+        boolean wearingGogglesArmor = !helmet.isEmpty() && helmet.getItem() instanceof TacticalGogglesItem;
+        boolean wearingGogglesCurios = gogglesChecker.test(mc.player);
 
-        if (!wearingHelm) {
+        if (!wearingGogglesArmor && !wearingGogglesCurios) {
             if (isActive) {
                 ClientAnalyzerData.getInstance().clear();
                 isActive = false;

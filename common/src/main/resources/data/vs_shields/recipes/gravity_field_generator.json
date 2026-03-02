@@ -1,14 +1,10 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "ENE",
-    "NSN",
-    "ENE"
-  ],
+  "pattern": ["CVC", "VSV", "CVC"],
   "key": {
-    "E": { "item": "minecraft:ender_pearl" },
-    "N": { "item": "minecraft:netherite_block" },
-    "S": { "item": "minecraft:nether_star" }
+    "C": { "item": "vs_shields:copper_coil" },
+    "V": { "item": "vs_shields:void_capacitor" },
+    "S": { "item": "vs_shields:stabilized_core" }
   },
   "result": {
     "item": "vs_shields:gravity_field_generator",

@@ -1,9 +1,11 @@
 package com.mechanicalskies.vsshields.forge
 
 import com.mechanicalskies.vsshields.item.FrequencyIDCardItem
+import com.mechanicalskies.vsshields.item.TacticalGogglesItem
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
+import top.theillusivec4.curios.api.CuriosApi
 
 /**
  * Soft dependency on Curios API.
@@ -15,6 +17,22 @@ object CuriosIntegration {
     val LOADED: Boolean = runCatching {
         Class.forName("top.theillusivec4.curios.api.CuriosApi")
     }.isSuccess
+
+    /**
+     * Returns true if the player has TacticalGogglesItem in any Curios "head" slot.
+     */
+    fun hasGogglesInHeadSlot(player: Player): Boolean {
+        if (!LOADED) return false
+        return runCatching {
+            val curios = CuriosApi.getCuriosInventory(player).resolve().orElse(null) ?: return false
+            val headHandler = curios.getStacksHandler("head").orElse(null) ?: return false
+            val stacks = headHandler.stacks
+            for (i in 0 until stacks.slots) {
+                if (stacks.getStackInSlot(i).item is TacticalGogglesItem) return true
+            }
+            false
+        }.getOrDefault(false)
+    }
 
     /**
      * Returns true if the entity has a card matching [code] in inventory or Curios slots.

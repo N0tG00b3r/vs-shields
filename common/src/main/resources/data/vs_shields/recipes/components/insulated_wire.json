@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["CCC", "LLL"],
+  "key": {
+    "C": { "item": "minecraft:copper_ingot" },
+    "L": { "item": "minecraft:leather" }
+  },
+  "result": { "item": "vs_shields:insulated_wire", "count": 6 }
+}

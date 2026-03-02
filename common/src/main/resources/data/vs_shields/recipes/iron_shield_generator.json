@@ -1,14 +1,10 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "IRI",
-    "IGI",
-    "IRI"
-  ],
+  "pattern": ["PWP", "WTW", "PWP"],
   "key": {
-    "I": { "item": "minecraft:iron_block" },
-    "R": { "item": "minecraft:redstone" },
-    "G": { "item": "minecraft:glass" }
+    "P": { "item": "vs_shields:reinforced_plate" },
+    "W": { "item": "vs_shields:copper_coil" },
+    "T": { "item": "vs_shields:tempered_glass_pane" }
   },
   "result": {
     "item": "vs_shields:iron_shield_generator",

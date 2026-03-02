@@ -1,13 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "   ",
-    "INI",
-    "PPP"
-  ],
+  "pattern": ["   ", "WSW", "PPP"],
   "key": {
-    "I": { "item": "minecraft:iron_nugget" },
-    "N": { "item": "minecraft:name_tag" },
+    "W": { "item": "vs_shields:insulated_wire" },
+    "S": { "item": "vs_shields:signal_board" },
     "P": { "item": "minecraft:paper" }
   },
   "result": {

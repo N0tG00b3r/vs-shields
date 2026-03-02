@@ -1,13 +1,10 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "DED",
-    "DGD",
-    "DED"
-  ],
+  "pattern": ["DRD", "EGE", "DRD"],
   "key": {
     "D": { "item": "minecraft:diamond" },
-    "E": { "item": "minecraft:ender_pearl" },
+    "R": { "item": "vs_shields:resonance_lens" },
+    "E": { "item": "vs_shields:energy_cell" },
     "G": { "item": "vs_shields:iron_shield_generator" }
   },
   "result": {

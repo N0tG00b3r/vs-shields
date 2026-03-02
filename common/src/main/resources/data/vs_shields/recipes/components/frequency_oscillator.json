@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["ASA", "QCQ", "ASA"],
+  "key": {
+    "A": { "item": "minecraft:amethyst_shard" },
+    "S": { "item": "vs_shields:signal_board" },
+    "Q": { "item": "minecraft:quartz" },
+    "C": { "item": "vs_shields:copper_coil" }
+  },
+  "result": { "item": "vs_shields:frequency_oscillator", "count": 1 }
+}

@@ -1,22 +1,13 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "EIE",
-    "INI",
-    "EIE"
-  ],
+  "pattern": ["EIE", "IHI", "EIE"],
   "key": {
-    "E": {
-      "item": "minecraft:echo_shard"
-    },
-    "I": {
-      "item": "vs_shields:shield_battery_input"
-    },
-    "N": {
-      "item": "minecraft:netherite_ingot"
-    }
+    "E": { "item": "minecraft:echo_shard" },
+    "I": { "item": "vs_shields:shield_battery_input" },
+    "H": { "item": "vs_shields:hardened_casing" }
   },
   "result": {
-    "item": "vs_shields:shield_battery_controller"
+    "item": "vs_shields:shield_battery_controller",
+    "count": 1
   }
 }

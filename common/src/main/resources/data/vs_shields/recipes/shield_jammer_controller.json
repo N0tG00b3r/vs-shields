@@ -1,29 +1,13 @@
 {
-    "type": "minecraft:crafting_shaped",
-    "pattern": [
-        "DED",
-        "RNR",
-        "DOD"
-    ],
-    "key": {
-        "D": {
-            "item": "minecraft:diamond_block"
-        },
-        "E": {
-            "item": "minecraft:end_crystal"
-        },
-        "R": {
-            "item": "minecraft:redstone_block"
-        },
-        "N": {
-            "item": "minecraft:netherite_block"
-        },
-        "O": {
-            "item": "minecraft:obsidian"
-        }
-    },
-    "result": {
-        "item": "vs_shields:shield_jammer_controller",
-        "count": 1
-    }
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["HFH", "FSF", "HFH"],
+  "key": {
+    "H": { "item": "vs_shields:hardened_casing" },
+    "F": { "item": "vs_shields:frequency_oscillator" },
+    "S": { "item": "vs_shields:stabilized_core" }
+  },
+  "result": {
+    "item": "vs_shields:shield_jammer_controller",
+    "count": 1
+  }
 }

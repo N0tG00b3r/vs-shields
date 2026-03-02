@@ -7,6 +7,7 @@ import com.mechanicalskies.vsshields.shield.ShieldManager
 import net.minecraft.core.BlockPos
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.LivingEntity
+import net.minecraft.world.entity.projectile.Projectile
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.Level
 import net.minecraft.world.phys.AABB
@@ -335,18 +336,37 @@ class ShieldDamageHandler {
 
         // Fast path: projectile hit directly on a ship block
         var shield: ShieldInstance? = null
-        val ship = level.getShipManagingPos(BlockPos.containing(hitPos))
-        if (ship != null) {
-            shield = manager.getShield(ship.id)
+        var hitShip: Ship? = null
+        val blockShip = level.getShipManagingPos(BlockPos.containing(hitPos))
+        if (blockShip != null) {
+            shield = manager.getShield(blockShip.id)
+            hitShip = blockShip
         }
 
         // Slow path: projectile hit near a shielded ship (within padding)
         if (shield == null) {
             val result = findShieldedShipNearPos(level, hitPos) ?: return
             shield = result.second
+            hitShip = result.first
         }
 
         if (shield.isActive && shield.currentHP > 0) {
+            // === FIX: skip crew fire — projectile shot from inside the shield zone ===
+            // Without this check, arrows/projectiles from crew hitting their own ship's
+            // inner blocks (hull, walls) would absorb into the shield as if incoming.
+            val worldAABB = hitShip?.worldAABB
+            if (worldAABB != null) {
+                val shooter = (projectile as? Projectile)?.owner
+                if (shooter != null) {
+                    val padding = ShieldConfig.get().general.shieldPadding
+                    val shieldAABB = AABB(
+                        worldAABB.minX() - padding, worldAABB.minY() - padding, worldAABB.minZ() - padding,
+                        worldAABB.maxX() + padding, worldAABB.maxY() + padding, worldAABB.maxZ() + padding
+                    )
+                    if (shieldAABB.contains(shooter.x, shooter.y, shooter.z)) return
+                }
+            }
+
             val damage = getProjectileDamage(projectile)
             if (damage <= 0.0) return
 

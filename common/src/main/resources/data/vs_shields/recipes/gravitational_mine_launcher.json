@@ -1,17 +1,10 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "EDE",
-    "QNQ",
-    "RPR"
-  ],
+  "pattern": ["WPW", "PSP", "WPW"],
   "key": {
-    "E": { "item": "minecraft:ender_eye" },
-    "D": { "item": "minecraft:dropper" },
-    "Q": { "item": "minecraft:quartz" },
-    "N": { "item": "minecraft:netherite_ingot" },
-    "R": { "item": "minecraft:redstone" },
-    "P": { "item": "minecraft:piston" }
+    "W": { "item": "vs_shields:copper_coil" },
+    "P": { "item": "vs_shields:reinforced_plate" },
+    "S": { "item": "vs_shields:signal_board" }
   },
   "result": {
     "item": "vs_shields:gravitational_mine_launcher",

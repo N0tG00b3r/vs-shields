@@ -1,5 +1,8 @@
 {
   "variants": {
-    "": { "model": "vs_shields:block/solid_projection_module" }
+    "facing=north": { "model": "vs_shields:block/solid_projection_module" },
+    "facing=south": { "model": "vs_shields:block/solid_projection_module", "y": 180 },
+    "facing=west":  { "model": "vs_shields:block/solid_projection_module", "y": 270 },
+    "facing=east":  { "model": "vs_shields:block/solid_projection_module", "y": 90 }
   }
 }

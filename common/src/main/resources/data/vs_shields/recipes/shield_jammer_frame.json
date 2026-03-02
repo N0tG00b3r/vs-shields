@@ -1,20 +1,12 @@
 {
-    "type": "minecraft:crafting_shaped",
-    "pattern": [
-        "IOI",
-        "OIO",
-        "IOI"
-    ],
-    "key": {
-        "I": {
-            "item": "minecraft:iron_block"
-        },
-        "O": {
-            "item": "minecraft:obsidian"
-        }
-    },
-    "result": {
-        "item": "vs_shields:shield_jammer_frame",
-        "count": 4
-    }
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["POP", "OPO", "POP"],
+  "key": {
+    "P": { "item": "vs_shields:reinforced_plate" },
+    "O": { "item": "minecraft:obsidian" }
+  },
+  "result": {
+    "item": "vs_shields:shield_jammer_frame",
+    "count": 4
+  }
 }
