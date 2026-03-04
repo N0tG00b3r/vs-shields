@@ -1,0 +1,200 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "vs_shields:item/compass/aetheric_compass_00"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "vs_shields:angle": 0.0
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_00"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.03125
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_01"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.0625
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_02"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.09375
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_03"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.125
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_04"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.15625
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_05"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.1875
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_06"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.21875
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_07"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.25
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_08"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.28125
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_09"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.3125
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_10"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.34375
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_11"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.375
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_12"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.40625
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_13"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.4375
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_14"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.46875
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_15"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.5
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_16"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.53125
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_17"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.5625
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_18"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.59375
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_19"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.625
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_20"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.65625
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_21"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.6875
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_22"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.71875
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_23"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.75
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_24"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.78125
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_25"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.8125
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_26"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.84375
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_27"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.875
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_28"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.90625
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_29"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.9375
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_30"
+    },
+    {
+      "predicate": {
+        "vs_shields:angle": 0.96875
+      },
+      "model": "vs_shields:item/compass/aetheric_compass_31"
+    }
+  ]
+}

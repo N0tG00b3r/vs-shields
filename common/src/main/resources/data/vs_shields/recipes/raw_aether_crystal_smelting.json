@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:smelting",
+  "ingredient": {
+    "item": "vs_shields:raw_aether_crystal"
+  },
+  "result": "vs_shields:refined_aether_crystal",
+  "experience": 1.0,
+  "cookingtime": 200
+}

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "vs_shields:resonance_fragment" },
+    { "item": "vs_shields:frequency_oscillator" }
+  ],
+  "result": {
+    "item": "vs_shields:calibrated_oscillator",
+    "count": 1
+  }
+}

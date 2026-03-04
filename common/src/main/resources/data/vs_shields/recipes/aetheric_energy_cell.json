@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "vs_shields:refined_aether_crystal" },
+    { "item": "vs_shields:energy_cell" }
+  ],
+  "result": {
+    "item": "vs_shields:aetheric_energy_cell",
+    "count": 1
+  }
+}

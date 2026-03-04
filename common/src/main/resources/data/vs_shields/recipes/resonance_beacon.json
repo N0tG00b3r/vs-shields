@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "VRV",
+    "RSR",
+    "VRV"
+  ],
+  "key": {
+    "V": { "item": "vs_shields:void_capacitor" },
+    "R": { "item": "vs_shields:resonance_lens" },
+    "S": { "item": "vs_shields:stabilized_core" }
+  },
+  "result": {
+    "item": "vs_shields:resonance_beacon",
+    "count": 1
+  }
+}

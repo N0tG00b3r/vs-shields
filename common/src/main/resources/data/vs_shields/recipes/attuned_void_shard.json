@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "vs_shields:refined_aether_crystal" },
+    { "item": "vs_shields:void_shard" }
+  ],
+  "result": {
+    "item": "vs_shields:attuned_void_shard",
+    "count": 1
+  }
+}
