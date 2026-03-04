@@ -1,6 +1,7 @@
 {
     "replace": false,
     "values": [
-        "vs_shields:gravity_field_generator"
+        "vs_shields:gravity_field_generator",
+        "vs_shields:resonance_cluster"
     ]
 }

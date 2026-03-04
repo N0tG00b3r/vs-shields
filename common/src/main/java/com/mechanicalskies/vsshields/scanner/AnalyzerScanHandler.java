@@ -151,8 +151,21 @@ public class AnalyzerScanHandler {
         } catch (Exception ignored) {
         }
 
+        // --- Anomaly detection ---
+        boolean isAnomaly = false;
+        int anomalyTTLSeconds = 0;
+        com.mechanicalskies.vsshields.anomaly.AnomalyInstance anomalyInst =
+                com.mechanicalskies.vsshields.anomaly.AnomalyManager.getInstance().getActive();
+        if (anomalyInst != null && targetId == anomalyInst.getShipId()) {
+            isAnomaly = true;
+            long currentTick = level.getGameTime();
+            long remaining = anomalyInst.getGlobalTTLRemaining(currentTick,
+                    com.mechanicalskies.vsshields.config.ShieldConfig.get().getAnomaly().globalLifetimeTicks);
+            anomalyTTLSeconds = (int) (remaining / 20);
+        }
+
         ModNetwork.sendAnalyzerData(player, targetId, hp, maxHp, active, solid, energy,
-                matrixArr, cannons, critical, crewIds, minePositions);
+                matrixArr, cannons, critical, crewIds, minePositions, isAnomaly, anomalyTTLSeconds);
     }
 
     /**

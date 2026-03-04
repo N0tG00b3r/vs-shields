@@ -27,6 +27,13 @@ Wrap your VS2 warship in a procedural energy shield that stops projectiles, abso
 - **Redstone I/O** — Signal **in** activates/deactivates the shield; signal **out** pulses when struck — combine both sides for fully automated defence logic
 - **Solid Projection Module** — turns the energy shield into a physical barrier; access controlled by programmable **Frequency ID Cards** (up to 8-char codes, Curios-compatible)
 - **Boarding Pod** — 2-block multiblock assault craft that assembles into a full VS2 physics ship; aim with the mouse, hold **Space** to fire the rocket booster, steer mid-flight by looking where you want to go (crosshair-accurate steering at any ship rotation); breaches a 2×2×4 tunnel into the target hull
+- **Aetheric Anomaly** — procedurally generated floating islands that spawn periodically as VS2 ships high in the sky; mesa top with rolling hills, stalactite-like bottom, caves with rare ores; 4-phase lifecycle (ACTIVE → EXTRACTION → WARNING → DISSOLVING); anti-gravity hover with slow drift and gentle swaying; hostile guardians (Enderman/Phantom/Shulker) with custom drops and escalating waves; ship repulsion, projectile absorption, explosion suppression; hold-RMB void deposit extraction with progress HUD; periodic aetheric pulse (knockback + shield damage); resource mining (Raw Aether Crystal, Resonance Fragment, Void Essence); fully configurable timers, sizes, and physics; admin commands for spawning/despawning/info
+- **Aetheric Compass** — handheld item that detects anomaly islands: slow spin (no anomaly), points toward island (>500 blocks), wild erratic spin (≤500 blocks — interference); animated 32-texture needle like a vanilla compass
+- **Resonance Beacon** — scan block that reveals exact anomaly coordinates; requires 500k FE + 1 Refined Aether Crystal per scan; displays position and remaining TTL
+- **Aetheric Energy Cell** — consumable: right-click a Shield Generator to inject 75,000 FE (configurable)
+- **Attuned Void Shard** / **Calibrated Oscillator** — crafting ingredients for future tier-4 recipes
+- **Anomaly particle effects** — spawn beam (vertical light column), ambient motes, pulse shockwave, warning shimmer, dissolution smoke
+- **Extraction Timer HUD** — shown to all players within 100 blocks of an active anomaly; color-coded countdown
 - **Crafting component system** — 13 custom intermediate items (Charged Redstone Crystal, Copper Coil, Void Shard, etc.) form a three-tier progression (Base → Mid → Advanced); netherite is gated behind Hardened Casing, generators upgrade Iron → Diamond → Netherite
 - **Energy Cell** — consumable item that instantly charges a Shield Generator with 25,000 FE on right-click
 - **Void Shard** — rare drop from Endermen (5%) and Ender Dragon (4–8); required for endgame Void Capacitor
@@ -141,6 +148,43 @@ Heavy-duty launcher that fires Gravitational Mines.
 - **Cooldown:** 5 seconds between shots
 - **Variable Range:** Shift+Scroll to cycle deployment distance (15 / 30 / 50 / 70 blocks); the mine arms at exactly that distance from the launch point
 - Consumes one mine from the inventory per shot (free in Creative)
+
+---
+
+### Aetheric Anomaly
+
+Procedurally generated floating islands that periodically appear high in the sky as VS2 ships.
+
+- **Appearance:** Mesa-shaped top with rolling hills, tapered stalactite bottom, noise-carved caves with ore veins
+- **6 unique blocks:** Aetheric Stone, Cracked Aetheric Stone, Void Moss, Aether Crystal Ore (light 8, sparkle particles), Resonance Cluster (light 12, energy arcs), Concentrated Void Deposit (light 10, corona + void drip particles)
+- **Hovering physics:** Anti-gravity + spring force + velocity damping; slow Lissajous drift around spawn point; gentle sine-wave swaying
+- **Lifecycle:** ACTIVE (spawns, hovers) → EXTRACTION (player detected nearby, timer starts) → WARNING (violent shaking, 60s) → DISSOLVING (blocks vanish edge-inward over 45s)
+- **Protection:** Ship repulsion pushes VS2 ships away; all projectiles absorbed; all explosions suppressed; block placement prevented
+- **Guardian mobs:** Enderman (50%), Phantom (35%), Shulker (15%) spawn in escalating waves with custom drops (Void Essence, Raw Aether Crystal, Resonance Fragment); Endermen are teleport-clamped to the island; Phantoms orbit around it
+- **Resource mining:** Aether Crystal Ore drops 1–3 Raw Aether Crystal (Fortune-affected); Resonance Cluster drops 1–2 Resonance Fragment; Raw Aether Crystal smelts into Refined Aether Crystal
+- **Void Deposit extraction:** Hold RMB on the Concentrated Void Deposit for a timed extraction (progress bar HUD); exhaustion triggers destabilisation
+- **Periodic aetheric pulse:** Every 30 seconds when players are near, a knockback + shield-damage pulse fires
+- **Destabilisation:** Right-clicking or destroying a Concentrated Void Deposit immediately triggers the WARNING phase
+- **Auto-spawn:** Configurable interval (default 60 min), random position within radius around world spawn, Y 200–250
+- **Admin commands:** `/vs_shields anomaly spawn [x y z]`, `despawn`, `info`, `timer set <seconds>`, `reload`
+- **Persistence:** Survives server restarts; deferred ship verification (5s after boot) prevents false cleanup
+
+| Config Key | Default | Description |
+|-----------|---------|-------------|
+| `anomaly.enabled` | `true` | Enable/disable the entire system |
+| `anomaly.spawnIntervalTicks` | `72000` (60 min) | Time between auto-spawns |
+| `anomaly.globalLifetimeTicks` | `24000` (20 min) | Max lifetime if no player approaches |
+| `anomaly.extractionTimerTicks` | `8400` (7 min) | Timer once a player is detected nearby |
+| `anomaly.dissolutionPhaseTicks` | `900` (45 sec) | Duration of block dissolution |
+| `anomaly.pulseCooldownTicks` | `600` (30 sec) | Interval between periodic aetheric pulses |
+| `anomaly.minIslandSize` / `maxIslandSize` | `40` / `80` | Island diameter range (blocks) |
+| `anomaly.antiGravityMultiplier` | `1.05` | Force multiplier (1.0 = exact hover) |
+| `anomaly.compassChaosRadius` | `500` | Distance at which compass enters interference mode |
+| `anomaly.beaconMaxEnergy` | `1000000` | Resonance Beacon FE buffer capacity |
+| `anomaly.beaconEnergyInput` | `50000` | Resonance Beacon max FE/tick input |
+| `anomaly.beaconScanCost` | `500000` | FE consumed per beacon scan |
+| `anomaly.beaconScanTicks` | `200` | Scan duration (10 seconds) |
+| `general.aethericEnergyCellFE` | `75000` | FE injected by Aetheric Energy Cell |
 
 ---
 
@@ -453,6 +497,28 @@ All recipes use custom intermediate components. Components are organized in thre
 [Reinforced Plate] [Copper Coil]      [Reinforced Plate]
 ```
 
+### Anomaly Detection
+
+**Aetheric Compass**
+```
+[Resonance Lens] [Void Shard]     [Resonance Lens]
+[Void Shard]     [Compass]        [Void Shard]
+[Resonance Lens] [Void Shard]     [Resonance Lens]
+```
+
+**Resonance Beacon**
+```
+[Void Capacitor]  [Resonance Lens]  [Void Capacitor]
+[Resonance Lens]  [Stabilized Core] [Resonance Lens]
+[Void Capacitor]  [Resonance Lens]  [Void Capacitor]
+```
+
+**Aetheric Energy Cell** *(shapeless)*: Refined Aether Crystal + Energy Cell
+
+**Attuned Void Shard** *(shapeless)*: Refined Aether Crystal + Void Shard
+
+**Calibrated Oscillator** *(shapeless)*: Resonance Fragment + Frequency Oscillator
+
 ### Solid Projection Module & Access Cards
 
 **Solid Projection Module**
@@ -488,6 +554,7 @@ All recipes use custom intermediate components. Components are organized in thre
 | **[Create: Gunsmithing](https://www.curseforge.com/minecraft/mc-mods/create-gunsmithing)** | Per-weapon damage for projectile and hitscan weapons |
 | **[Alex's Caves](https://modrinth.com/mod/alexs-caves)** | Nuclear bomb and torpedo intercepted |
 | **[Curios API](https://modrinth.com/mod/curios)** | Tactical Goggles in head slot, Frequency ID Card in charm slot |
+| **[World Border (Serilum)](https://modrinth.com/mod/world-border)** | Anomaly islands respect custom world borders (auto-detected via reflection) |
 
 ---
 

@@ -270,6 +270,20 @@ object PodShipManager {
                     .transformPosition(Vector3d(seat.x, seat.y, seat.z), Vector3d())
                 val cp = state.cockpitShipyardPos!!
                 seat.setCockpitShipyardPosStr("${cp.x},${cp.y},${cp.z}")
+
+                // Set passenger yaw to face cockpit forward direction in ship-local space.
+                // VS2 camera = shipRotation × playerLocalYaw, so we need:
+                //   localYaw = worldToShip.rotateDirection(cockpitFacingDir)
+                // Without this, the view snaps to north when mounting on a rotated parent ship.
+                val passenger = seat.passengers.firstOrNull()
+                if (passenger != null) {
+                    val localFwd = podShip.worldToShip
+                        .transformDirection(Vector3d(state.launchFacingDir), Vector3d()).normalize()
+                    val localYaw = Math.toDegrees(atan2(-localFwd.x, localFwd.z)).toFloat()
+                    passenger.yRot = localYaw
+                    passenger.xRot = 0f
+                    passenger.yHeadRot = localYaw
+                }
             }
 
             // VS2-native entity tracking: drag the seat with the pod ship each tick.
@@ -535,8 +549,14 @@ object PodShipManager {
         state.breachLayerIndex = 0
 
         // Attach pod rigidly to target ship via VSFixedJoint.
-        // The joint attachment point on the target IS attachLocalPos — no extra computation.
-        val poseOnPod    = VSJointPose(podShip.worldToShip.transformPosition(podPosVec, Vector3d()), Quaterniond())
+        // Capture the pod's current rotation relative to the target so the joint
+        // preserves the pod's world orientation at impact (nose toward target).
+        // Without this, identity quaternions would snap the pod to match the target's
+        // local frame — often flipping it 180° (back toward target).
+        val relRot = Quaterniond(podShip.transform.shipToWorldRotation)
+            .conjugate()  // inverse of pod's world rotation
+            .mul(Quaterniond(targetShip.transform.shipToWorldRotation))
+        val poseOnPod    = VSJointPose(podShip.worldToShip.transformPosition(podPosVec, Vector3d()), relRot)
         val poseOnTarget = VSJointPose(attachLocalPos, Quaterniond())
         val gtpa = ValkyrienSkiesMod.getOrCreateGTPA(level.dimensionId)
         gtpa.addJoint(
@@ -643,16 +663,22 @@ object PodShipManager {
             breachHull(level, targetShip, drillingLocalPos, drillingDirection)
         }
 
-        // Teleport passenger into the pre-computed tunnel position
+        // Teleport passenger into the pre-computed tunnel position.
+        // Set rotation BEFORE teleport — teleportTo uses current yRot/xRot,
+        // and setting after causes one frame of wrong direction on the client.
         if (passenger != null && ejectWorld != null) {
             passenger.stopRiding()
-            passenger.teleportTo(ejectWorld.x, ejectWorld.y + 0.3, ejectWorld.z)
 
-            // Face breach direction
+            // Face breach direction (world-space — player is no longer on a VS2 ship mount)
             if (drillingDirection != null) {
-                passenger.setYRot(Math.toDegrees(atan2(-drillingDirection.x, drillingDirection.z)).toFloat())
-                passenger.setXRot(Math.toDegrees(asin(-drillingDirection.y.coerceIn(-1.0, 1.0))).toFloat())
+                val yaw = Math.toDegrees(atan2(-drillingDirection.x, drillingDirection.z)).toFloat()
+                val pitch = Math.toDegrees(asin(-drillingDirection.y.coerceIn(-1.0, 1.0))).toFloat()
+                passenger.yRot = yaw
+                passenger.xRot = pitch
+                passenger.yHeadRot = yaw  // needed for client head rotation sync
             }
+
+            passenger.teleportTo(ejectWorld.x, ejectWorld.y + 0.3, ejectWorld.z)
             passenger.deltaMovement = net.minecraft.world.phys.Vec3.ZERO
             passenger.fallDistance = 0f
         }

@@ -52,6 +52,24 @@ public class ModCreativeTabs {
                         output.accept(ModItems.FREQUENCY_OSCILLATOR.get());
                         output.accept(ModItems.VOID_SHARD.get());
                         output.accept(ModItems.VOID_CAPACITOR.get());
+                        // Aetheric Anomaly Phase 4
+                        output.accept(ModItems.AETHERIC_COMPASS.get());
+                        output.accept(ModItems.RESONANCE_BEACON.get());
+                        output.accept(ModItems.AETHERIC_ENERGY_CELL.get());
+                        output.accept(ModItems.ATTUNED_VOID_SHARD.get());
+                        output.accept(ModItems.CALIBRATED_OSCILLATOR.get());
+                        // Aetheric Anomaly resources
+                        output.accept(ModItems.RAW_AETHER_CRYSTAL.get());
+                        output.accept(ModItems.REFINED_AETHER_CRYSTAL.get());
+                        output.accept(ModItems.VOID_ESSENCE.get());
+                        output.accept(ModItems.RESONANCE_FRAGMENT.get());
+                        // Aetheric Anomaly blocks
+                        output.accept(ModItems.AETHERIC_STONE.get());
+                        output.accept(ModItems.AETHERIC_STONE_CRACKED.get());
+                        output.accept(ModItems.VOID_MOSS.get());
+                        output.accept(ModItems.AETHER_CRYSTAL_ORE.get());
+                        output.accept(ModItems.RESONANCE_CLUSTER.get());
+                        output.accept(ModItems.CONCENTRATED_VOID_DEPOSIT.get());
                     })
                     .build());
 

@@ -57,6 +57,13 @@ public class ModNetwork {
     public static final ResourceLocation CARD_PROGRAM_ID           = new ResourceLocation(VSShieldsMod.MOD_ID, "card_program");
     public static final ResourceLocation BOARDING_POD_FIRE_ID      = new ResourceLocation(VSShieldsMod.MOD_ID, "boarding_pod_fire");
     public static final ResourceLocation BOARDING_POD_RCS_ID       = new ResourceLocation(VSShieldsMod.MOD_ID, "boarding_pod_rcs");
+    public static final ResourceLocation ANOMALY_SPAWN_ID          = new ResourceLocation(VSShieldsMod.MOD_ID, "anomaly_spawn");
+    public static final ResourceLocation ANOMALY_DESPAWN_ID        = new ResourceLocation(VSShieldsMod.MOD_ID, "anomaly_despawn");
+    public static final ResourceLocation EXTRACTION_PROGRESS_ID    = new ResourceLocation(VSShieldsMod.MOD_ID, "extraction_progress");
+    public static final ResourceLocation ANOMALY_PULSE_ID          = new ResourceLocation(VSShieldsMod.MOD_ID, "anomaly_pulse");
+    public static final ResourceLocation BEACON_SCAN_START_ID      = new ResourceLocation(VSShieldsMod.MOD_ID, "beacon_scan_start");
+    public static final ResourceLocation BEACON_SCAN_RESULT_ID     = new ResourceLocation(VSShieldsMod.MOD_ID, "beacon_scan_result");
+    public static final ResourceLocation ANOMALY_TIMER_ID          = new ResourceLocation(VSShieldsMod.MOD_ID, "anomaly_timer");
 
     public static void init() {
         NetworkManager.registerReceiver(
@@ -188,6 +195,20 @@ public class ModNetwork {
                     });
                 });
 
+        // C2S: Beacon scan start
+        NetworkManager.registerReceiver(NetworkManager.Side.C2S, BEACON_SCAN_START_ID,
+                (buf, context) -> {
+                    BlockPos pos = buf.readBlockPos();
+                    context.queue(() -> {
+                        Player player = context.getPlayer();
+                        if (player instanceof ServerPlayer sp && player.level() instanceof ServerLevel sl) {
+                            if (sl.getBlockEntity(pos) instanceof com.mechanicalskies.vsshields.blockentity.ResonanceBeaconBlockEntity beacon) {
+                                beacon.startScan(sp);
+                            }
+                        }
+                    });
+                });
+
         // Register S2C Receivers (Client Only)
         EnvExecutor.runInEnv(Env.CLIENT, () -> () -> {
             ClientNetworkHandler.registerS2C();
@@ -262,7 +283,8 @@ public class ModNetwork {
                                         double[] matrix,
                                         Set<BlockPos> cannons, Set<BlockPos> critical,
                                         List<Integer> crewIds,
-                                        List<double[]> minePositions) {
+                                        List<double[]> minePositions,
+                                        boolean isAnomaly, int anomalyTTLSeconds) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         buf.writeLong(shipId);
         buf.writeDouble(hp);
@@ -296,6 +318,9 @@ public class ModNetwork {
         for (double[] m : mineList) {
             buf.writeDouble(m[0]); buf.writeDouble(m[1]); buf.writeDouble(m[2]);
         }
+        // Anomaly detection
+        buf.writeBoolean(isAnomaly);
+        buf.writeInt(anomalyTTLSeconds);
         NetworkManager.sendToPlayer(player, ANALYZER_DATA_ID, buf);
     }
 
@@ -504,6 +529,70 @@ public class ModNetwork {
         if (stack.getItem() instanceof FrequencyIDCardItem) {
             FrequencyIDCardItem.setCode(stack, code);
         }
+    }
+
+    // --- Aetheric Anomaly ---
+
+    /** S2C: notify all clients that an anomaly spawned. */
+    public static void sendAnomalySpawn(MinecraftServer server, long shipId, double x, double y, double z) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeLong(shipId);
+        buf.writeDouble(x);
+        buf.writeDouble(y);
+        buf.writeDouble(z);
+        NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), ANOMALY_SPAWN_ID, buf);
+    }
+
+    /** S2C: notify all clients that the anomaly was removed. */
+    public static void sendAnomalyDespawn(MinecraftServer server) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), ANOMALY_DESPAWN_ID, buf);
+    }
+
+    /** S2C: send extraction progress to a specific player. */
+    public static void sendExtractionProgress(ServerPlayer player, float progress, boolean active) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeFloat(progress);
+        buf.writeBoolean(active);
+        NetworkManager.sendToPlayer(player, EXTRACTION_PROGRESS_ID, buf);
+    }
+
+    /** S2C: notify all clients of an aetheric pulse (screen shake / particles). */
+    public static void sendAnomalyPulse(MinecraftServer server, double x, double y, double z, double radius) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeDouble(x);
+        buf.writeDouble(y);
+        buf.writeDouble(z);
+        buf.writeDouble(radius);
+        NetworkManager.sendToPlayers(server.getPlayerList().getPlayers(), ANOMALY_PULSE_ID, buf);
+    }
+
+    /** S2C: send beacon scan result to the player who started the scan. */
+    public static void sendBeaconScanResult(ServerPlayer player, boolean found,
+                                            double x, double y, double z, int ttlSeconds) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeBoolean(found);
+        buf.writeDouble(x);
+        buf.writeDouble(y);
+        buf.writeDouble(z);
+        buf.writeInt(ttlSeconds);
+        NetworkManager.sendToPlayer(player, BEACON_SCAN_RESULT_ID, buf);
+    }
+
+    /** C2S: player clicks SCAN button in beacon GUI. */
+    public static void sendBeaconScanStart(BlockPos pos) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeBlockPos(pos);
+        NetworkManager.sendToServer(BEACON_SCAN_START_ID, buf);
+    }
+
+    /** S2C: send anomaly timer + phase to players near the island. */
+    public static void sendAnomalyTimer(ServerPlayer player, int remainingSeconds, boolean active, int phaseOrdinal) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeInt(remainingSeconds);
+        buf.writeBoolean(active);
+        buf.writeInt(phaseOrdinal);
+        NetworkManager.sendToPlayer(player, ANOMALY_TIMER_ID, buf);
     }
 
     private static void handleJammerEnable(Player player, BlockPos pos, boolean enable) {

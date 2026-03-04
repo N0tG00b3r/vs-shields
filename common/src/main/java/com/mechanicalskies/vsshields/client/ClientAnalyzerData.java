@@ -32,6 +32,10 @@ public class ClientAnalyzerData {
     public final List<Integer> crewEntityIds = new ArrayList<>();
     /** World-space positions of ARMED gravitational mines targeting this ship. */
     public final List<double[]> mineWorldPositions = new ArrayList<>();
+    /** True if the scanned ship is an Aetheric Anomaly island. */
+    public boolean isAnomaly;
+    /** Remaining seconds until anomaly despawns (only valid if isAnomaly). */
+    public int anomalyTTLSeconds;
     public long lastUpdateMs = 0;
 
     private ClientAnalyzerData() {
@@ -53,7 +57,8 @@ public class ClientAnalyzerData {
 
     public void update(long shipId, double hp, double maxHp, boolean active, boolean solid, float energy,
             double[] matrix, List<BlockPos> cannons, List<BlockPos> critical,
-            List<Integer> crewIds, List<double[]> mines) {
+            List<Integer> crewIds, List<double[]> mines,
+            boolean isAnomaly, int anomalyTTLSeconds) {
         this.targetShipId = shipId;
         this.shieldHP = hp;
         this.maxShieldHP = maxHp;
@@ -69,6 +74,8 @@ public class ClientAnalyzerData {
         this.crewEntityIds.addAll(crewIds);
         this.mineWorldPositions.clear();
         this.mineWorldPositions.addAll(mines);
+        this.isAnomaly = isAnomaly;
+        this.anomalyTTLSeconds = anomalyTTLSeconds;
         this.lastUpdateMs = System.currentTimeMillis();
     }
 }

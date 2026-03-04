@@ -136,6 +136,55 @@ public class ModItems {
         public static final RegistrySupplier<Item> VOID_CAPACITOR = ITEMS.register(
                         "void_capacitor", () -> new Item(new Item.Properties().stacksTo(1)));
 
+        // ===== Aetheric Anomaly — Phase 4 items =====
+        public static final RegistrySupplier<Item> AETHERIC_COMPASS = ITEMS.register(
+                        "aetheric_compass",
+                        () -> new com.mechanicalskies.vsshields.item.AethericCompassItem(
+                                new Item.Properties().stacksTo(1).rarity(net.minecraft.world.item.Rarity.RARE)));
+        public static final RegistrySupplier<Item> AETHERIC_ENERGY_CELL = ITEMS.register(
+                        "aetheric_energy_cell",
+                        () -> new com.mechanicalskies.vsshields.item.AethericEnergyCellItem(new Item.Properties()));
+        public static final RegistrySupplier<Item> ATTUNED_VOID_SHARD = ITEMS.register(
+                        "attuned_void_shard",
+                        () -> new Item(new Item.Properties().stacksTo(16).rarity(net.minecraft.world.item.Rarity.RARE)));
+        public static final RegistrySupplier<Item> CALIBRATED_OSCILLATOR = ITEMS.register(
+                        "calibrated_oscillator",
+                        () -> new Item(new Item.Properties().stacksTo(16).rarity(net.minecraft.world.item.Rarity.RARE)));
+
+        public static final RegistrySupplier<Item> RESONANCE_BEACON = ITEMS.register(
+                        "resonance_beacon",
+                        () -> new BlockItem(ModBlocks.RESONANCE_BEACON.get(), new Item.Properties()));
+
+        // ===== Aetheric Anomaly resource items =====
+        public static final RegistrySupplier<Item> RAW_AETHER_CRYSTAL = ITEMS.register(
+                        "raw_aether_crystal", () -> new Item(new Item.Properties()));
+        public static final RegistrySupplier<Item> REFINED_AETHER_CRYSTAL = ITEMS.register(
+                        "refined_aether_crystal", () -> new Item(new Item.Properties()));
+        public static final RegistrySupplier<Item> VOID_ESSENCE = ITEMS.register(
+                        "void_essence", () -> new Item(new Item.Properties()));
+        public static final RegistrySupplier<Item> RESONANCE_FRAGMENT = ITEMS.register(
+                        "resonance_fragment", () -> new Item(new Item.Properties()));
+
+        // ===== Aetheric Anomaly block items =====
+        public static final RegistrySupplier<Item> AETHERIC_STONE = ITEMS.register(
+                        "aetheric_stone",
+                        () -> new BlockItem(ModBlocks.AETHERIC_STONE.get(), new Item.Properties()));
+        public static final RegistrySupplier<Item> AETHERIC_STONE_CRACKED = ITEMS.register(
+                        "aetheric_stone_cracked",
+                        () -> new BlockItem(ModBlocks.AETHERIC_STONE_CRACKED.get(), new Item.Properties()));
+        public static final RegistrySupplier<Item> VOID_MOSS = ITEMS.register(
+                        "void_moss",
+                        () -> new BlockItem(ModBlocks.VOID_MOSS.get(), new Item.Properties()));
+        public static final RegistrySupplier<Item> AETHER_CRYSTAL_ORE = ITEMS.register(
+                        "aether_crystal_ore",
+                        () -> new BlockItem(ModBlocks.AETHER_CRYSTAL_ORE.get(), new Item.Properties()));
+        public static final RegistrySupplier<Item> RESONANCE_CLUSTER = ITEMS.register(
+                        "resonance_cluster",
+                        () -> new BlockItem(ModBlocks.RESONANCE_CLUSTER.get(), new Item.Properties()));
+        public static final RegistrySupplier<Item> CONCENTRATED_VOID_DEPOSIT = ITEMS.register(
+                        "concentrated_void_deposit",
+                        () -> new BlockItem(ModBlocks.CONCENTRATED_VOID_DEPOSIT.get(), new Item.Properties()));
+
         public static void register() {
                 ITEMS.register();
         }

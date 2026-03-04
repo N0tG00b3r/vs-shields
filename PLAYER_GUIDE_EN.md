@@ -313,6 +313,173 @@ During **Boost** and **Coast** the pod automatically turns toward where your cro
 
 ---
 
+## Aetheric Anomaly
+
+Mysterious floating islands that periodically materialize high in the sky. They are full VS2 physics ships — hovering in place with a slow drift and gentle swaying motion.
+
+### How It Works
+
+1. **Spawning:** An island appears automatically every ~60 minutes (configurable) at a random position within 500–1500 blocks of world spawn, altitude 200–250. The spawn position respects world borders — if you use the [World Border by Serilum](https://modrinth.com/mod/world-border) mod or vanilla world border, the island will always appear inside the playable area. The island builds itself incrementally (50 blocks/tick) over a few seconds; during construction the VS2 ship is frozen in place to prevent drifting.
+2. **Exploration:** Fly up and land on the island. It has a mesa-shaped top with rolling hills, a tapered stalactite-like bottom, and caves inside. Mine the structural Aetheric Stone blocks (requires **iron pickaxe or better**) to explore.
+3. **Ores:** Inside you'll find **Aether Crystal Ore** (12–20 veins), **Resonance Cluster** (3–5, deep inside, requires diamond pickaxe), and **Concentrated Void Deposit** (1, near the center).
+4. **Timers:** The island has two timers:
+   - **Global lifetime:** 20 minutes from spawn (the island dissolves if nobody visits)
+   - **Extraction timer:** 7 minutes, starts when a player gets within 50 blocks
+5. **Destabilisation:** When you **right-click** or **destroy** the Concentrated Void Deposit, the island immediately enters the WARNING phase — get off quickly!
+
+### Lifecycle Phases
+
+| Phase | Duration | What Happens |
+|-------|----------|-------------|
+| **ACTIVE** | Until player approaches or global timer expires | Island hovers peacefully, drifting slowly |
+| **EXTRACTION** | 7 minutes (or until global timer expires) | Player detected — extraction timer running |
+| **WARNING** | 60 seconds | Island shakes violently (strong random torque) |
+| **DISSOLVING** | 45 seconds | Blocks vanish from edges inward; island disappears |
+
+### Island Blocks
+
+| Block | Hardness | Tool Required | Notes |
+|-------|----------|--------------|-------|
+| **Aetheric Stone** | 50 | Iron+ pickaxe | Main structural block |
+| **Cracked Aetheric Stone** | 40 | Iron+ pickaxe | Found on cave ceilings |
+| **Void Moss** | 0.3 | Any | Thin carpet on top surface |
+| **Aether Crystal Ore** | 15 | Iron+ pickaxe | Glows (light level 8), sparkle particles within 3 blocks |
+| **Resonance Cluster** | 30 | Diamond+ pickaxe | Glows (light level 12), energy arc particles + glow |
+| **Concentrated Void Deposit** | Unbreakable | — | Glows (light level 10), dark corona + void drip particles |
+
+### Resource Mining
+
+The island contains valuable resources:
+
+| Source | Drop | Tool | Notes |
+|--------|------|------|-------|
+| **Aether Crystal Ore** | 1–3 Raw Aether Crystal | Iron+ pickaxe | Fortune-affected |
+| **Resonance Cluster** | 1–2 Resonance Fragment | Diamond+ pickaxe | Found deep inside / on cave ceilings |
+| **Concentrated Void Deposit** | Void Essence (via extraction) | — | Hold RMB to extract; progress bar shown on HUD |
+| **Guardian mobs** | Void Essence, Raw Aether Crystal, Resonance Fragment | — | Custom drops from island guardians |
+
+**Raw Aether Crystal** can be smelted into **Refined Aether Crystal** in a furnace.
+
+### Void Deposit Extraction
+
+The Concentrated Void Deposit at the island's core can be mined by **holding right-click**. A progress bar appears on your HUD. When the deposit is exhausted, the island immediately enters the WARNING phase — be ready to evacuate!
+
+### Periodic Aetheric Pulse
+
+While players are on or near the island, the anomaly releases an **aetheric pulse** every ~30 seconds. The pulse:
+- Knocks back all nearby players
+- Deals damage to nearby shields
+- Serves as a warning that the island's energy is unstable
+
+### Guardian Mobs
+
+The island is defended by hostile mobs that spawn in escalating waves:
+
+| Mob | Chance | Behaviour |
+|-----|--------|-----------|
+| **Enderman** | 50% | Teleport-clamped to the island — cannot escape |
+| **Phantom** | 35% | Orbits around the island center instead of flying away |
+| **Shulker** | 15% | Stationary turret; fires homing projectiles |
+
+- Spawn rate **escalates** over time: interval decreases every 3 waves, max mob count increases every 5 waves
+- Guardians drop **custom loot**: Void Essence, Raw Aether Crystal, or Resonance Fragment (vanilla drops are replaced)
+- All guardians are **killed automatically** when the island enters DISSOLVING phase
+
+### Protection Mechanics
+
+The anomaly island has built-in defenses:
+- **Ship repulsion** — VS2 ships approaching the island are pushed away
+- **Projectile absorption** — All incoming projectiles are silently destroyed
+- **Explosion suppression** — Explosions on the island deal no block damage
+- **Block placement prevention** — Players cannot place blocks on the anomaly ship
+
+### Anomaly Detection Tools
+
+#### Aetheric Compass
+
+A handheld compass that detects Aetheric Anomalies. Hold it in either hand and watch the needle:
+
+| State | Condition | Needle Behavior |
+|-------|-----------|-----------------|
+| **Searching** | No anomaly active | Slow steady spin |
+| **Signal Detected** | Anomaly active, >500 blocks away | Points toward the anomaly |
+| **Interference!** | Anomaly active, ≤500 blocks away | Wild erratic spin |
+
+The compass uses 32 rotated needle textures — the animation works just like a vanilla compass. The interference radius (500 blocks) is configurable via `anomaly.compassChaosRadius`.
+
+**Recipe:**
+```
+[Resonance Lens] [Void Shard]     [Resonance Lens]
+[Void Shard]     [Compass]        [Void Shard]
+[Resonance Lens] [Void Shard]     [Resonance Lens]
+```
+
+#### Resonance Beacon
+
+A scanning station that reveals the exact coordinates and remaining time of an active anomaly.
+
+**How to use:**
+1. Place the beacon and connect FE power (1,000,000 FE buffer, accepts up to 50,000 FE/tick).
+2. Open the GUI (right-click).
+3. Insert a **Refined Aether Crystal** into the crystal slot.
+4. Ensure the beacon has at least **500,000 FE** stored.
+5. Click **SCAN** — a 10-second progress bar fills.
+6. Result appears on screen: `"Anomaly at X, Y, Z — Time: M:SS"` or `"No anomaly detected"`.
+
+Each scan consumes 500,000 FE + 1 Refined Aether Crystal.
+
+**Recipe:**
+```
+[Void Capacitor]  [Resonance Lens]  [Void Capacitor]
+[Resonance Lens]  [Stabilized Core] [Resonance Lens]
+[Void Capacitor]  [Resonance Lens]  [Void Capacitor]
+```
+
+#### Extraction Timer HUD
+
+When you are within 100 blocks of an active anomaly, a countdown timer appears at the top-center of your screen: **"ANOMALY: M:SS"**. Colors change as time runs out:
+- **White** — more than 50% time remaining
+- **Yellow** — 25–50% remaining
+- **Red** — less than 25% remaining
+- **Blinking** — less than 30 seconds remaining
+
+#### Anomaly Particle Effects
+
+| Effect | When | Particles |
+|--------|------|-----------|
+| **Spawn beam** | Anomaly spawns | Vertical light column (END_ROD + sparks), 30 seconds |
+| **Ambient motes** | Player within 100 blocks | Purple/portal particles floating near the island |
+| **Pulse shockwave** | Each aetheric pulse | Expanding SONIC_BOOM ring |
+| **Warning shimmer** | WARNING phase | Scattered electric sparks around the island |
+| **Dissolution smoke** | DISSOLVING phase | Dense smoke as blocks vanish |
+
+#### Extraction Torque
+
+When you mine **Aether Crystal Ore** on the anomaly island, each block mined applies a small rotational kick to the island. The island slowly starts spinning as you extract its resources — be careful not to lose your footing!
+
+### Derivative Items
+
+| Item | Type | Recipe | Notes |
+|------|------|--------|-------|
+| **Aetheric Energy Cell** | Consumable | Shapeless: Refined Aether Crystal + Energy Cell | Right-click Shield Generator → +75,000 FE |
+| **Attuned Void Shard** | Ingredient (stack 16) | Shapeless: Refined Aether Crystal + Void Shard | For future tier-4 recipes |
+| **Calibrated Oscillator** | Ingredient (stack 16) | Shapeless: Resonance Fragment + Freq. Oscillator | For future tier-4 recipes |
+
+### Admin Commands
+
+All commands require permission level 2 (op).
+
+| Command | Description |
+|---------|-------------|
+| `/vs_shields anomaly spawn` | Spawn island at random position |
+| `/vs_shields anomaly spawn <x> <y> <z>` | Spawn at specific coordinates |
+| `/vs_shields anomaly despawn` | Immediately remove active island |
+| `/vs_shields anomaly info` | Show position, phase, timers, block count |
+| `/vs_shields anomaly timer set <seconds>` | Override remaining global TTL |
+| `/vs_shields anomaly reload` | Reload config from file |
+
+---
+
 ## Crafting Components
 
 All recipes in VS Shields use custom intermediate components instead of raw vanilla materials. This creates a structured progression path.

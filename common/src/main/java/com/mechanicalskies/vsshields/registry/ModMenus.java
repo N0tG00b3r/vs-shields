@@ -36,6 +36,10 @@ public class ModMenus {
                         .register("solid_projection_module",
                                         () -> MenuRegistry.ofExtended(SolidProjectionModuleMenu::new));
 
+        public static final RegistrySupplier<MenuType<com.mechanicalskies.vsshields.menu.ResonanceBeaconMenu>> RESONANCE_BEACON_MENU = MENUS
+                        .register("resonance_beacon",
+                                        () -> MenuRegistry.ofExtended(com.mechanicalskies.vsshields.menu.ResonanceBeaconMenu::new));
+
         public static void register() {
                 MENUS.register();
         }

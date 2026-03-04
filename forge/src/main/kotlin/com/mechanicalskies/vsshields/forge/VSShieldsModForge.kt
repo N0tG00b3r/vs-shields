@@ -15,6 +15,7 @@ import com.mechanicalskies.vsshields.scanner.AnalyzerBlockCache
 import com.mechanicalskies.vsshields.scanner.AnalyzerScanHandler
 import com.mechanicalskies.vsshields.shield.CloakManager
 import com.mechanicalskies.vsshields.shield.GravityFieldRegistry
+import com.mechanicalskies.vsshields.anomaly.AnomalyManager
 import com.mechanicalskies.vsshields.shield.ShieldManager
 import dev.architectury.platform.forge.EventBuses
 import net.minecraft.server.level.ServerLevel
@@ -65,8 +66,57 @@ class VSShieldsModForge {
         MinecraftForge.EVENT_BUS.register(GravityFieldHandler())
         MinecraftForge.EVENT_BUS.register(ShieldSolidBarrier())
         MinecraftForge.EVENT_BUS.register(SolidProjectionModuleEnergyCapability())
+        MinecraftForge.EVENT_BUS.register(ResonanceBeaconEnergyCapability())
         MinecraftForge.EVENT_BUS.register(PodShipManager)
         MinecraftForge.EVENT_BUS.register(VoidShardDropHandler)
+        MinecraftForge.EVENT_BUS.register(AnomalyCommandHandler)
+        MinecraftForge.EVENT_BUS.register(AnomalyGuardianEventHandler)
+        MinecraftForge.EVENT_BUS.register(AnomalyGuardianDropHandler)
+
+        // Register AnomalyIslandControl as a VS2 ship attachment —
+        // VS2 core will auto-call physTick() on the physics thread for any ship
+        // that has this attachment set via ship.setAttachment()
+        try {
+            org.valkyrienskies.mod.common.ValkyrienSkiesMod.vsCore
+                .registerAttachment(AnomalyIslandControl::class.java)
+            org.slf4j.LoggerFactory.getLogger("VSShieldsModForge")
+                .info("[VS Shields] Registered AnomalyIslandControl attachment with VS2 core")
+        } catch (e: Exception) {
+            org.slf4j.LoggerFactory.getLogger("VSShieldsModForge")
+                .error("[VS Shields] Failed to register AnomalyIslandControl attachment", e)
+        }
+
+        // Wire AnomalyManager callbacks to forge-side VS2 API implementations
+        AnomalyManager.setSpawnCallback { level, x, y, z, config ->
+            AnomalySpawner.spawn(level, x, y, z, config)
+        }
+        AnomalyManager.setSpawnTickCallback { level, config ->
+            AnomalySpawner.tickSpawn(level, config)
+        }
+        AnomalyManager.setIsSpawningCallback { AnomalySpawner.isSpawning() }
+        AnomalyManager.setCancelSpawnCallback { level -> AnomalySpawner.cancelSpawn(level) }
+        AnomalyManager.setDespawnCallback { level, anomaly ->
+            AnomalySpawner.despawn(level, anomaly)
+        }
+        AnomalyManager.setPhysicsCallback { level, anomaly, applyTorque, config ->
+            AnomalyPhysicsHandler.applyPhysics(level, anomaly, applyTorque, config)
+        }
+        AnomalyManager.setDissolveCallback { level, anomaly, config ->
+            AnomalyDissolver.tickDissolve(level, anomaly, config)
+        }
+        AnomalyManager.setShipExistsCallback { level, shipId ->
+            AnomalySpawner.shipExists(level, shipId)
+        }
+        AnomalyManager.setRepulsionCallback { level, anomaly ->
+            AnomalyShipRepulsion.tick(level, anomaly)
+        }
+        AnomalyManager.setGuardianCallback { level, anomaly ->
+            AnomalyGuardianManager.tick(level, anomaly)
+        }
+        AnomalyManager.setGuardianCleanupCallback { level, anomaly ->
+            AnomalyGuardianManager.cleanupGuardians(level, anomaly)
+            AnomalyGuardianManager.reset()
+        }
 
         ShieldGeneratorBlockEntity.setEnergyInputHook { level, pos, be ->
             CreateCompat.tickKineticInput(level, pos, be)
@@ -127,6 +177,7 @@ class VSShieldsModForge {
     fun onServerStarted(event: ServerStartedEvent) {
         ShieldManager.getInstance().setServer(event.server)
         CloakManager.getInstance().setServer(event.server)
+        AnomalyManager.getInstance().init(event.server)
     }
 
     @SubscribeEvent
@@ -134,6 +185,7 @@ class VSShieldsModForge {
         if (event.phase == TickEvent.Phase.END) {
             ShieldManager.getInstance().tick()
             AnalyzerScanHandler.tickCleanup(event.server)
+            AnomalyManager.getInstance().tick()
         }
     }
 
@@ -145,6 +197,9 @@ class VSShieldsModForge {
         SolidModuleRegistry.getInstance().clear()
         AnalyzerBlockCache.getInstance().clear()
         AnalyzerScanHandler.clear()
+        AnomalyManager.getInstance().clear()
+        AnomalyPhysicsHandler.reset()
+        AnomalyGuardianManager.reset()
     }
 
     @SubscribeEvent
@@ -163,6 +218,7 @@ class VSShieldsModForge {
     fun onBlockPlace(event: BlockEvent.EntityPlaceEvent) {
         val level = event.level as? ServerLevel ?: return
         val ship = level.getShipManagingPos(event.pos) ?: return
+
         AnalyzerBlockCache.getInstance().onBlockPlaced(ship.id, event.pos, event.state)
     }
 
@@ -171,6 +227,13 @@ class VSShieldsModForge {
         val level = event.level as? ServerLevel ?: return
         val ship = level.getShipManagingPos(event.pos) ?: return
         AnalyzerBlockCache.getInstance().onBlockRemoved(ship.id, event.pos)
+
+        // Extraction torque: mining Aether Crystal Ore on anomaly ship causes yaw kick
+        val anomaly = AnomalyManager.getInstance().active
+        if (anomaly != null && ship.id == anomaly.shipId
+            && event.state.block === com.mechanicalskies.vsshields.registry.ModBlocks.AETHER_CRYSTAL_ORE.get()) {
+            AnomalyPhysicsHandler.triggerExtractionKick(level, anomaly.shipId)
+        }
     }
 
     /**

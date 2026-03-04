@@ -8,9 +8,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [0.0.9] — Components, Goggles & Polish
+## [0.0.9] — Components, Goggles, Aetheric Anomaly & Polish
 
-> ⚠ **Config notice:** Default values for shield HP, recharge, capacitor, emitter, and battery capacity have changed. If you have an existing `config/vs_shields.json`, **delete it** before launching so the new defaults are applied. Your customisations will need to be re-entered.
+> ⚠ **Config notice:** Default values for shield HP, recharge, capacitor, emitter, battery capacity, and the new `anomaly` section have changed. If you have an existing `config/vs_shields.json`, **delete it** before launching so the new defaults are applied. Your customisations will need to be re-entered.
 
 ### Added
 - **Tactical Goggles** — new headgear item replacing the Tactical Netherite Helm. Equippable in the regular helmet armor slot OR the Curios head slot. Three abilities:
@@ -26,6 +26,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Energy Cell item** — Right-click a Shield Generator to charge it with 25,000 FE (consumed on use). Amount configurable via `energyCellFE`.
 - **Void Shard drops** — Endermen drop 1 Void Shard at 5% chance; Ender Dragon drops 4–8 on death. Rates configurable via `voidShardEndermanChance`, `voidShardDragonMin`, `voidShardDragonMax`.
 - **Redstone activation** — Redstone signal HIGH activates the shield; LOW deactivates it. Rising/falling edge is detected each server tick via `hasNeighborSignal`. Combines with the existing redstone *output* (signal on hit) — wire a lever to toggle the shield, or hook up a comparator for a damage-triggered alarm that also controls your defences.
+- **Aetheric Anomaly** (Phase 1) — procedurally generated floating islands that periodically spawn high in the sky as VS2 ships:
+  - **Procedural island generation** — mesa-shaped top with rolling hills, stalactite-like bottom, noise-carved caves with ore veins
+  - **6 new blocks** — Aetheric Stone, Cracked Aetheric Stone, Void Moss, Aether Crystal Ore, Resonance Cluster, Concentrated Void Deposit
+  - **Dynamic hovering** — anti-gravity physics with spring restoring force, velocity damping, slow Lissajous drift, and gentle sine-wave swaying
+  - **Dual timer system** — global lifetime (20 min default) + extraction timer (7 min, starts when player approaches)
+  - **4-phase lifecycle** — ACTIVE → EXTRACTION → WARNING (island shakes violently) → DISSOLVING (blocks vanish edge-inward over 45s)
+  - **Void Deposit destabilisation** — right-clicking or destroying a Concentrated Void Deposit immediately forces the island into WARNING phase
+  - **Admin commands** — `/vs_shields anomaly spawn [x y z]`, `despawn`, `info`, `timer set <seconds>`, `reload`
+  - **World persistence** — active anomaly survives server restarts via SavedData; deferred VS2 ship verification prevents false orphan cleanup
+  - **Configurable** — 18 settings in the `anomaly` section: spawn interval, timers, island size (40–80 blocks), altitude, physics multipliers
 
 ### Removed
 - **Tactical Netherite Helm** — fully removed from registry, creative tab, recipes, textures, and model. Superseded by Tactical Goggles.
@@ -56,6 +66,64 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Known Issues
 - **CGS Nail Gun** projectiles still pass through shields without dealing damage. Blaze Gun works correctly. Requires runtime debugging to identify the exact entity type registration and boundary-crossing behavior.
+
+### Hotfixes (post-release)
+
+#### Boarding Pod
+- **Drilling rotation fix** — Pod no longer flips backwards when drilling into a target hull. Root cause: `VSFixedJoint` used identity quaternions on both sides, which forced the pod's local frame to snap to the target's local frame. Fixed by computing the relative rotation at contact time: `inverse(podWorldRot) × targetWorldRot`, preserving the pod's world orientation at the moment of impact.
+- **Blockstate facing fix** — Pod now correctly faces the cockpit FACING direction upon boarding. Previously the blockstate rotation was off, causing a 180° snap.
+- **Mount yaw fix** — Player yaw is computed from the cockpit FACING direction before `startRiding()`, preventing the camera from snapping to north on mount.
+
+#### Aetheric Anomaly
+- **Incremental spawn** — Island blocks are now placed at 50 blocks/tick instead of all at once, eliminating the physics spike on spawn. The VS2 ship is kept static during the entire build process and released to anti-gravity physics once complete.
+- **Client sync fix** — Subsequent block batches in the shipyard now use `setBlock(pos, state, 2)` (flag 2 = SEND_TO_CLIENTS) instead of flag 0, fixing invisible blocks after the first batch.
+- **Spatial shuffle** — Block entries are shuffled before storage so the first 50-block batch is spatially diverse, not a single vertical column (HashMap iteration order clusters by BlockPos hash).
+- **Offset calculation fix** — World-to-shipyard offset now uses `ctx.toCenter - ctx.fromCenter` from the `AssembleContext` (always valid immediately after assembly) instead of `ship.worldToShip` which may not be fully initialized on the same tick.
+- **AnomalyIslandControl** — Anti-gravity and drift physics moved to a VS2 `ShipPhysicsListener` running at 60 Hz on the physics thread, replacing the 20 Hz game-thread approach. Spring-damper + Lissajous drift + gentle sway + WARNING torque all run natively in the physics pipeline.
+- **WorldBorder integration** — Anomaly spawn position is now clamped to the world border. Supports [World Border by Serilum](https://modrinth.com/mod/world-border) (config read via reflection) with automatic fallback to vanilla `WorldBorder`. A margin of `maxIslandSize/2 + 10` blocks ensures the entire island fits inside.
+
+#### Aetheric Anomaly — Phase 2 (Protection & Interaction)
+- **Ship repulsion** — VS2 ships approaching the anomaly island are pushed away by `AnomalyShipRepulsion.kt`, preventing players from ramming or docking.
+- **Projectile absorption** — `ShieldBarrierHandler` now recognizes anomaly ships and silently discards all incoming projectiles (infinite shield).
+- **Explosion suppression** — `ShieldDamageHandler` suppresses all explosions originating on the anomaly island.
+- **Block placement prevention** — Players cannot place blocks on the anomaly VS2 ship (enforced in `VSShieldsModForge`).
+- **Resource mining** — Loot tables added: Aether Crystal Ore drops 1–3 Raw Aether Crystal (Fortune-affected), Resonance Cluster drops 1–2 Resonance Fragment.
+- **4 resource items** — Raw Aether Crystal, Refined Aether Crystal (smelted from raw), Void Essence, Resonance Fragment; all registered with item models and lang keys.
+- **Void Deposit extraction** — Hold RMB on the Concentrated Void Deposit for a timed extraction (progress HUD bar via `VoidDepositProgressHud`). Exhaustion triggers destabilisation.
+- **Periodic aetheric pulse** — Every 30 seconds (`pulseCooldownTicks`) when players are near the island, a knockback + shield-damage pulse fires via `AnomalyPulseHandler`.
+- **Resonance Cluster loot fix** — Was incorrectly dropping `void_essence` instead of `resonance_fragment`.
+
+#### Aetheric Anomaly — Phase 3 (Guardians)
+- **Guardian spawning** — `AnomalyGuardianManager.kt` spawns hostile mobs on the island during ACTIVE and EXTRACTION phases: Enderman (50%), Phantom (35%), Shulker (15%).
+- **Teleport clamping** — `AnomalyGuardianEventHandler.kt` prevents guardian Endermen from teleporting off the island.
+- **Phantom orbiting** — Guardian Phantoms orbit around the island center instead of flying away.
+- **Custom drops** — `AnomalyGuardianDropHandler.kt` replaces vanilla loot: guardians drop Void Essence, Raw Aether Crystal, or Resonance Fragment.
+- **Spawn escalation** — Guardian spawn interval decreases every 3 waves, max mob count increases every 5 waves.
+- **Cleanup on dissolution** — All guardian mobs are killed when the island enters DISSOLVING phase.
+
+#### Aetheric Anomaly — Phase 4 (Detection & Items)
+- **Aetheric Compass** — new item that detects anomaly islands. Three states: slow spin (no anomaly), points toward island (>500 blocks away), wild erratic spin (≤500 blocks — interference zone). 32-texture animated needle like a vanilla compass. Recipe: Resonance Lens × 4, Void Shard × 4, Compass × 1.
+- **Resonance Beacon** — new block that performs a charged scan to reveal exact anomaly coordinates. Requires 500,000 FE + 1 Refined Aether Crystal per scan. 10-second scan progress bar; results display anomaly position and remaining TTL. Recipe: Void Capacitor × 4, Resonance Lens × 4, Stabilized Core × 1.
+- **Aetheric Energy Cell** — consumable item that injects **75,000 FE** into a Shield Generator on right-click (configurable via `aethericEnergyCellFE`). Shapeless: Refined Aether Crystal + Energy Cell.
+- **Attuned Void Shard** — crafting ingredient for future tier-4 recipes. Shapeless: Refined Aether Crystal + Void Shard.
+- **Calibrated Oscillator** — crafting ingredient for future tier-4 recipes. Shapeless: Resonance Fragment + Frequency Oscillator.
+- **Config fields** — `anomaly.compassChaosRadius` (500), `anomaly.beaconMaxEnergy` (1M), `anomaly.beaconEnergyInput` (50k), `anomaly.beaconScanCost` (500k), `anomaly.beaconScanTicks` (200), `general.aethericEnergyCellFE` (75k).
+
+#### Aetheric Anomaly — Phase 5 (Polish & Effects)
+- **Extraction Timer HUD** — top-center timer "ANOMALY: M:SS" shown to all players within 100 blocks of an active anomaly. Color-coded: white >50%, yellow 25-50%, red <25%, blinking <30s.
+- **Spawn beam** — vertical END_ROD + ELECTRIC_SPARK particle column from Y=0 to Y=320 when an anomaly spawns (visible for 30 seconds).
+- **Ambient motes** — WITCH + PORTAL particles near the anomaly island when a player is within 100 blocks.
+- **Pulse shockwave** — expanding SONIC_BOOM ring on each aetheric pulse.
+- **Warning shimmer** — scattered ELECTRIC_SPARK particles during the WARNING phase.
+- **Dissolution smoke** — SMOKE + LARGE_SMOKE particles during the DISSOLVING phase.
+- **Extraction torque** — mining Aether Crystal Ore on the anomaly island applies a small yaw impulse (±20,000) to the island, causing it to slowly rotate.
+- **Ship Analyzer integration** — scanning an anomaly island now shows a special purple panel: "AETHERIC ANOMALY", "Shield: IMPERVIOUS", remaining TTL countdown, and guardian count.
+
+#### Aetheric Anomaly — Block Visuals
+- **Updated light levels** — Aether Crystal Ore: 5 → **8**, Resonance Cluster: 8 → **12**, Concentrated Void Deposit: 10 (unchanged).
+- **Aether Crystal Ore particles** — ELECTRIC_SPARK sparkle when player is within 3 blocks.
+- **Resonance Cluster particles** — 2–3 ELECTRIC_SPARK energy arcs per tick + 25% chance END_ROD glow.
+- **Concentrated Void Deposit particles** — PORTAL corona (3/tick), FALLING_OBSIDIAN_TEAR void drip (33%), WITCH purple motes (50%).
 
 ---
 

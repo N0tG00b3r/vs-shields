@@ -127,20 +127,30 @@ public class BoardingPodCockpitBlock extends HorizontalDirectionalBlock {
         final Vec3   finalSpawnPos      = spawnPos;
         final long   finalPodShipId     = podShipId;
         final long   finalIgnoredShipId = ignoredShipId;
-        final float  yRot               = player.getYRot();
-        final float  xRot               = player.getXRot();
 
         sl.getServer().tell(new net.minecraft.server.TickTask(
                 sl.getServer().getTickCount() + 2, () -> {
             if (!player.isAlive()) return;  // player logged off in 2 ticks — skip
+
+            // Compute yaw facing the cockpit's forward direction (= FACING).
+            // Ship-local yaw = world yaw for a fresh pod ship (identity rotation).
+            Direction cockpitFacing = Direction.from3DDataValue(facingOrdinal);
+            float cockpitYaw = (float) Math.toDegrees(
+                    Math.atan2(-(double) cockpitFacing.getStepX(), (double) cockpitFacing.getStepZ()));
+
             CockpitSeatEntity delayedSeat = new CockpitSeatEntity(ModEntities.COCKPIT_SEAT.get(), sl);
-            // Lower Y by 0.2 so entity centre sits deeper inside the cockpit block.
-            // Seat lives in WORLD space — VS2's ShipMountedToDataProvider (mixin) supplies
-            // the constant cockpitShipyardPos to setupWithShipMounted for smooth camera.
-            delayedSeat.moveTo(finalSpawnPos.x, finalSpawnPos.y - 0.2, finalSpawnPos.z, yRot, xRot);
+            delayedSeat.moveTo(finalSpawnPos.x, finalSpawnPos.y - 0.2, finalSpawnPos.z, cockpitYaw, 0f);
             delayedSeat.setPodShipId(finalPodShipId);
             sl.addFreshEntity(delayedSeat);
+
+            // Set player rotation to cockpit forward BEFORE mounting —
+            // VS2's ShipMountedToData takes over camera from the next frame,
+            // using the player's current yRot as ship-local direction.
+            player.setYRot(cockpitYaw);
+            player.setXRot(0f);
+            player.setYHeadRot(cockpitYaw);
             player.startRiding(delayedSeat, true);
+
             CockpitSeatEntity.notifyPodRegistered(finalPodShipId, delayedSeat.getId(), finalIgnoredShipId,
                     org.valkyrienskies.mod.common.VSGameUtilsKt.getDimensionId(sl), facingOrdinal);
         }));

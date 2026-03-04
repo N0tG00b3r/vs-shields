@@ -25,6 +25,7 @@ public class ShieldConfig {
     private GeneralConfig general;
     private CloakConfig cloak;
     private CgsConfig cgs;
+    private AnomalyConfig anomaly;
 
     public static class TierConfig {
         public int maxHp;
@@ -95,6 +96,8 @@ public class ShieldConfig {
         public int     voidShardDragonMax      = 8;
         /** FE added to a Shield Generator when one Energy Cell is used on it. */
         public int     energyCellFE            = 25_000;
+        /** FE added to a Shield Generator when one Aetheric Energy Cell is used on it. */
+        public int     aethericEnergyCellFE    = 75_000;
     }
 
     public static class BatteryConfig {
@@ -126,6 +129,94 @@ public class ShieldConfig {
         public double shotgunBurst = 16.0;
         /** Set false to disable hitscan interception entirely. */
         public boolean enableHitscan = true;
+    }
+
+    /** Aetheric Anomaly system configuration. */
+    public static class AnomalyConfig {
+        public boolean enabled = true;
+        /** Ticks between anomaly spawns (default 72000 = 60 min). */
+        public int spawnIntervalTicks = 72000;
+        /** Random offset ± added to spawn interval. */
+        public int spawnIntervalRandomOffsetTicks = 6000;
+        /** Max lifetime before dissolution if no player lands (default 24000 = 20 min). */
+        public int globalLifetimeTicks = 24000;
+        /** Extraction timer once a player lands (default 8400 = 7 min). */
+        public int extractionTimerTicks = 8400;
+        /** Warning phase duration before dissolution (default 1200 = 60 sec). */
+        public int warningPhaseTicks = 1200;
+        /** Dissolution phase duration (default 900 = 45 sec). */
+        public int dissolutionPhaseTicks = 900;
+        /** Minimum spawn radius from world center. */
+        public int minSpawnRadius = 500;
+        /** Maximum spawn radius from world center. */
+        public int maxSpawnRadius = 1500;
+        public int minY = 200;
+        public int maxY = 250;
+        /** Island diameter range (blocks). */
+        public int minIslandSize = 40;
+        public int maxIslandSize = 80;
+        /** Island height (blocks). */
+        public int islandHeight = 25;
+        /** Ship repulsion radius around the island (blocks). */
+        public int shipRepulsionRadius = 30;
+        /** Minimum online players for auto-spawn. */
+        public int minPlayersOnline = 1;
+        /** Anti-gravity force multiplier (1.0 = exact hover, >1.0 = slight upward bias). */
+        public double antiGravityMultiplier = 1.05;
+        /** Torque magnitude during Warning phase. */
+        public double warningTorqueMagnitude = 80000.0;
+
+        // --- Phase 2: Ship repulsion ---
+        /** Repulsion radius beyond island AABB (blocks). */
+        public double repulsionRadius = 15.0;
+        /** Base repulsion force (Newtons). */
+        public double repulsionForce = 500000.0;
+        /** Velocity damping factor for repulsed ships. */
+        public double repulsionDamping = 0.85;
+
+        // --- Phase 2: Void deposit extraction ---
+        /** Ticks per extraction cycle (200 = 10 sec). */
+        public int extractionTicksPerItem = 200;
+        /** Number of extraction cycles per deposit before exhaustion. */
+        public int extractionItemsPerDeposit = 1;
+
+        // --- Phase 2: Aetheric pulse ---
+        /** Pulse knockback radius from island center (blocks). */
+        public double pulseRadius = 30.0;
+        /** Pulse knockback force (Newtons). Kept for backwards-compat config key. */
+        public double pulseForce = 80000.0;
+        /** Pulse knockback velocity magnitude (direct velocity add, not Newtons). */
+        public double pulseKnockback = 1.2;
+        /** Cooldown between pulses (ticks). */
+        public int pulseCooldownTicks = 600;
+        /** Shield HP removed from nearby ships on pulse. */
+        public double pulseShieldDamage = 75.0;
+
+        // --- Phase 3: Guardians ---
+        /** Enable guardian mob spawning on the island. */
+        public boolean guardiansEnabled = true;
+        /** Ticks between guardian spawn attempts. */
+        public int guardianSpawnInterval = 400;
+        /** Maximum guardian count on the island. */
+        public int maxGuardians = 8;
+        /** Guardian spawn radius from island center (blocks). */
+        public double guardianSpawnRadius = 20.0;
+        /** Max teleport distance for anomaly Endermen (blocks from island center). */
+        public double endermanTeleportRadius = 35.0;
+        /** Max orbit distance for anomaly Phantoms (blocks from island center). */
+        public double phantomOrbitRadius = 25.0;
+
+        // --- Phase 4: Detection ---
+        /** Radius from anomaly where compass needle goes wild (blocks). */
+        public int compassChaosRadius = 500;
+        /** Resonance Beacon max FE storage. */
+        public int beaconMaxEnergy = 1_000_000;
+        /** Resonance Beacon max FE input per tick. */
+        public int beaconEnergyInput = 50_000;
+        /** FE cost per beacon scan. */
+        public int beaconScanCost = 500_000;
+        /** Beacon scan duration (ticks). */
+        public int beaconScanTicks = 200;
     }
 
     private ShieldConfig() {
@@ -185,6 +276,7 @@ public class ShieldConfig {
         cfg.general = new GeneralConfig();
         cfg.cloak = new CloakConfig();
         cfg.cgs = new CgsConfig();
+        cfg.anomaly = new AnomalyConfig();
         return cfg;
     }
 
@@ -303,6 +395,10 @@ public class ShieldConfig {
                 loaded.general.energyCellFE = defaults.general.energyCellFE;
                 changed = true;
             }
+            if (!rawGeneral.has("aethericEnergyCellFE")) {
+                loaded.general.aethericEnergyCellFE = defaults.general.aethericEnergyCellFE;
+                changed = true;
+            }
         }
         if (loaded.cloak == null) {
             loaded.cloak = defaults.cloak;
@@ -311,6 +407,81 @@ public class ShieldConfig {
         if (loaded.cgs == null) {
             loaded.cgs = defaults.cgs;
             changed = true;
+        }
+        if (loaded.anomaly == null) {
+            loaded.anomaly = defaults.anomaly;
+            changed = true;
+        } else {
+            JsonObject rawAnomaly = rawJson.has("anomaly")
+                    ? rawJson.getAsJsonObject("anomaly") : new JsonObject();
+            // Phase 2: repulsion
+            if (!rawAnomaly.has("repulsionRadius")) {
+                loaded.anomaly.repulsionRadius = defaults.anomaly.repulsionRadius; changed = true;
+            }
+            if (!rawAnomaly.has("repulsionForce")) {
+                loaded.anomaly.repulsionForce = defaults.anomaly.repulsionForce; changed = true;
+            }
+            if (!rawAnomaly.has("repulsionDamping")) {
+                loaded.anomaly.repulsionDamping = defaults.anomaly.repulsionDamping; changed = true;
+            }
+            // Phase 2: extraction
+            if (!rawAnomaly.has("extractionTicksPerItem")) {
+                loaded.anomaly.extractionTicksPerItem = defaults.anomaly.extractionTicksPerItem; changed = true;
+            }
+            if (!rawAnomaly.has("extractionItemsPerDeposit")) {
+                loaded.anomaly.extractionItemsPerDeposit = defaults.anomaly.extractionItemsPerDeposit; changed = true;
+            }
+            // Phase 2: pulse
+            if (!rawAnomaly.has("pulseRadius")) {
+                loaded.anomaly.pulseRadius = defaults.anomaly.pulseRadius; changed = true;
+            }
+            if (!rawAnomaly.has("pulseForce")) {
+                loaded.anomaly.pulseForce = defaults.anomaly.pulseForce; changed = true;
+            }
+            if (!rawAnomaly.has("pulseKnockback")) {
+                loaded.anomaly.pulseKnockback = defaults.anomaly.pulseKnockback; changed = true;
+            }
+            if (!rawAnomaly.has("pulseCooldownTicks")) {
+                loaded.anomaly.pulseCooldownTicks = defaults.anomaly.pulseCooldownTicks; changed = true;
+            }
+            if (!rawAnomaly.has("pulseShieldDamage")) {
+                loaded.anomaly.pulseShieldDamage = defaults.anomaly.pulseShieldDamage; changed = true;
+            }
+            // Phase 3: guardians
+            if (!rawAnomaly.has("guardiansEnabled")) {
+                loaded.anomaly.guardiansEnabled = defaults.anomaly.guardiansEnabled; changed = true;
+            }
+            if (!rawAnomaly.has("guardianSpawnInterval")) {
+                loaded.anomaly.guardianSpawnInterval = defaults.anomaly.guardianSpawnInterval; changed = true;
+            }
+            if (!rawAnomaly.has("maxGuardians")) {
+                loaded.anomaly.maxGuardians = defaults.anomaly.maxGuardians; changed = true;
+            }
+            if (!rawAnomaly.has("guardianSpawnRadius")) {
+                loaded.anomaly.guardianSpawnRadius = defaults.anomaly.guardianSpawnRadius; changed = true;
+            }
+            if (!rawAnomaly.has("endermanTeleportRadius")) {
+                loaded.anomaly.endermanTeleportRadius = defaults.anomaly.endermanTeleportRadius; changed = true;
+            }
+            if (!rawAnomaly.has("phantomOrbitRadius")) {
+                loaded.anomaly.phantomOrbitRadius = defaults.anomaly.phantomOrbitRadius; changed = true;
+            }
+            // Phase 4: detection
+            if (!rawAnomaly.has("compassChaosRadius")) {
+                loaded.anomaly.compassChaosRadius = defaults.anomaly.compassChaosRadius; changed = true;
+            }
+            if (!rawAnomaly.has("beaconMaxEnergy")) {
+                loaded.anomaly.beaconMaxEnergy = defaults.anomaly.beaconMaxEnergy; changed = true;
+            }
+            if (!rawAnomaly.has("beaconEnergyInput")) {
+                loaded.anomaly.beaconEnergyInput = defaults.anomaly.beaconEnergyInput; changed = true;
+            }
+            if (!rawAnomaly.has("beaconScanCost")) {
+                loaded.anomaly.beaconScanCost = defaults.anomaly.beaconScanCost; changed = true;
+            }
+            if (!rawAnomaly.has("beaconScanTicks")) {
+                loaded.anomaly.beaconScanTicks = defaults.anomaly.beaconScanTicks; changed = true;
+            }
         }
         // Backfill any new projectile entries added in newer versions
         // (merge() only checks top-level fields, not individual map entries)
@@ -360,5 +531,9 @@ public class ShieldConfig {
 
     public CgsConfig getCgs() {
         return cgs != null ? cgs : new CgsConfig();
+    }
+
+    public AnomalyConfig getAnomaly() {
+        return anomaly != null ? anomaly : new AnomalyConfig();
     }
 }

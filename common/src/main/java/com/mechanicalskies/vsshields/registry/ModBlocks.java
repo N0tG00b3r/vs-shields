@@ -12,6 +12,12 @@ import com.mechanicalskies.vsshields.block.ShieldCapacitorBlock;
 import com.mechanicalskies.vsshields.block.ShieldEmitterBlock;
 import com.mechanicalskies.vsshields.block.ShieldGeneratorBlock;
 import com.mechanicalskies.vsshields.block.SolidProjectionModuleBlock;
+import com.mechanicalskies.vsshields.anomaly.block.AethericStoneBlock;
+import com.mechanicalskies.vsshields.anomaly.block.AethericStoneCrackedBlock;
+import com.mechanicalskies.vsshields.anomaly.block.VoidMossBlock;
+import com.mechanicalskies.vsshields.anomaly.block.AetherCrystalOreBlock;
+import com.mechanicalskies.vsshields.anomaly.block.ResonanceClusterBlock;
+import com.mechanicalskies.vsshields.anomaly.block.ConcentratedVoidDepositBlock;
 import com.mechanicalskies.vsshields.shield.ShieldTier;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
@@ -165,6 +171,71 @@ public class ModBlocks {
                         () -> new BoardingPodEngineBlock(
                                         BlockBehaviour.Properties.of()
                                                         .strength(4.0f, 8.0f)
+                                                        .sound(SoundType.METAL)
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
+
+        // ===== Aetheric Anomaly blocks =====
+
+        public static final RegistrySupplier<Block> AETHERIC_STONE = BLOCKS.register(
+                        "aetheric_stone",
+                        () -> new AethericStoneBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(50.0f, 1200.0f)
+                                                        .sound(SoundType.STONE)
+                                                        .requiresCorrectToolForDrops()));
+
+        public static final RegistrySupplier<Block> AETHERIC_STONE_CRACKED = BLOCKS.register(
+                        "aetheric_stone_cracked",
+                        () -> new AethericStoneCrackedBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(40.0f, 1200.0f)
+                                                        .sound(SoundType.STONE)
+                                                        .requiresCorrectToolForDrops()));
+
+        public static final RegistrySupplier<Block> VOID_MOSS = BLOCKS.register(
+                        "void_moss",
+                        () -> new VoidMossBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(0.3f, 0.3f)
+                                                        .sound(SoundType.MOSS_CARPET)
+                                                        .noOcclusion()
+                                                        .noLootTable()));
+
+        public static final RegistrySupplier<Block> AETHER_CRYSTAL_ORE = BLOCKS.register(
+                        "aether_crystal_ore",
+                        () -> new AetherCrystalOreBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(15.0f, 15.0f)
+                                                        .sound(SoundType.AMETHYST)
+                                                        .requiresCorrectToolForDrops()
+                                                        .lightLevel(s -> 8)));
+
+        public static final RegistrySupplier<Block> RESONANCE_CLUSTER = BLOCKS.register(
+                        "resonance_cluster",
+                        () -> new ResonanceClusterBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(30.0f, 30.0f)
+                                                        .sound(SoundType.AMETHYST_CLUSTER)
+                                                        .requiresCorrectToolForDrops()
+                                                        .lightLevel(s -> 12)));
+
+        public static final RegistrySupplier<Block> CONCENTRATED_VOID_DEPOSIT = BLOCKS.register(
+                        "concentrated_void_deposit",
+                        () -> new ConcentratedVoidDepositBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(-1.0f, 3600000.0f)
+                                                        .sound(SoundType.SCULK)
+                                                        .lightLevel(s -> 10)
+                                                        .noLootTable()));
+
+        // ===== Phase 4: Detection blocks =====
+
+        public static final RegistrySupplier<Block> RESONANCE_BEACON = BLOCKS.register(
+                        "resonance_beacon",
+                        () -> new com.mechanicalskies.vsshields.block.ResonanceBeaconBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .strength(5.0f, 10.0f)
                                                         .sound(SoundType.METAL)
                                                         .requiresCorrectToolForDrops()
                                                         .noOcclusion()));

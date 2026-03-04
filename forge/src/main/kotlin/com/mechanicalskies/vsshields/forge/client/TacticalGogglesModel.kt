@@ -38,22 +38,20 @@ class TacticalGogglesModel<T : LivingEntity>(root: ModelPart) : HumanoidModel<T>
             // their UV overlaps with the skipped 8×8×8 head box, causing artifacts on the crown.
             parts.addOrReplaceChild("head",
                 CubeListBuilder.create()
-                    // === bone group (X+5, Y-6, Z) — without brim and upper plate ===
-                    .texOffs(20, 20).addBox(4.0F, -8.0F, -5.0F, 1.0F, 7.0F, 9.0F, CubeDeformation(0.0F))
+                    // === bone group (X+5, Y-6, Z) — without brim, upper plate, and side panels ===
+                    // right side panel 1×7×9 texOffs(20,20) REMOVED — oversized green/metallic plate
                     // brim 10×1×10 texOffs(0,0) REMOVED — UV conflict with head box
                     // upper plate 8×1×8 texOffs(0,11) REMOVED — UV conflict with head box
-                    .texOffs(0, 20).addBox(-5.0F, -8.0F, -5.0F, 1.0F, 7.0F, 9.0F, CubeDeformation(0.0F))
+                    // left side panel 1×7×9 texOffs(0,20) REMOVED — oversized green/metallic plate
                     .texOffs(32, 18).addBox(-4.0F, -8.0F, -5.0F, 8.0F, 1.0F, 1.0F, CubeDeformation(0.0F))
                     .texOffs(40, 6).addBox(-2.0F, -2.0F, -5.0F, 4.0F, 2.0F, 1.0F, CubeDeformation(0.0F))
                     .texOffs(40, 38).addBox(-1.0F, -7.0F, -5.0F, 2.0F, 4.0F, 1.0F, CubeDeformation(0.0F))
                     .texOffs(32, 11).addBox(-5.0F, -8.0F, 4.0F, 10.0F, 6.0F, 1.0F, CubeDeformation(0.0F))
                     .texOffs(40, 9).addBox(1.0F, -7.0F, -5.0F, 1.0F, 1.0F, 1.0F, CubeDeformation(0.0F))
                     .texOffs(44, 9).addBox(-2.0F, -7.0F, -5.0F, 1.0F, 1.0F, 1.0F, CubeDeformation(0.0F))
-                    .texOffs(0, 46).addBox(2.0F, -3.0F, -5.0F, 2.0F, 3.0F, 1.0F, CubeDeformation(0.0F))
-                    .texOffs(6, 46).addBox(-4.0F, -3.0F, -5.0F, 2.0F, 3.0F, 1.0F, CubeDeformation(0.0F))
-                    .texOffs(0, 36).addBox(1.0F, -11.0F, -5.0F, 2.0F, 2.0F, 8.0F, CubeDeformation(0.0F))
-                    .texOffs(20, 36).addBox(-3.0F, -11.0F, -5.0F, 2.0F, 2.0F, 8.0F, CubeDeformation(0.0F))
-                    .texOffs(12, 46).addBox(1.0F, -14.0F, -3.0F, 1.0F, 3.0F, 1.0F, CubeDeformation(0.0F))
+                    // cheek guards (2×3×1) REMOVED — extra green/metallic bits below lenses
+                    // antenna mount bars (2×2×8) REMOVED — protrusions above head
+                    // antenna rod (1×3×1) REMOVED — asymmetric vertical stick
                     .texOffs(40, 0).addBox(2.0F, -7.0F, -6.0F, 2.0F, 4.0F, 2.0F, CubeDeformation(0.0F))
                     .texOffs(40, 20).addBox(-4.0F, -7.0F, -6.0F, 2.0F, 4.0F, 2.0F, CubeDeformation(0.0F))
                     .texOffs(40, 26).addBox(-2.0F, -6.0F, -6.0F, 1.0F, 4.0F, 2.0F, CubeDeformation(0.0F))

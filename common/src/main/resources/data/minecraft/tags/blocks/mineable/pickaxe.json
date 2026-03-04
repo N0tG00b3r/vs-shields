@@ -16,6 +16,12 @@
     "vs_shields:gravity_field_generator",
     "vs_shields:solid_projection_module",
     "vs_shields:boarding_pod_cockpit",
-    "vs_shields:boarding_pod_engine"
+    "vs_shields:boarding_pod_engine",
+    "vs_shields:aetheric_stone",
+    "vs_shields:aetheric_stone_cracked",
+    "vs_shields:aether_crystal_ore",
+    "vs_shields:resonance_cluster",
+    "vs_shields:concentrated_void_deposit",
+    "vs_shields:resonance_beacon"
   ]
 }

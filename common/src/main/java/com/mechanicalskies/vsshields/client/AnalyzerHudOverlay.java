@@ -59,7 +59,28 @@ public class AnalyzerHudOverlay {
         int cx = x;
         int cy = y + 2;
 
-        if (hasShip) {
+        if (hasShip && data.isAnomaly) {
+            // === ANOMALY special panel ===
+            graphics.drawString(mc.font, "◉ AETHERIC ANOMALY", cx, cy, 0xFFCC88FF, true); // purple
+            cy += LINE_HEIGHT + 2;
+
+            graphics.drawString(mc.font, "Shield: IMPERVIOUS", cx, cy, 0xFFCC88FF, true);
+            cy += LINE_HEIGHT;
+
+            int mins = data.anomalyTTLSeconds / 60;
+            int secs = data.anomalyTTLSeconds % 60;
+            String ttlStr = String.format("TTL: %d:%02d", mins, secs);
+            int ttlColor = data.anomalyTTLSeconds > 300 ? 0xFFFFFFFF
+                    : data.anomalyTTLSeconds > 60 ? 0xFFFFFF44 : 0xFFFF4444;
+            graphics.drawString(mc.font, ttlStr, cx, cy, ttlColor, true);
+            cy += LINE_HEIGHT;
+
+            // Crew count (guardians on the island)
+            if (!data.crewEntityIds.isEmpty()) {
+                String crewPart = String.format("Guardians: %d", data.crewEntityIds.size());
+                graphics.drawString(mc.font, crewPart, cx, cy, 0xFF88DDFF, true);
+            }
+        } else if (hasShip) {
             // Title
             graphics.drawString(mc.font, "◉ VESSEL DETECTED", cx, cy, 0xFF55FF55, true);
             cy += LINE_HEIGHT + 2;

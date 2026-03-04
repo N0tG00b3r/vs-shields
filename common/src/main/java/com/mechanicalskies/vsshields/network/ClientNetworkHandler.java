@@ -11,6 +11,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 
+import com.mechanicalskies.vsshields.anomaly.ClientAnomalyData;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -195,8 +197,80 @@ public class ClientNetworkHandler {
                     for (int i = 0; i < nMines; i++)
                         mines.add(new double[]{buf.readDouble(), buf.readDouble(), buf.readDouble()});
 
+                    // Anomaly detection fields (appended to packet)
+                    boolean isAnomaly = buf.readBoolean();
+                    int anomalyTTL = buf.readInt();
+
                     context.queue(() -> ClientAnalyzerData.getInstance()
-                            .update(shipId, hp, maxHp, active, solid, energy, matrix, cannons, critical, crewIds, mines));
+                            .update(shipId, hp, maxHp, active, solid, energy, matrix, cannons, critical, crewIds, mines,
+                                    isAnomaly, anomalyTTL));
+                });
+
+        // S2C: Anomaly spawn notification
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.S2C,
+                ModNetwork.ANOMALY_SPAWN_ID,
+                (buf, context) -> {
+                    long aShipId = buf.readLong();
+                    double ax = buf.readDouble();
+                    double ay = buf.readDouble();
+                    double az = buf.readDouble();
+                    context.queue(() -> ClientAnomalyData.update(aShipId, ax, ay, az));
+                });
+
+        // S2C: Anomaly despawn notification
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.S2C,
+                ModNetwork.ANOMALY_DESPAWN_ID,
+                (buf, context) -> {
+                    context.queue(ClientAnomalyData::clear);
+                });
+
+        // S2C: Extraction progress update
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.S2C,
+                ModNetwork.EXTRACTION_PROGRESS_ID,
+                (buf, context) -> {
+                    float progress = buf.readFloat();
+                    boolean active = buf.readBoolean();
+                    context.queue(() -> ClientAnomalyData.setExtractionProgress(progress, active));
+                });
+
+        // S2C: Aetheric pulse visual (screen shake)
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.S2C,
+                ModNetwork.ANOMALY_PULSE_ID,
+                (buf, context) -> {
+                    double px = buf.readDouble();
+                    double py = buf.readDouble();
+                    double pz = buf.readDouble();
+                    double pRadius = buf.readDouble();
+                    context.queue(() -> ClientAnomalyData.onPulse(px, py, pz, pRadius));
+                });
+
+        // S2C: Resonance Beacon scan result
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.S2C,
+                ModNetwork.BEACON_SCAN_RESULT_ID,
+                (buf, context) -> {
+                    boolean found = buf.readBoolean();
+                    double bx = buf.readDouble();
+                    double by = buf.readDouble();
+                    double bz = buf.readDouble();
+                    int ttl = buf.readInt();
+                    context.queue(() -> com.mechanicalskies.vsshields.client.ResonanceBeaconScreen
+                            .setResult(found, bx, by, bz, ttl));
+                });
+
+        // S2C: Anomaly timer + phase update
+        NetworkManager.registerReceiver(
+                NetworkManager.Side.S2C,
+                ModNetwork.ANOMALY_TIMER_ID,
+                (buf, context) -> {
+                    int seconds = buf.readInt();
+                    boolean active = buf.readBoolean();
+                    int phaseOrdinal = buf.readInt();
+                    context.queue(() -> ClientAnomalyData.setTimerData(seconds, active, phaseOrdinal));
                 });
     }
 }

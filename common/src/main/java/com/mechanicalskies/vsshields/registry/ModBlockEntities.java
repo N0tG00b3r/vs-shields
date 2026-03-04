@@ -80,6 +80,12 @@ public class ModBlockEntities {
                                         SolidProjectionModuleBlockEntity::new,
                                         ModBlocks.SOLID_PROJECTION_MODULE.get()).build(null));
 
+        @SuppressWarnings("ConstantConditions")
+        public static final RegistrySupplier<BlockEntityType<com.mechanicalskies.vsshields.blockentity.ResonanceBeaconBlockEntity>> RESONANCE_BEACON = BLOCK_ENTITIES
+                        .register("resonance_beacon", () -> BlockEntityType.Builder.of(
+                                        com.mechanicalskies.vsshields.blockentity.ResonanceBeaconBlockEntity::new,
+                                        ModBlocks.RESONANCE_BEACON.get()).build(null));
+
         public static void register() {
                 BLOCK_ENTITIES.register();
         }
