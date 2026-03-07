@@ -21,6 +21,7 @@ public class ClientAnomalyData {
     // Timer HUD data (from ANOMALY_TIMER packet)
     private static int timerSeconds;
     private static boolean timerActive;
+    private static int extractionSeconds = -1; // -1 = not in extraction
 
     // Spawn beam visual: game tick when beam ends (0 = inactive)
     private static long spawnBeamEndTick;
@@ -46,6 +47,13 @@ public class ClientAnomalyData {
         worldY = 0;
         worldZ = 0;
         exists = false;
+        timerSeconds = 0;
+        timerActive = false;
+        anomalyPhase = -1;
+        extractionProgress = 0;
+        extractionActive = false;
+        pulseShakeTicks = 0;
+        spawnBeamEndTick = 0;
     }
 
     public static long getShipId() { return shipId; }
@@ -74,15 +82,17 @@ public class ClientAnomalyData {
     }
 
     // Timer HUD
-    public static void setTimerData(int seconds, boolean active, int phaseOrdinal) {
+    public static void setTimerData(int seconds, boolean active, int phaseOrdinal, int extractSec) {
         timerSeconds = seconds;
         timerActive = active;
         anomalyPhase = phaseOrdinal;
+        extractionSeconds = extractSec;
     }
 
     public static int getTimerSeconds() { return timerSeconds; }
     public static boolean isTimerActive() { return timerActive; }
     public static int getAnomalyPhase() { return anomalyPhase; }
+    public static int getExtractionSeconds() { return extractionSeconds; }
     /** Phase constants matching AnomalyInstance.Phase ordinals */
     public static final int PHASE_ACTIVE = 0;
     public static final int PHASE_EXTRACTION = 1;

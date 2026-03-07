@@ -73,6 +73,15 @@ public class ShieldEffectHandler {
         }
 
         level.playLocalSound(hitX, hitY, hitZ, ModSounds.SHIELD_HIT.get(), SoundSource.BLOCKS, 1.0f, 1.0f, false);
+
+        // Notify panel animator for hit flash + ripple
+        ShieldPanelAnimator animator = ClientShieldManager.getInstance().getAnimator(shipId);
+        if (animator != null) {
+            ClientShieldManager.ClientShieldData data = ClientShieldManager.getInstance().getShield(shipId);
+            if (data != null) {
+                animator.onHit(hitX, hitY, hitZ, data);
+            }
+        }
     }
 
     /**

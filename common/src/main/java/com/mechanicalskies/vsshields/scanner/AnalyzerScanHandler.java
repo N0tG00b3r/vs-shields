@@ -77,6 +77,11 @@ public class AnalyzerScanHandler {
             }
         }
 
+        // Filter out cloaked ships — scanner should not reveal them
+        if (best != null && com.mechanicalskies.vsshields.shield.CloakManager.getInstance().isShipCloaked(best.getId())) {
+            best = null;
+        }
+
         if (best == null) {
             // No ship in view — clean up any lingering glow for this player
             cleanupGlow(player.getUUID(), level.getServer());
@@ -103,6 +108,14 @@ public class AnalyzerScanHandler {
 
         // --- Crew entities ---
         List<Integer> crewIds = new ArrayList<>();
+
+        // Clean up glow from previous scan before storing a new state
+        // (prevents orphaned glow when player looks away from target)
+        ScanState prevState = activeScanners.remove(player.getUUID());
+        if (prevState != null) {
+            removeGlow(prevState.entityIds(), level.getServer());
+        }
+
         if (best != null) {
             AABBdc w = best.getWorldAABB();
             AABB crewAABB = new AABB(w.minX(), w.minY(), w.minZ(), w.maxX(), w.maxY(), w.maxZ());

@@ -47,6 +47,19 @@ object AnomalyGuardianManager {
         if (currentTick - lastSpawnTick < currentSpawnInterval) return
         lastSpawnTick = currentTick
 
+        // Only spawn guardians when at least one player is within spawn radius
+        // This prevents mob accumulation when the island is in unloaded chunks
+        val playerSearchBox = AABB(
+            anomaly.worldX - config.guardianSpawnRadius,
+            anomaly.worldY - config.guardianSpawnRadius,
+            anomaly.worldZ - config.guardianSpawnRadius,
+            anomaly.worldX + config.guardianSpawnRadius,
+            anomaly.worldY + config.guardianSpawnRadius,
+            anomaly.worldZ + config.guardianSpawnRadius
+        )
+        val hasNearbyPlayer = level.players().any { playerSearchBox.contains(it.x, it.y, it.z) }
+        if (!hasNearbyPlayer) return
+
         // Count existing guardians near island
         val searchBox = AABB(
             anomaly.worldX - config.guardianSpawnRadius,

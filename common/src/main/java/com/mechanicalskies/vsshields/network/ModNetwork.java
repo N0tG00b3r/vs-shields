@@ -587,11 +587,12 @@ public class ModNetwork {
     }
 
     /** S2C: send anomaly timer + phase to players near the island. */
-    public static void sendAnomalyTimer(ServerPlayer player, int remainingSeconds, boolean active, int phaseOrdinal) {
+    public static void sendAnomalyTimer(ServerPlayer player, int remainingSeconds, boolean active, int phaseOrdinal, int extractionSeconds) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         buf.writeInt(remainingSeconds);
         buf.writeBoolean(active);
         buf.writeInt(phaseOrdinal);
+        buf.writeInt(extractionSeconds);
         NetworkManager.sendToPlayer(player, ANOMALY_TIMER_ID, buf);
     }
 

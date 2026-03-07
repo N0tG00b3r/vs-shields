@@ -122,7 +122,8 @@ public class CloakingFieldGeneratorBlockEntity extends BlockEntity implements Ex
 
         MinecraftServer server = level.getServer();
         boolean hasEnoughEnergy = be.energyStored >= be.energyPerTick;
-        boolean shouldCloak = be.isCloakingActive && hasEnoughEnergy;
+        boolean canRecloak = CloakManager.getInstance().canRecloak(shipId, level.getGameTime());
+        boolean shouldCloak = be.isCloakingActive && hasEnoughEnergy && canRecloak;
 
         if (shouldCloak) {
             be.energyStored -= be.energyPerTick;
@@ -212,4 +213,5 @@ public class CloakingFieldGeneratorBlockEntity extends BlockEntity implements Ex
         buf.writeBlockPos(worldPosition);
         buf.writeLong(trackedShipId);
     }
+
 }

@@ -2,11 +2,11 @@
 
 **Energy shield systems for [Valkyrien Skies 2](https://www.curseforge.com/minecraft/mc-mods/valkyrien-skies) ships.**
 
-Minecraft 1.20.1 · Forge · Requires VS2 + Architectury API
+Minecraft 1.20.1 · Forge · Requires VS2 + Architectury API + Embeddium
 
 ---
 
-![Active Shield](https://cdn.modrinth.com/data/cached_images/e6ef52dcc76da17970f8160a2dd0552ec7d60490.jpeg)
+![VS Shields Banner](https://i.imgur.com/rBj5gGQ.png)
 
 Wrap your VS2 warship in a procedural energy shield that stops projectiles, absorbs explosions, and pulses with a honeycomb glow. Add a battery multiblock for emergency regen, an electronic warfare jammer to burn out enemy shields on collision, a gravity field generator to grant your crew flight and fall immunity, and deploy gravitational mines to send enemy ships into a spin.
 
@@ -328,4 +328,4 @@ Place a Create **rotation shaft** adjacent to a Shield Generator, Battery Input,
 
 ## License
 
-All Rights Reserved
+[Custom License](https://github.com/LennyPane/vs-shields/blob/main/LICENSE)

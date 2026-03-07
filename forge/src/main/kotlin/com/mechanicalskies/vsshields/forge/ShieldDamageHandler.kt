@@ -2,6 +2,7 @@ package com.mechanicalskies.vsshields.forge
 
 import com.mechanicalskies.vsshields.config.ShieldConfig
 import com.mechanicalskies.vsshields.network.ModNetwork
+import com.mechanicalskies.vsshields.shield.CloakManager
 import com.mechanicalskies.vsshields.shield.ShieldInstance
 import com.mechanicalskies.vsshields.shield.ShieldManager
 import net.minecraft.core.BlockPos
@@ -138,6 +139,35 @@ class ShieldDamageHandler {
         /** Public accessor for ShieldBarrierHandler */
         fun getProjectileDamagePublic(entity: Entity): Double = getProjectileDamage(entity)
 
+        /** Cloak break: entity's ship is cloaked → count hit (shooting FROM cloak).
+         *  Uses worldAABB containment instead of getShipManagingPos() because entity
+         *  positions are in world-projected coords, not shipyard chunk claims. */
+        private fun cloakBreakFrom(level: Level, entity: Entity?) {
+            if (entity == null) return
+            val server = level.server ?: return
+            val cm = CloakManager.getInstance()
+            for (cloakedId in cm.cloakedShipIds) {
+                val ownerPos = cm.getCloakOwnerPos(cloakedId) ?: continue
+                val ship = level.getShipManagingPos(ownerPos) ?: continue
+                val aabb = ship.worldAABB ?: continue
+                if (entity.x in aabb.minX()..aabb.maxX() &&
+                    entity.y in aabb.minY()..aabb.maxY() &&
+                    entity.z in aabb.minZ()..aabb.maxZ()) {
+                    cm.registerCloakHit(cloakedId, server)
+                    return
+                }
+            }
+        }
+
+        /** Cloak break: hit position is on a cloaked ship → count hit (shooting INTO cloak). */
+        private fun cloakBreakTarget(level: Level, hitPos: Vec3) {
+            val server = level.server ?: return
+            val ship = level.getShipManagingPos(BlockPos.containing(hitPos)) ?: return
+            if (CloakManager.getInstance().isShipCloaked(ship.id)) {
+                CloakManager.getInstance().registerCloakHit(ship.id, server)
+            }
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // CGS Hitscan interception (Option C)
         //
@@ -210,6 +240,9 @@ class ShieldDamageHandler {
             val level = shooter.level()
             if (level.isClientSide) return
 
+            // Cloak break: hitscan from cloaked ship
+            cloakBreakFrom(level, shooter)
+
             // Determine per-shot damage from weapon item registry name
             val stack = invokeMethod(event, "getItemStack", "getStack", "getGun", "getWeapon")
                     as? ItemStack
@@ -266,6 +299,23 @@ class ShieldDamageHandler {
                 try { event.setCanceled(true) } catch (_: Exception) { }
                 break  // stop at the first shield in the ray path
             }
+
+            // Cloak break: CGS hitscan ray hits a cloaked ship AABB
+            val cm = CloakManager.getInstance()
+            for (cloakedId in cm.cloakedShipIds) {
+                val clkPos = cm.getCloakOwnerPos(cloakedId) ?: continue
+                val clkShip = level.getShipManagingPos(clkPos) ?: continue
+                val clkAABB = clkShip.worldAABB ?: continue
+                val inflated = AABB(
+                    clkAABB.minX() - padding, clkAABB.minY() - padding, clkAABB.minZ() - padding,
+                    clkAABB.maxX() + padding, clkAABB.maxY() + padding, clkAABB.maxZ() + padding
+                )
+                val hitOpt = inflated.clip(eyePos, rayEnd)
+                if (hitOpt.isPresent) {
+                    cm.registerCloakHit(cloakedId, level.server!!)
+                    break
+                }
+            }
         }
     }
 
@@ -293,6 +343,13 @@ class ShieldDamageHandler {
             shield = result.second
             shieldShip = result.first
         }
+
+        // Cloak break: explosion near/on a cloaked ship
+        if (shieldShip != null && CloakManager.getInstance().isShipCloaked(shieldShip.id)) {
+            CloakManager.getInstance().registerCloakHit(shieldShip.id, level.server!!)
+        }
+        // Cloak break: explosion caused from cloaked ship
+        cloakBreakFrom(level, explosion.getDirectSourceEntity() ?: explosion.getIndirectSourceEntity())
 
         if (shield.isActive && shield.currentHP > 0) {
             // Don't damage the shield for internal explosions (own weapon muzzle blasts,
@@ -349,6 +406,14 @@ class ShieldDamageHandler {
             shield = result.second
             hitShip = result.first
         }
+
+        // Cloak break: projectile hits cloaked ship
+        if (hitShip != null && CloakManager.getInstance().isShipCloaked(hitShip.id)) {
+            CloakManager.getInstance().registerCloakHit(hitShip.id, level.server!!)
+        }
+        // Cloak break: projectile from cloaked ship
+        val shooterEntity = (projectile as? Projectile)?.owner ?: projectile
+        cloakBreakFrom(level, shooterEntity)
 
         if (shield.isActive && shield.currentHP > 0) {
             // === FIX: skip crew fire — projectile shot from inside the shield zone ===

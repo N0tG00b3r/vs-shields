@@ -80,15 +80,28 @@ public class AethericCompassItem extends Item {
             return (float) (((gameTick * 17L + (long) noise) % 360L + 360L) % 360L) / 360f;
         }
 
+        // Wobble zone: compass oscillates increasingly as player approaches chaos radius
+        // Wobble starts at 2× chaosRadius and intensifies toward chaosRadius boundary
+        double wobbleStartDist = chaosRadius * 2.0;
+        double wobbleAngle = 0;
+        if (dist < wobbleStartDist) {
+            // 0 at wobbleStartDist, 1 at chaosRadius
+            double wobbleIntensity = 1.0 - (dist - chaosRadius) / (wobbleStartDist - chaosRadius);
+            wobbleIntensity = wobbleIntensity * wobbleIntensity; // ease-in (quadratic)
+            // Multi-frequency oscillation: max ±30° at boundary (60° total spread)
+            double maxDeg = 30.0 * wobbleIntensity;
+            wobbleAngle = Math.toRadians(maxDeg * (
+                    Math.sin(gameTick * 0.4) * 0.6 + Math.sin(gameTick * 1.1) * 0.4));
+        }
+
         // Normal: point toward anomaly
         double targetAngle = Math.atan2(dz, dx); // radians, east=0
         double playerAngle = Math.toRadians(entity.getYRot()); // yaw: south=0, west=90
 
-        // Convert: MC yaw → math angle (east=0, CCW positive)
-        // MC: 0=south, 90=west, -90=east → math: yaw 0 → -π/2, yaw -90 → 0
-        double playerMathAngle = -playerAngle + Math.PI / 2;
+        // Convert MC yaw to atan2(dz,dx) angle: south(yaw=0)→π/2, east(yaw=-90)→0
+        double playerMathAngle = playerAngle + Math.PI / 2;
 
-        double relAngle = targetAngle - playerMathAngle;
+        double relAngle = targetAngle - playerMathAngle + wobbleAngle;
         // Normalize to 0..2π
         relAngle = ((relAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
 

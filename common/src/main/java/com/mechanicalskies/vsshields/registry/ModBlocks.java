@@ -111,7 +111,8 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .strength(4.0f, 8.0f)
                                                         .sound(SoundType.METAL)
-                                                        .requiresCorrectToolForDrops()));
+                                                        .requiresCorrectToolForDrops()
+                                                        .noOcclusion()));
 
         public static final RegistrySupplier<Block> GRAVITY_FIELD_GENERATOR = BLOCKS.register(
                         "gravity_field_generator",

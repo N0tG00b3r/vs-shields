@@ -3,6 +3,7 @@ package com.mechanicalskies.vsshields.client;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashSet;
 
 /**
  * Tracks the IDs of ships that are currently cloaked on the client-side.
@@ -35,6 +36,11 @@ public class CloakedShipsRegistry {
 
     public boolean hasAnyCloakedShips() {
         return !cloakedShips.isEmpty();
+    }
+
+    /** Returns a snapshot of cloaked ship IDs (safe to iterate during rendering). */
+    public Set<Long> getCloakedShipIds() {
+        return new HashSet<>(cloakedShips);
     }
 
     public void clear() {

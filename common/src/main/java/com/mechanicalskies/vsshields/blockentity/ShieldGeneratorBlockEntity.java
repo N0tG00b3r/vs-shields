@@ -299,4 +299,5 @@ public class ShieldGeneratorBlockEntity extends BlockEntity implements ExtendedM
         buf.writeBlockPos(getBlockPos());
         buf.writeLong(trackedShipId);
     }
+
 }

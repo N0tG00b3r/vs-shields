@@ -270,7 +270,8 @@ public class ClientNetworkHandler {
                     int seconds = buf.readInt();
                     boolean active = buf.readBoolean();
                     int phaseOrdinal = buf.readInt();
-                    context.queue(() -> ClientAnomalyData.setTimerData(seconds, active, phaseOrdinal));
+                    int extractSeconds = buf.readInt();
+                    context.queue(() -> ClientAnomalyData.setTimerData(seconds, active, phaseOrdinal, extractSeconds));
                 });
     }
 }

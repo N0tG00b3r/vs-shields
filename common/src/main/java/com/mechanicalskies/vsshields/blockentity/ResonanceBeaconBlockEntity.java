@@ -27,6 +27,13 @@ import org.jetbrains.annotations.Nullable;
 
 public class ResonanceBeaconBlockEntity extends BlockEntity implements ExtendedMenuProvider {
 
+    @FunctionalInterface
+    public interface EnergyInputHook {
+        void tick(Level level, BlockPos pos, ResonanceBeaconBlockEntity be);
+    }
+    private static EnergyInputHook energyInputHook = null;
+    public static void setEnergyInputHook(EnergyInputHook hook) { energyInputHook = hook; }
+
     public int energyStored = 0;
     private int maxEnergy;
 
@@ -79,6 +86,10 @@ public class ResonanceBeaconBlockEntity extends BlockEntity implements ExtendedM
                 be.completeScan();
             }
             be.setChanged();
+        }
+
+        if (energyInputHook != null) {
+            energyInputHook.tick(level, pos, be);
         }
     }
 

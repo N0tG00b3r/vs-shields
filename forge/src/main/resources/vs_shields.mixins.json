@@ -6,12 +6,16 @@
   "client": [
     "TacticalGogglesForgeMixin",
     "MixinEmbeddingShipVisual",
-    "MixinRenderingShipVisual",
-    "MixinCockpitSeatShipMount"
+    "MixinCockpitSeatShipMount",
+    "MixinSodiumCompat",
+    "MixinEntityRendererCloak"
   ],
   "mixins": [
     "MixinPlayerCockpitSize",
-    "MixinEntityCockpitEye"
+    "MixinEntityCockpitEye",
+    "MixinChunkMapCloaking",
+    "MixinTrackedEntityCloak",
+    "MixinRadarCloakFilter"
   ],
   "injectors": {
     "defaultRequire": 0

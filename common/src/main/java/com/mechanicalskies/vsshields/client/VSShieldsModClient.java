@@ -21,6 +21,7 @@ public class VSShieldsModClient {
 
     public static void initClient() {
         // registerPackets() is now handled by EnvExecutor in ModNetwork.init()
+        ShieldEnergyTexture.register();
         BlockEntityRendererRegistry.register(ModBlockEntities.SHIELD_GENERATOR.get(), ShieldRenderer::new);
         BlockEntityRendererRegistry.register(ModBlockEntities.CLOAKING_FIELD_GENERATOR.get(),
                 CloakShimmerRenderer::new);
@@ -55,6 +56,7 @@ public class VSShieldsModClient {
         dev.architectury.event.events.client.ClientTickEvent.CLIENT_POST.register(instance -> {
             ShieldAmbientSoundHandler.tick();
             ShieldEffectHandler.tick();
+            ShieldEnergyTexture.tick();
             HelmAnalyzerHandler.tick(instance);
             BoardingPodClientHandler.tick();
             ClientAnomalyData.tickPulseShake();

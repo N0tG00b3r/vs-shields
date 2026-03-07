@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 /**
  * Top-center HUD displaying the anomaly timer when active.
+ * Shows global TTL in ACTIVE phase, extraction countdown in EXTRACTION phase.
  * Visible to all players within 100 blocks of the anomaly.
  */
 public class AnomalyTimerHud {
@@ -19,22 +20,42 @@ public class AnomalyTimerHud {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        int mins = seconds / 60;
-        int secs = seconds % 60;
-        String text = String.format("ANOMALY: %d:%02d", mins, secs);
+        int phase = ClientAnomalyData.getAnomalyPhase();
+        int extractSec = ClientAnomalyData.getExtractionSeconds();
 
-        // Color based on time remaining
+        // During extraction phase, show extraction timer instead of global TTL
+        boolean showExtraction = (phase == ClientAnomalyData.PHASE_EXTRACTION && extractSec >= 0);
+        int displaySeconds = showExtraction ? extractSec : seconds;
+
+        int mins = displaySeconds / 60;
+        int secs = displaySeconds % 60;
+
+        String label = showExtraction ? "EXTRACTION" : "ANOMALY";
+        String text = String.format("%s: %d:%02d", label, mins, secs);
+
+        // Color based on phase and time remaining
         int color;
-        if (seconds > 300) {        // >5 min: white
-            color = 0xFFFFFFFF;
-        } else if (seconds > 60) {  // 1-5 min: yellow
-            color = 0xFFFFFF44;
-        } else if (seconds > 30) {  // 30s-1min: red
-            color = 0xFFFF4444;
+        if (showExtraction) {
+            // Extraction: orange/yellow, blink when low
+            if (displaySeconds > 60) {
+                color = 0xFFFF8800;
+            } else if (displaySeconds > 30) {
+                color = 0xFFFF4400;
+            } else {
+                long gameTick = mc.level != null ? mc.level.getGameTime() : 0;
+                color = (gameTick % 10 < 5) ? 0xFFFF4400 : 0xFFAA2200;
+            }
         } else {
-            // <30s: blinking red
-            long gameTick = mc.level != null ? mc.level.getGameTime() : 0;
-            color = (gameTick % 10 < 5) ? 0xFFFF4444 : 0xFFAA0000;
+            if (seconds > 300) {
+                color = 0xFFFFFFFF;
+            } else if (seconds > 60) {
+                color = 0xFFFFFF44;
+            } else if (seconds > 30) {
+                color = 0xFFFF4444;
+            } else {
+                long gameTick = mc.level != null ? mc.level.getGameTime() : 0;
+                color = (gameTick % 10 < 5) ? 0xFFFF4444 : 0xFFAA0000;
+            }
         }
 
         int screenWidth = mc.getWindow().getGuiScaledWidth();

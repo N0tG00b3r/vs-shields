@@ -23,7 +23,8 @@ class VSShieldsModForgeClient {
         fun clientInit(event: FMLClientSetupEvent) {
             VSShieldsModClient.initClient()
             VSShieldsModClient.setAnomalyParticleTicker { AnomalyParticleHandler.tick() }
-            CloakRenderSuppressor.register()
+            MinecraftForge.EVENT_BUS.register(CloakEntityRenderHandler)
+            MinecraftForge.EVENT_BUS.register(CloakExternalShimmerRenderer)
             MinecraftForge.EVENT_BUS.register(DrillShakeHandler)
             HelmAnalyzerHandler.setGogglesChecker { player -> CuriosIntegration.hasGogglesInHeadSlot(player) }
             if (CuriosIntegration.LOADED) {

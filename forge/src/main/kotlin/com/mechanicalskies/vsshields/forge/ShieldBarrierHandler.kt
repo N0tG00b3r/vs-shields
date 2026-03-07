@@ -2,6 +2,7 @@ package com.mechanicalskies.vsshields.forge
 
 import com.mechanicalskies.vsshields.config.ShieldConfig
 import com.mechanicalskies.vsshields.network.ModNetwork
+import com.mechanicalskies.vsshields.shield.CloakManager
 import com.mechanicalskies.vsshields.shield.ShieldInstance
 import com.mechanicalskies.vsshields.shield.ShieldManager
 import net.minecraft.world.entity.Entity
@@ -33,11 +34,16 @@ import org.valkyrienskies.mod.common.getShipManagingPos
  */
 class ShieldBarrierHandler {
 
+    private var tickPhase = 0
+
     @SubscribeEvent
     fun onLevelTick(event: TickEvent.LevelTickEvent) {
         if (event.phase != TickEvent.Phase.END) return
         val level = event.level
         if (level.isClientSide) return
+        // Throttle: process every 2nd tick. Projectiles at 3 blocks/tick travel
+        // at most 6 blocks before detection — within shield padding.
+        if (tickPhase++ % 2 != 0) return
 
         val manager = ShieldManager.getInstance()
         val padding = ShieldConfig.get().general.shieldPadding
@@ -112,6 +118,35 @@ class ShieldBarrierHandler {
                         // === FRIENDLY FIRE: entity entering the ship's block zone ===
                         val interceptPos = computeInterceptPoint(prevPos, curPos, coreAABB)
                         interceptEntity(entity, shield, manager, server, shipId, interceptPos)
+                    }
+                }
+            }
+        }
+
+        // --- Cloak break: projectiles crossing into cloaked ship AABB ---
+        val cm = CloakManager.getInstance()
+        val cloakedIds = cm.cloakedShipIds
+        if (cloakedIds.isNotEmpty()) {
+            for (cloakedShipId in cloakedIds) {
+                val clkPos = cm.getCloakOwnerPos(cloakedShipId) ?: continue
+                val clkShip: Ship = level.getShipManagingPos(clkPos) ?: continue
+                val clkAABB = clkShip.worldAABB ?: continue
+                val inflated = AABB(
+                    clkAABB.minX() - padding, clkAABB.minY() - padding, clkAABB.minZ() - padding,
+                    clkAABB.maxX() + padding, clkAABB.maxY() + padding, clkAABB.maxZ() + padding
+                )
+                val projectiles = level.getEntities(null, inflated) { it is Projectile || isCbcEntity(it) }
+                for (entity in projectiles) {
+                    if (!entity.isAlive) continue
+                    // Skip projectiles whose owner is inside the shield zone (friendly fire)
+                    if (entity is Projectile) {
+                        val owner = entity.owner
+                        if (owner != null && inflated.contains(owner.x, owner.y, owner.z)) continue
+                    }
+                    val curIn = inflated.contains(entity.x, entity.y, entity.z)
+                    val prevIn = inflated.contains(entity.xOld, entity.yOld, entity.zOld)
+                    if (curIn && !prevIn) {
+                        cm.registerCloakHit(cloakedShipId, server)
                     }
                 }
             }

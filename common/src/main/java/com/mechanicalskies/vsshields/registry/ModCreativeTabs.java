@@ -38,6 +38,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.FREQUENCY_ID_CARD.get());
                         output.accept(ModItems.BOARDING_POD_COCKPIT.get());
                         output.accept(ModItems.BOARDING_POD_ENGINE.get());
+                        output.accept(ModItems.CLOAKING_FIELD_GENERATOR.get());
                         // Crafting Components
                         output.accept(ModItems.CHARGED_REDSTONE_CRYSTAL.get());
                         output.accept(ModItems.COPPER_COIL.get());

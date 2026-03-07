@@ -3,8 +3,46 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-> **Note:** Versions 0.0.7 and 0.0.8 were internal builds, never publicly released.
+> **Note:** Versions 0.0.7, 0.0.8 and 0.0.9 were internal builds, never publicly released.
 > All changes since 0.0.6 will be included in the upcoming public update.
+
+---
+
+## [0.1.0] — Shield Visual Overhaul, Performance & Physics
+
+### Added
+- **Cloaking combat break** — Shooting from or into a cloaked ship now registers combat hits. After 3 hits (configurable via `cloak.cloakBreakHitThreshold`), the cloak automatically breaks and a 30-second recloak cooldown begins (`cloak.cloakBreakCooldownTicks = 600`). Covers all weapon types: vanilla projectiles, explosions, CBC shells, CGS projectiles, and CGS hitscan weapons. The cloaking generator's toggle is automatically turned off on combat break so it doesn't immediately recloak.
+- **Aetheric Compass needle animation** — 32 programmatically generated rotation frames with crisp pixel-art needle at every angle.
+
+### Changed
+- **Solid shield physics: force-based AABB repulsion** — Ship-to-ship solid shield collisions now use direct force application via VS2's `applyWorldForce()` with SAT (Separating Axis Theorem) minimum penetration detection, replacing the old velocity-based elastic impulse. Ships are pushed apart along the nearest face with quadratic force scaling (soft at edge, stiff deeper in). Force is applied at center of mass (zero torque) so ships don't tumble on contact — they feel a solid wall. Both ships receive equal and opposite forces (Newton's 3rd law). Configurable: `shipRepulsionForce` (default 500,000).
+- **Shield texture: reaction-diffusion labyrinth** — Replaced the static voronoi/honeycomb hex grid with an animated Gray-Scott reaction-diffusion simulation. The shield surface now displays a living, organic labyrinth pattern that continuously restructures itself through erosion and regrowth.
+- **Self-animated texture** — UV scroll removed from all shield layers. The RD simulation itself drives the animation: small circular patches are erased periodically; the surrounding labyrinth grows into the gaps along new paths, creating perpetual visible rearrangement.
+- **Near-edge visibility improved** — Fresnel minimum raised from 0.45 to 0.65, making shield panels clearly visible even when viewed face-on (near edge of the bubble).
+- **Cloaking Field Generator: OBJ model** — Replaced placeholder cube_all with a proper 4-cube OBJ model (tapered antenna design) via Forge OBJ loader.
+- **Resonance Beacon: OBJ model** — Replaced placeholder cube_all with a proper OBJ model via Forge OBJ loader.
+- **Updated item textures** — New artwork for Attuned Void Shard and Calibrated Oscillator.
+
+### Performance
+- **Shield rendering optimized (~10-15 FPS recovered)** — Comprehensive optimization pass reducing the FPS impact of active shields from 10-15 down to 2-3:
+  - **Sphere mesh reduced** — Truncated icosahedron grid resolution lowered from 32×48 (1536 quads, ~37K vertices/frame across 4 layers) to 20×32 (640 quads, ~15K vertices). Flat-shaded panels make high intra-face resolution unnecessary.
+  - **Fresnel LUT** — Per-vertex `Math.pow(x, 2.5)` replaced with a 256-entry precomputed lookup table. Single array index instead of transcendental function.
+  - **Precomputed UV and pole-fade** — Static arrays for slice U, stack V, and pole-fade values eliminate sin/cos and division from the inner rendering loop.
+  - **Fill layer merged into base** — The separate Fill draw pass (EYES shader, 12% alpha) removed; its effect folded into the base alpha via `Math.max(fillAlpha, edgeWeighted)`, saving one full render pass (~9K vertices).
+  - **RD texture optimized** — Simulation grid reduced from 256×256 to 128×128 (4× fewer Laplacian computations); steps per active tick reduced from 10 to 6; simulation now updates every 3rd client tick instead of every tick. Net CPU reduction: ~20× average.
+  - **Distance LOD** — Shields beyond 80 blocks from the camera skip bloom and conduit layers, rendering only the base layer.
+  - **Server-side throttling** — `ShieldBarrierHandler` scans every 2 ticks (projectile speed compensated by shield padding); `ShieldSolidBarrier` scans every 3 ticks (entity walking speed compensated by pushback). `CuriosIntegration.hasMatchingCard()` reflection results cached per UUID for 20 ticks.
+
+### Removed
+- **Energy Streams layer** — Layer 3 (diagonal energy flow lines with UV scroll) removed entirely from rendering, render types, texture generation, and config. The `shieldStreamIntensity` config option no longer exists.
+
+### Fixed
+- **Cloak break: inside-out shots now detected** — Shooting from inside a cloaked ship now correctly registers combat hits against the cloak. Previously, `cloakBreakFrom()` used `getShipManagingPos(worldPos)` which always returned null for world-projected entity positions (not shipyard chunk claims). Fixed by iterating all cloaked ships via `CloakManager.getCloakedShipIds()` and checking entity world position against `ship.worldAABB` containment.
+- **Solid barrier: ships no longer lock rotation on contact** — The previous VSDistanceJoint-based approach had three critical bugs: (1) `maxTorque=1e10` locked ship rotation, (2) averaged spherical radius didn't prevent approach along the long axis of rectangular ships, (3) joints couldn't be removed because they prevented the separation needed to trigger cleanup. Replaced entirely with force-based AABB repulsion that applies force at CoM (zero torque = no tumbling) and has no persistent state (no cleanup needed).
+- **Shader mod cloud sorting** — Clouds (and other post-process effects) no longer render in front of the shield when using Iris/Oculus shader packs. Root cause: all shield render layers used `COLOR_WRITE` (no depth write), so the shield's depth was never recorded in the depth buffer. Shader packs composite clouds in a separate pass that checks the depth buffer — missing depth meant clouds always passed the depth test. Fixed by switching the base translucent layer (`shieldTranslucent`, `shieldTranslucentCulled`) to `COLOR_DEPTH_WRITE`. Bloom and conduit layers remain color-only (additive effects).
+- **Cloaking Field Generator: block occlusion** — Added `.noOcclusion()` to prevent adjacent block faces from being culled (void visible through non-full-cube OBJ model).
+- **Activation wave on login** — Shield no longer plays the activation wave animation when loading into a world where the shield is already active. Added `firstTick` flag to `ShieldPanelAnimator` that skips the first off→on transition.
+- **Activation wave on toggle** — Shield activation wave now correctly triggers when toggling the shield on after it was off. Previously, `wasActive` was not updated when the shield was inactive (renderer returned early), so the off→on transition was missed.
 
 ---
 
@@ -65,7 +103,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Boarding Pod: purple particle on cockpit break** — Particle texture now correctly assigned to the root composite-model element.
 
 ### Known Issues
-- **CGS Nail Gun** projectiles still pass through shields without dealing damage. Blaze Gun works correctly. Requires runtime debugging to identify the exact entity type registration and boundary-crossing behavior.
+- **CGS Nail Gun** projectiles may still pass through shields without dealing damage. Blaze Gun works correctly. Requires runtime debugging to identify the exact entity type registration and boundary-crossing behavior.
 
 ### Hotfixes (post-release)
 
@@ -124,6 +162,42 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Aether Crystal Ore particles** — ELECTRIC_SPARK sparkle when player is within 3 blocks.
 - **Resonance Cluster particles** — 2–3 ELECTRIC_SPARK energy arcs per tick + 25% chance END_ROD glow.
 - **Concentrated Void Deposit particles** — PORTAL corona (3/tick), FALLING_OBSIDIAN_TEAR void drip (33%), WITCH purple motes (50%).
+
+#### Cloaking System — Working Implementation
+
+- **Cloaking now works with Create/Flywheel** — `MixinEmbeddingShipVisual` injects after Flywheel's `updateEmbedding()`, scaling the ship's visual to 0.0001f. Previous approaches (`VSGameEvents.renderShip`, `MixinShipEmbeddingManager`) were overridden by Flywheel's task thread.
+- **Chunk-level hiding** — `MixinChunkMapCloaking` + `MixinTrackedEntityCloak` suppress chunk/entity packets for cloaked ships server-side, preventing external clients from receiving block data.
+- **Cloak suppresses shield** — Activating cloaking now deactivates the shield and sets HP to 0. Deactivating cloaking starts a 10-second cooldown, after which the shield auto-restarts from 0 HP and recharges normally. Config: `cloak.cloakShieldCooldownTicks = 200`.
+- **Rainbow shimmer (crew-side)** — `CloakShimmerRenderer` (BER) renders a subtle iridescent shimmer shell around cloaked ships for players aboard. Uses HSV hue-shift by vertex position + time, low saturation (0.35) for pastel iridescence.
+- **Predator-like shimmer (external)** — `CloakExternalShimmerRenderer.kt` renders a world-space ellipsoid at the ship's `worldAABB` for external players. Rainbow hue-shift + wave distortion for heat-shimmer effect. Very low alpha (0.025–0.037) makes it nearly invisible.
+- **Shield rendered as cloaked** — When cloaked, the shield bubble turns pink-purple with 8% alpha instead of the normal color.
+
+#### Create Radar Compatibility
+
+- **Cloaked ships invisible to Create Radar** — `MixinRadarCloakFilter` injects at the return of `RadarScanningBlockBehavior.scanForVSTracks()` and removes cloaked ships from the `scannedShips` set. Cloaked ships no longer appear on radar or trigger RWR alerts.
+
+#### Shield Rendering Improvements
+
+- **Shield brighter and more visible** — Increased base alpha (0.45 → 0.65), fresnel minimum (0.45 → 0.60), pole-fade minimum (0.30 → 0.50), clamped alpha range (0.20–0.60 → 0.35–0.75). Shield is now clearly visible from all angles, including directly facing the camera.
+- **Spiral UV animation** — Hex grid texture now slowly scrolls in a spiral pattern with different speeds for the base layer (slow) and bloom layer (faster), creating a parallax depth effect. Full cycle: 120 seconds.
+- **Texture seam fix** — Added +0.5 UV offset to shift tile boundaries away from the sphere equator, eliminating the visible seam.
+
+#### Scanner & Compass Fixes
+
+- **Scanner "No target" for cloaked ships** — Ship Analyzer raycast now filters out cloaked ships via `CloakManager.isShipCloaked()`.
+- **Guardian glow cleanup** — Scanning glow now properly cleans up when the player looks away from a target. Previous ScanState is removed and glow is cleared before storing the new one.
+- **Anomaly HUD panel height** — Reduced from 92px to 50px for anomaly display, eliminating excess empty space.
+- **Compass direction fix** — MC yaw → math angle conversion corrected: `playerMathAngle = -playerAngle - PI/2`.
+- **Compass wobble increased** — Wobble zone spread increased to ±30° (60° total) at the chaos boundary.
+
+#### Anomaly Timer Fixes
+
+- **Extraction timer HUD** — Top-center timer now shown to all players within 100 blocks.
+- **Timer freeze fix** — Anomaly timer no longer freezes after the island despawns.
+
+#### Energy
+
+- **Resonance Beacon Create SU** — Added `EnergyInputHook` to `ResonanceBeaconBlockEntity`, wired in `CreateCompat.tickBeaconKineticInput()`. Beacon now accepts Create rotation shafts alongside FE cables.
 
 ---
 
@@ -194,6 +268,6 @@ Features present in 0.0.6:
 - Ship Analyzer (handheld)
 - Gravitational Mine + Gravitational Mine Launcher (variable deployment range, 5-sec cooldown)
 - Full mod compatibility: Create Big Cannons (all shell types including Nuke Shell), Create Gunsmithing (projectile + hitscan), Alex's Caves (nuclear bomb + torpedo)
-- Dynamic shield bubble — honeycomb hex-grid, color by HP (blue / yellow / red), flicker at low FE
+- Dynamic shield bubble — procedural energy pattern, color by HP (blue / yellow / red), flicker at low FE
 - Redstone output from Shield Generator on hit (signal strength = damage received)
 - JSON config (`config/vs_shields.json`) with automatic merge for new keys

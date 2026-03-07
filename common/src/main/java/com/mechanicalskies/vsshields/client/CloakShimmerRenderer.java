@@ -15,15 +15,34 @@ import org.valkyrienskies.mod.common.VSClientGameUtils;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
- * Renders a subtle translucent shimmer shell around a cloaked ship.
- * Only visible to players who are ON the cloaked ship (they see the cloak is
- * active).
- * For players NOT on the ship, the ship is hidden by LevelRendererCloakMixin.
+ * Renders a "Predator + Hologram" shimmer shell around a cloaked ship.
+ * Only visible to players who are ON the cloaked ship (crew sees the cloak is active).
+ *
+ * Visual: teal/cyan scan line bands + vertical sweep pulse.
+ * No fresnel (camera is inside the sphere).
+ * Matches the external renderer's visual language.
  */
 public class CloakShimmerRenderer implements BlockEntityRenderer<CloakingFieldGeneratorBlockEntity> {
 
-    private static final int STACKS = 14;
-    private static final int SLICES = 20;
+    private static final int STACKS = 28;
+    private static final int SLICES = 24;
+
+    // Teal/cyan — same as external renderer
+    private static final float COLOR_R = 0.1f;
+    private static final float COLOR_G = 0.85f;
+    private static final float COLOR_B = 0.75f;
+
+    // Scan line parameters — same frequency as external
+    private static final double BAND_COUNT = 10.0;
+    private static final double BAND_SHARPNESS = 4.0;
+
+    // Base alpha (crew sees it subtler than external)
+    private static final float BASE_ALPHA = 0.04f;
+
+    // Sweep pulse
+    private static final float PULSE_BOOST = 0.04f;
+    private static final long PULSE_PERIOD_MS = 4000L;
+    private static final double PULSE_WIDTH = 6.0;
 
     public CloakShimmerRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -38,12 +57,9 @@ public class CloakShimmerRenderer implements BlockEntityRenderer<CloakingFieldGe
         if (ship == null)
             return;
 
-        // Only show shimmer if the ship is actively cloaked on the client
         if (!CloakedShipsRegistry.getInstance().isCloaked(ship.getId()))
             return;
 
-        // Only show shimmer to a player who is ON this ship (they can see their own
-        // cloak)
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null)
             return;
@@ -57,8 +73,6 @@ public class CloakShimmerRenderer implements BlockEntityRenderer<CloakingFieldGe
         if (shipAABB == null)
             return;
 
-        // BER coordinate space is shipyard-space relative to the block's position.
-        // Compute offset from the generator block to the AABB center.
         float cx = (shipAABB.minX() + shipAABB.maxX()) / 2.0f - be.getBlockPos().getX();
         float cy = (shipAABB.minY() + shipAABB.maxY()) / 2.0f - be.getBlockPos().getY();
         float cz = (shipAABB.minZ() + shipAABB.maxZ()) / 2.0f - be.getBlockPos().getZ();
@@ -67,20 +81,26 @@ public class CloakShimmerRenderer implements BlockEntityRenderer<CloakingFieldGe
         float ry = (shipAABB.maxY() - shipAABB.minY()) / 2.0f + 1.5f;
         float rz = (shipAABB.maxZ() - shipAABB.minZ()) / 2.0f + 1.5f;
 
-        // Gentle pulsing alpha
-        float time = (System.currentTimeMillis() % 6000) / 6000.0f;
-        float alpha = 0.06f + (float) (Math.sin(time * Math.PI * 2.0) * 0.025);
+        long now = System.currentTimeMillis();
+
+        // Sweep pulse Y: -1 (bottom) → +1 (top)
+        float pulsePhase = (now % PULSE_PERIOD_MS) / (float) PULSE_PERIOD_MS;
+        float pulseY = -1.0f + 2.0f * pulsePhase;
+
+        // Global breathing
+        float breathe = (now % 6000) / 6000.0f;
+        float breatheMul = 1.0f + (float) Math.sin(breathe * Math.PI * 2.0) * 0.20f;
 
         poseStack.pushPose();
         poseStack.translate(cx, cy, cz);
         poseStack.scale(rx, ry, rz);
 
-        renderShimmerSphere(poseStack, alpha);
+        renderShimmerSphere(poseStack.last().pose(), pulseY, breatheMul, now);
 
         poseStack.popPose();
     }
 
-    private void renderShimmerSphere(PoseStack poseStack, float alpha) {
+    private void renderShimmerSphere(Matrix4f matrix, float pulseY, float breatheMul, long now) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
@@ -89,12 +109,9 @@ public class CloakShimmerRenderer implements BlockEntityRenderer<CloakingFieldGe
 
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder builder = tesselator.getBuilder();
-        Matrix4f matrix = poseStack.last().pose();
-
-        // Teal shimmer — distinct from the energy shield colours
-        float r = 0.15f, g = 0.85f, b = 0.75f;
-
         builder.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+
+        double wt = (now % 8000) / 8000.0 * Math.PI * 2.0;
 
         for (int stack = 0; stack < STACKS; stack++) {
             double phi1 = Math.PI * stack / STACKS;
@@ -102,24 +119,44 @@ public class CloakShimmerRenderer implements BlockEntityRenderer<CloakingFieldGe
             float s1 = (float) Math.sin(phi1), c1 = (float) Math.cos(phi1);
             float s2 = (float) Math.sin(phi2), c2 = (float) Math.cos(phi2);
 
+            // Scan line intensity
+            double phiMid = (phi1 + phi2) / 2.0;
+            float scanLine = (float) Math.pow(Math.abs(Math.sin(phiMid * BAND_COUNT)), BAND_SHARPNESS);
+
             for (int slice = 0; slice < SLICES; slice++) {
                 double t1 = 2.0 * Math.PI * slice / SLICES;
                 double t2 = 2.0 * Math.PI * (slice + 1) / SLICES;
                 float st1 = (float) Math.sin(t1), ct1 = (float) Math.cos(t1);
                 float st2 = (float) Math.sin(t2), ct2 = (float) Math.cos(t2);
 
-                float x1 = s1 * ct1, y1 = c1, z1 = s1 * st1;
-                float x2 = s1 * ct2, y2 = c1, z2 = s1 * st2;
-                float x3 = s2 * ct2, y3 = c2, z3 = s2 * st2;
-                float x4 = s2 * ct1, y4 = c2, z4 = s2 * st1;
+                // Wave distortion
+                float w1 = 1.0f + (float) (Math.sin((phi1 * 3 + t1 * 2 + wt) * 1.5) * 0.03
+                        + Math.sin((phi1 * 5 - t1 * 3 + wt * 0.7) * 2.0) * 0.02);
+                float w2 = 1.0f + (float) (Math.sin((phi1 * 3 + t2 * 2 + wt) * 1.5) * 0.03
+                        + Math.sin((phi1 * 5 - t2 * 3 + wt * 0.7) * 2.0) * 0.02);
+                float w3 = 1.0f + (float) (Math.sin((phi2 * 3 + t2 * 2 + wt) * 1.5) * 0.03
+                        + Math.sin((phi2 * 5 - t2 * 3 + wt * 0.7) * 2.0) * 0.02);
+                float w4 = 1.0f + (float) (Math.sin((phi2 * 3 + t1 * 2 + wt) * 1.5) * 0.03
+                        + Math.sin((phi2 * 5 - t1 * 3 + wt * 0.7) * 2.0) * 0.02);
 
-                builder.vertex(matrix, x1, y1, z1).color(r, g, b, alpha).endVertex();
-                builder.vertex(matrix, x2, y2, z2).color(r, g, b, alpha).endVertex();
-                builder.vertex(matrix, x3, y3, z3).color(r, g, b, alpha).endVertex();
+                float x1 = s1 * ct1 * w1, y1 = c1 * w1, z1 = s1 * st1 * w1;
+                float x2 = s1 * ct2 * w2, y2 = c1 * w2, z2 = s1 * st2 * w2;
+                float x3 = s2 * ct2 * w3, y3 = c2 * w3, z3 = s2 * st2 * w3;
+                float x4 = s2 * ct1 * w4, y4 = c2 * w4, z4 = s2 * st1 * w4;
 
-                builder.vertex(matrix, x1, y1, z1).color(r, g, b, alpha).endVertex();
-                builder.vertex(matrix, x3, y3, z3).color(r, g, b, alpha).endVertex();
-                builder.vertex(matrix, x4, y4, z4).color(r, g, b, alpha).endVertex();
+                // Per-vertex alpha: base × scan line + pulse
+                float a1 = vertexAlpha(y1, scanLine, pulseY, breatheMul);
+                float a2 = vertexAlpha(y2, scanLine, pulseY, breatheMul);
+                float a3 = vertexAlpha(y3, scanLine, pulseY, breatheMul);
+                float a4 = vertexAlpha(y4, scanLine, pulseY, breatheMul);
+
+                builder.vertex(matrix, x1, y1, z1).color(COLOR_R, COLOR_G, COLOR_B, a1).endVertex();
+                builder.vertex(matrix, x2, y2, z2).color(COLOR_R, COLOR_G, COLOR_B, a2).endVertex();
+                builder.vertex(matrix, x3, y3, z3).color(COLOR_R, COLOR_G, COLOR_B, a3).endVertex();
+
+                builder.vertex(matrix, x1, y1, z1).color(COLOR_R, COLOR_G, COLOR_B, a1).endVertex();
+                builder.vertex(matrix, x3, y3, z3).color(COLOR_R, COLOR_G, COLOR_B, a3).endVertex();
+                builder.vertex(matrix, x4, y4, z4).color(COLOR_R, COLOR_G, COLOR_B, a4).endVertex();
             }
         }
 
@@ -128,6 +165,13 @@ public class CloakShimmerRenderer implements BlockEntityRenderer<CloakingFieldGe
         RenderSystem.depthMask(true);
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
+    }
+
+    private static float vertexAlpha(float vy, float scanLine, float pulseY, float breatheMul) {
+        float base = BASE_ALPHA * (0.3f + 0.7f * scanLine);
+        double pd = vy - pulseY;
+        float pulse = PULSE_BOOST * (float) Math.exp(-pd * pd * PULSE_WIDTH);
+        return Math.min((base + pulse) * breatheMul, 0.13f);
     }
 
     @Override

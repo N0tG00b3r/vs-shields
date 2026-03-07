@@ -28,6 +28,9 @@ public class ShieldInstance {
     private DamageListener damageListener;
     private boolean solidMode = false;
     private String accessCode = "";
+    private boolean suppressedByCloak = false;
+    private int cloakCooldownRemaining = 0;
+    private boolean wasActiveBeforeCloak = false;
 
     public ShieldInstance(long shipId, ShieldTier tier) {
         this.shipId = shipId;
@@ -72,6 +75,7 @@ public class ShieldInstance {
     }
 
     public void setActive(boolean active) {
+        if (active && (suppressedByCloak || cloakCooldownRemaining > 0)) return;
         this.active = active;
     }
 
@@ -142,6 +146,17 @@ public class ShieldInstance {
      * Tick the shield: recharge HP if cooldown has passed.
      */
     public void tick(long currentTick) {
+        // Handle cloak cooldown countdown
+        if (cloakCooldownRemaining > 0) {
+            cloakCooldownRemaining--;
+            if (cloakCooldownRemaining <= 0 && wasActiveBeforeCloak) {
+                active = true;
+                wasActiveBeforeCloak = false;
+                depletionTick = currentTick; // start depletion cooldown from now
+            }
+            return;
+        }
+
         if (!active || regenStalled)
             return;
         double max = getMaxHP();
@@ -213,5 +228,31 @@ public class ShieldInstance {
     public void setSolidMode(boolean solid, String code) {
         this.solidMode = solid;
         this.accessCode = (code != null) ? code : "";
+    }
+
+    // --- Cloak Suppression ---
+
+    public boolean isSuppressedByCloak() {
+        return suppressedByCloak;
+    }
+
+    public int getCloakCooldownRemaining() {
+        return cloakCooldownRemaining;
+    }
+
+    public void setSuppressedByCloak(boolean suppressed) {
+        if (suppressed) {
+            wasActiveBeforeCloak = active;
+            active = false;
+            currentHP = 0;
+            suppressedByCloak = true;
+            cloakCooldownRemaining = 0;
+        } else {
+            suppressedByCloak = false;
+            if (wasActiveBeforeCloak) {
+                cloakCooldownRemaining = com.mechanicalskies.vsshields.config.ShieldConfig
+                        .get().getCloak().cloakShieldCooldownTicks;
+            }
+        }
     }
 }

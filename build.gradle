@@ -18,6 +18,11 @@ allprojects {
         maven { url "https://maven.fabricmc.net/" }
         mavenCentral()
         maven {
+            name = "Modrinth"
+            url = "https://api.modrinth.com/maven"
+            content { includeGroup "maven.modrinth" }
+        }
+        maven {
             name = "Valkyrien Skies Internal"
             url = project.vs_maven_url ?: 'https://maven.valkyrienskies.org'
             content {
@@ -86,5 +91,11 @@ project(':forge') {
     }
     tasks.withType(Jar).configureEach {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
+    // Create Radar compiled with Kotlin 2.2; our project uses 2.0 — skip metadata version check
+    tasks.withType(KotlinCompile).configureEach {
+        kotlinOptions {
+            freeCompilerArgs += "-Xskip-metadata-version-check"
+        }
     }
 }

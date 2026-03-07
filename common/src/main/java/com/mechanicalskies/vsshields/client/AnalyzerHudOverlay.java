@@ -48,8 +48,15 @@ public class AnalyzerHudOverlay {
         int x = sw - PANEL_W - MARGIN;
         int y = MARGIN;
 
-        // Dynamic height based on ship presence
-        int actualH = hasShip ? PANEL_H : 32;
+        // Dynamic height based on content
+        int actualH;
+        if (hasShip && data.isAnomaly) {
+            actualH = 40; // 3 lines: title + TTL + guardians
+        } else if (hasShip) {
+            actualH = PANEL_H;
+        } else {
+            actualH = 32;
+        }
 
         // Background panel
         graphics.fill(x - 2, y - 2, x + PANEL_W + 2, y + actualH + 2, 0xA0000000);
@@ -63,9 +70,6 @@ public class AnalyzerHudOverlay {
             // === ANOMALY special panel ===
             graphics.drawString(mc.font, "◉ AETHERIC ANOMALY", cx, cy, 0xFFCC88FF, true); // purple
             cy += LINE_HEIGHT + 2;
-
-            graphics.drawString(mc.font, "Shield: IMPERVIOUS", cx, cy, 0xFFCC88FF, true);
-            cy += LINE_HEIGHT;
 
             int mins = data.anomalyTTLSeconds / 60;
             int secs = data.anomalyTTLSeconds % 60;

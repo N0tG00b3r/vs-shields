@@ -1,5 +1,7 @@
 package com.mechanicalskies.vsshields.network;
 
+import com.mechanicalskies.vsshields.client.ShieldPanelAnimator;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -11,6 +13,7 @@ public class ClientShieldManager {
     private static final ClientShieldManager INSTANCE = new ClientShieldManager();
 
     private final Map<Long, ClientShieldData> shields = new ConcurrentHashMap<>();
+    private final Map<Long, ShieldPanelAnimator> animators = new ConcurrentHashMap<>();
 
     private ClientShieldManager() {
     }
@@ -47,12 +50,27 @@ public class ClientShieldManager {
         return shields.get(shipId);
     }
 
+    public ShieldPanelAnimator getAnimator(long shipId) {
+        return animators.get(shipId);
+    }
+
+    /** Get or create an animator for the given shield. */
+    public ShieldPanelAnimator getOrCreateAnimator(long shipId) {
+        return animators.computeIfAbsent(shipId, id -> new ShieldPanelAnimator());
+    }
+
     public Map<Long, ClientShieldData> getAllShields() {
         return shields;
     }
 
     public void clear() {
         shields.clear();
+        animators.clear();
+    }
+
+    /** Remove animators for shields that no longer exist. */
+    public void retainAnimators(java.util.Set<Long> activeIds) {
+        animators.keySet().retainAll(activeIds);
     }
 
     /**

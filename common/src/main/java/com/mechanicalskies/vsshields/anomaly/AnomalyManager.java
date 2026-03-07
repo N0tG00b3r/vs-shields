@@ -381,6 +381,8 @@ public class AnomalyManager {
         if (currentTick % 20 == 0) {
             long globalRemaining = anomaly.getGlobalTTLRemaining(currentTick, config.globalLifetimeTicks);
             int seconds = (int) (globalRemaining / 20);
+            long extractRemaining = anomaly.getExtractionRemaining(currentTick, config.extractionTimerTicks);
+            int extractSeconds = extractRemaining >= 0 ? (int) (extractRemaining / 20) : -1;
             boolean timerActive = (anomaly.getPhase() == AnomalyInstance.Phase.ACTIVE
                     || anomaly.getPhase() == AnomalyInstance.Phase.EXTRACTION);
             int phaseOrdinal = anomaly.getPhase().ordinal();
@@ -388,7 +390,7 @@ public class AnomalyManager {
                 double dx = sp.getX() - anomaly.getWorldX();
                 double dz = sp.getZ() - anomaly.getWorldZ();
                 if (dx * dx + dz * dz <= 100.0 * 100.0) {
-                    com.mechanicalskies.vsshields.network.ModNetwork.sendAnomalyTimer(sp, seconds, timerActive, phaseOrdinal);
+                    com.mechanicalskies.vsshields.network.ModNetwork.sendAnomalyTimer(sp, seconds, timerActive, phaseOrdinal, extractSeconds);
                 }
             }
         }

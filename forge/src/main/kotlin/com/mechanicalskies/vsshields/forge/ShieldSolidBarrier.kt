@@ -17,6 +17,8 @@ import org.valkyrienskies.mod.common.dimensionId
 import org.valkyrienskies.mod.common.getShipManagingPos
 import org.valkyrienskies.mod.common.getShipsIntersecting
 import java.util.UUID
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Server-side tick handler that physically blocks living entities and foreign VS2 ships
@@ -59,19 +61,36 @@ class ShieldSolidBarrier {
     }
 
 
+    private val LOGGER = org.slf4j.LoggerFactory.getLogger("ShieldSolidBarrier")
+
+    /** Cache for CuriosIntegration.hasMatchingCard() reflection calls. */
+    private val cardCache = HashMap<UUID, Pair<Long, Boolean>>()  // UUID -> (expiry tick, result)
+
+    private fun hasCardCached(entity: LivingEntity, code: String, gameTime: Long): Boolean {
+        val cached = cardCache[entity.uuid]
+        if (cached != null && cached.first > gameTime) return cached.second
+        val result = CuriosIntegration.hasMatchingCard(entity, code)
+        cardCache[entity.uuid] = Pair(gameTime + 20L, result)
+        return result
+    }
+
     @SubscribeEvent
     fun onLevelTick(event: TickEvent.LevelTickEvent) {
         if (event.phase != TickEvent.Phase.END) return
         val level = event.level
         if (level.isClientSide) return
+        // Throttle: living entities move slowly (~0.26 blocks/tick sprint).
+        // 3-tick interval → max 0.78 block penetration, compensated by pushBack.
+        if (level.gameTime % 3L != 0L) return
 
         val manager = ShieldManager.getInstance()
-        val padding  = ShieldConfig.get().general.shieldPadding
-        val repulse  = ShieldConfig.get().general.shipRepulsionForce
+        val cfg     = ShieldConfig.get().general
+        val padding = cfg.shieldPadding
 
-        // Periodic cleanup of expired trust entries
-        if (level.gameTime % 20L == 0L) {
+        // Periodic cleanup of expired trust entries and card cache
+        if (level.gameTime % 60L == 0L) {
             trustedUntil.entries.removeIf { (_, expiry) -> expiry <= level.gameTime }
+            cardCache.entries.removeIf { (_, pair) -> pair.first <= level.gameTime }
         }
 
         for ((shipId, shield) in manager.allShields) {
@@ -124,7 +143,7 @@ class ShieldSolidBarrier {
                     }
                     outside.contains(uuid) -> {
                         if (insideNow) {
-                            if (CuriosIntegration.hasMatchingCard(entity, shield.accessCode)) {
+                            if (hasCardCached(entity, shield.accessCode, level.gameTime)) {
                                 inside.add(uuid)
                                 outside.remove(uuid)
                             } else {
@@ -136,7 +155,7 @@ class ShieldSolidBarrier {
                         // Untracked entity appeared inside — unauthorized entry (e.g. teleport).
                         // Check card; if none, push out immediately.
                         if (insideNow) {
-                            if (CuriosIntegration.hasMatchingCard(entity, shield.accessCode)) {
+                            if (hasCardCached(entity, shield.accessCode, level.gameTime)) {
                                 inside.add(uuid)
                             } else {
                                 outside.add(uuid)
@@ -147,16 +166,8 @@ class ShieldSolidBarrier {
                 }
             }
 
-            // --- VS2 ship collision (velocity-based elastic impulse) ---
-            // Reads actual velocities of both ships, computes elastic collision impulse,
-            // applies it as a 1-tick corrective force at each ship's CoM (no torque).
+            // --- Force-based ship repulsion (replaces VSDistanceJoint) ---
             try {
-                val shieldMat = ship.shipToWorld
-                val shieldComX = shieldMat.m30()
-                val shieldComY = shieldMat.m31()
-                val shieldComZ = shieldMat.m32()
-                val vA = ship.velocity
-
                 val shieldAABBdc = AABBd(
                     worldAABB.minX() - padding, worldAABB.minY() - padding, worldAABB.minZ() - padding,
                     worldAABB.maxX() + padding, worldAABB.maxY() + padding, worldAABB.maxZ() + padding
@@ -166,42 +177,44 @@ class ShieldSolidBarrier {
 
                 for (foreign: Ship in level.getShipsIntersecting(shieldAABBdc)) {
                     if (foreign.id == shipId) continue
-                    // Boarding pod ships pass through the barrier (they breach via their own logic)
                     if (PodShipManager.isTrustedPodShip(foreign.id)) continue
                     if (foreignShipHasMatchingCard(level as ServerLevel, foreign.id, shield.accessCode)) continue
 
-                    val foreignMat = foreign.shipToWorld
-                    val fComX = foreignMat.m30()
-                    val fComY = foreignMat.m31()
-                    val fComZ = foreignMat.m32()
+                    val foreignAABB = foreign.worldAABB ?: continue
 
-                    // Unit normal from shield CoM toward foreign CoM
-                    var nx = fComX - shieldComX
-                    var ny = fComY - shieldComY
-                    var nz = fComZ - shieldComZ
-                    val dist = Math.sqrt(nx * nx + ny * ny + nz * nz)
-                    if (dist < 1e-6) continue
-                    nx /= dist; ny /= dist; nz /= dist
+                    // SAT: overlap on each axis
+                    val overlapX = min(shieldAABBdc.maxX, foreignAABB.maxX()) - max(shieldAABBdc.minX, foreignAABB.minX())
+                    val overlapY = min(shieldAABBdc.maxY, foreignAABB.maxY()) - max(shieldAABBdc.minY, foreignAABB.minY())
+                    val overlapZ = min(shieldAABBdc.maxZ, foreignAABB.maxZ()) - max(shieldAABBdc.minZ, foreignAABB.minZ())
+                    if (overlapX <= 0 || overlapY <= 0 || overlapZ <= 0) continue
 
-                    // Relative velocity along normal: positive = ships approaching each other
-                    val vB = foreign.velocity
-                    val vRelN = (vA.x() - vB.x()) * nx +
-                                (vA.y() - vB.y()) * ny +
-                                (vA.z() - vB.z()) * nz
-                    if (vRelN <= 0.05) continue  // already separating or nearly stationary
+                    // Minimum penetration axis → push along shortest escape direction
+                    val minOverlap = min(overlapX, min(overlapY, overlapZ))
 
-                    // Scale force by approach speed: faster closing = harder bounce.
-                    // shipRepulsionForce acts as "stiffness" — tune in config.
-                    val f = vRelN * repulse
+                    val shieldCX = (shieldAABBdc.minX + shieldAABBdc.maxX) * 0.5
+                    val shieldCY = (shieldAABBdc.minY + shieldAABBdc.maxY) * 0.5
+                    val shieldCZ = (shieldAABBdc.minZ + shieldAABBdc.maxZ) * 0.5
+                    val foreignCX = (foreignAABB.minX() + foreignAABB.maxX()) * 0.5
+                    val foreignCY = (foreignAABB.minY() + foreignAABB.maxY()) * 0.5
+                    val foreignCZ = (foreignAABB.minZ() + foreignAABB.maxZ()) * 0.5
 
-                    // Apply at each ship's CoM — no torque introduced
-                    gtpa.applyWorldForce(shipId,     Vector3d(-nx * f, -ny * f, -nz * f),
-                                                     Vector3d(shieldComX, shieldComY, shieldComZ))
-                    gtpa.applyWorldForce(foreign.id, Vector3d( nx * f,  ny * f,  nz * f),
-                                                     Vector3d(fComX, fComY, fComZ))
+                    var dx = 0.0; var dy = 0.0; var dz = 0.0
+                    when (minOverlap) {
+                        overlapX -> dx = if (foreignCX > shieldCX) 1.0 else -1.0
+                        overlapY -> dy = if (foreignCY > shieldCY) 1.0 else -1.0
+                        overlapZ -> dz = if (foreignCZ > shieldCZ) 1.0 else -1.0
+                    }
+
+                    // Quadratic: soft touch at edge, stiff wall deeper in
+                    val forceMag = minOverlap * minOverlap * cfg.shipRepulsionForce
+
+                    // null pos → force at CoM → ZERO torque → no tumbling
+                    val pushForce = Vector3d(dx * forceMag, dy * forceMag, dz * forceMag)
+                    gtpa.applyWorldForce(foreign.id, pushForce, null)
+                    gtpa.applyWorldForce(shipId, Vector3d(-dx * forceMag, -dy * forceMag, -dz * forceMag), null)
                 }
-            } catch (_: Exception) {
-                // VS2 physics world unavailable this tick — skip silently
+            } catch (e: Exception) {
+                LOGGER.warn("[SolidBarrier] Repulsion failed for ship {}: {}", shipId, e.message)
             }
         }
     }

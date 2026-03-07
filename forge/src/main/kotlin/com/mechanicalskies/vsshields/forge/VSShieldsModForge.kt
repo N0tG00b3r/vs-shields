@@ -142,6 +142,10 @@ class VSShieldsModForge {
             CreateCompat.tickSolidModuleInput(level, pos, be)
         }
 
+        com.mechanicalskies.vsshields.blockentity.ResonanceBeaconBlockEntity.setEnergyInputHook { level, pos, be ->
+            CreateCompat.tickBeaconKineticInput(level, pos, be)
+        }
+
         // Legacy boarding pod trust callback (for old BoardingPodEntity if still present)
         BoardingPodEntity.setTrustCallback { uuid, gameTime, ticks ->
             ShieldSolidBarrier.trustPassenger(uuid, gameTime, ticks)

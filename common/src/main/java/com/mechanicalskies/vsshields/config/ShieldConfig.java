@@ -83,7 +83,11 @@ public class ShieldConfig {
         public int solidModuleEnergyCost   = 500;
         public int solidModuleMaxEnergy    = 1_000_000;
         public int solidModuleEnergyInput  = 50_000;
-        public double shipRepulsionForce   = 100_000.0;
+        public double shipRepulsionForce   = 500_000.0;
+        /** VSDistanceJoint spring stiffness for solid shield ship-to-ship repulsion. */
+        public double solidJointStiffness  = 5000.0;
+        /** VSDistanceJoint damping coefficient for solid shield ship-to-ship repulsion. */
+        public double solidJointDamping    = 500.0;
         /** Set to false to hide the shield bubble entirely (client-side). */
         public boolean showShieldBubble       = true;
         /** Set to true to hide the bubble for crew standing inside it (back-face culling only). */
@@ -98,6 +102,12 @@ public class ShieldConfig {
         public int     energyCellFE            = 25_000;
         /** FE added to a Shield Generator when one Aetheric Energy Cell is used on it. */
         public int     aethericEnergyCellFE    = 75_000;
+        /** Bloom layer intensity for shield hex edges (0.0 = off, 1.0 = full). */
+        public float   shieldBloomIntensity    = 0.4f;
+        /** Number of hex texture tiles across the shield sphere. */
+        public int     shieldHexTileCount      = 8;
+        /** Conduit pulse layer intensity (0.0 = off, 1.0 = full). Energy packets along hex edges. */
+        public float   shieldConduitIntensity  = 0.30f;
     }
 
     public static class BatteryConfig {
@@ -111,6 +121,12 @@ public class ShieldConfig {
     public static class CloakConfig {
         public int maxEnergy = 100000;
         public int energyPerTick = 30;
+        /** Ticks before shield auto-restarts after decloaking (200 = 10 sec). */
+        public int cloakShieldCooldownTicks = 200;
+        /** Number of combat hits (FROM or INTO cloaked ship) before cloak breaks. */
+        public int cloakBreakHitThreshold = 3;
+        /** Ticks before recloak is allowed after combat break (600 = 30 sec). */
+        public int cloakBreakCooldownTicks = 600;
     }
 
     /**
@@ -379,6 +395,14 @@ public class ShieldConfig {
                 loaded.general.shipRepulsionForce = defaults.general.shipRepulsionForce;
                 changed = true;
             }
+            if (!rawGeneral.has("solidJointStiffness")) {
+                loaded.general.solidJointStiffness = defaults.general.solidJointStiffness;
+                changed = true;
+            }
+            if (!rawGeneral.has("solidJointDamping")) {
+                loaded.general.solidJointDamping = defaults.general.solidJointDamping;
+                changed = true;
+            }
             if (!rawGeneral.has("voidShardEndermanChance")) {
                 loaded.general.voidShardEndermanChance = defaults.general.voidShardEndermanChance;
                 changed = true;
@@ -399,10 +423,37 @@ public class ShieldConfig {
                 loaded.general.aethericEnergyCellFE = defaults.general.aethericEnergyCellFE;
                 changed = true;
             }
+            if (!rawGeneral.has("shieldBloomIntensity")) {
+                loaded.general.shieldBloomIntensity = defaults.general.shieldBloomIntensity;
+                changed = true;
+            }
+            if (!rawGeneral.has("shieldHexTileCount")) {
+                loaded.general.shieldHexTileCount = defaults.general.shieldHexTileCount;
+                changed = true;
+            }
+            if (!rawGeneral.has("shieldConduitIntensity")) {
+                loaded.general.shieldConduitIntensity = defaults.general.shieldConduitIntensity;
+                changed = true;
+            }
         }
         if (loaded.cloak == null) {
             loaded.cloak = defaults.cloak;
             changed = true;
+        } else {
+            JsonObject rawCloak = rawJson.has("cloak")
+                    ? rawJson.getAsJsonObject("cloak") : new JsonObject();
+            if (!rawCloak.has("cloakShieldCooldownTicks")) {
+                loaded.cloak.cloakShieldCooldownTicks = defaults.cloak.cloakShieldCooldownTicks;
+                changed = true;
+            }
+            if (!rawCloak.has("cloakBreakHitThreshold")) {
+                loaded.cloak.cloakBreakHitThreshold = defaults.cloak.cloakBreakHitThreshold;
+                changed = true;
+            }
+            if (!rawCloak.has("cloakBreakCooldownTicks")) {
+                loaded.cloak.cloakBreakCooldownTicks = defaults.cloak.cloakBreakCooldownTicks;
+                changed = true;
+            }
         }
         if (loaded.cgs == null) {
             loaded.cgs = defaults.cgs;

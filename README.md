@@ -2,20 +2,19 @@
 
 **Energy shield systems for [Valkyrien Skies 2](https://modrinth.com/mod/valkyrien-skies) ships.**
 
-Minecraft 1.20.1 · Forge · Requires VS2 + Architectury API
+Minecraft 1.20.1 · Forge · Requires VS2 + Architectury API + Embeddium
 
 ---
 
-![Active Shield](https://cdn.modrinth.com/data/cached_images/e6ef52dcc76da17970f8160a2dd0552ec7d60490.jpeg)
+![VS Shields Banner](https://i.imgur.com/rBj5gGQ.png)
 
-Wrap your VS2 warship in a procedural energy shield that stops projectiles, absorbs explosions, and pulses with a honeycomb glow. Add a battery multiblock for emergency regen, an electronic warfare jammer to burn out enemy shields on collision, a gravity field generator to grant your crew flight and fall immunity, and deploy gravitational mines to send enemy ships into a spin.
-
+Wrap your VS2 warship in a procedural energy shield that stops projectiles, absorbs explosions, and pulses with an organic reaction-diffusion labyrinth glow. Add a battery multiblock for emergency regen, an electronic warfare jammer to burn out enemy shields on collision, a gravity field generator to grant your crew flight and fall immunity, deploy gravitational mines to send enemy ships into a spin, and cloak your ship with a light-bending invisibility field.
 ---
 
 ## Features at a glance
 
 - **Dynamic shield bubble** — automatically conforms to the full size of your ship; grows as you add blocks
-- **Honeycomb visual** — slowly rotating hex-grid that shifts from blue → yellow → red as HP drops, with violent flicker at low energy
+- **Living labyrinth visual** — animated Gray-Scott reaction-diffusion pattern that continuously restructures itself through erosion and regrowth; shifts from blue → yellow → red as HP drops, with violent flicker at low energy; heavily optimized (distance LOD, Fresnel LUT, reduced mesh, throttled simulation) for minimal FPS impact; shader-compatible depth writing for correct cloud sorting with Iris/Oculus
 - **Three tiers** — Iron / Diamond / Netherite with escalating HP, recharge, and FE costs
 - **Capacitors & emitters** — stackable addon blocks for more HP and faster recharge
 - **Shield Battery multiblock** — 3×3×3 structure that silently absorbs 20% of every hit, then dumps an emergency HP restore when you're near death
@@ -26,6 +25,7 @@ Wrap your VS2 warship in a procedural energy shield that stops projectiles, abso
 - **Gravitational Mine + Launcher** — deployable space-mines that apply massive physical torque to enemy ships on detonation
 - **Redstone I/O** — Signal **in** activates/deactivates the shield; signal **out** pulses when struck — combine both sides for fully automated defence logic
 - **Solid Projection Module** — turns the energy shield into a physical barrier; access controlled by programmable **Frequency ID Cards** (up to 8-char codes, Curios-compatible)
+- **Cloaking Field Generator** — renders your ship invisible to other players and radar systems. Crew aboard sees a subtle rainbow shimmer shell; external players see only a faint Predator-like heat distortion. Activating the cloak suppresses the shield (auto-restarts with 10-second cooldown when decloaked). **Combat break:** after 3 combat hits (shots from or into the cloaked ship), the cloak automatically breaks with a 30-second recloak cooldown. Compatible with Create Radar — cloaked ships are hidden from radar scans and RWR alerts
 - **Boarding Pod** — 2-block multiblock assault craft that assembles into a full VS2 physics ship; aim with the mouse, hold **Space** to fire the rocket booster, steer mid-flight by looking where you want to go (crosshair-accurate steering at any ship rotation); breaches a 2×2×4 tunnel into the target hull
 - **Aetheric Anomaly** — procedurally generated floating islands that spawn periodically as VS2 ships high in the sky; mesa top with rolling hills, stalactite-like bottom, caves with rare ores; 4-phase lifecycle (ACTIVE → EXTRACTION → WARNING → DISSOLVING); anti-gravity hover with slow drift and gentle swaying; hostile guardians (Enderman/Phantom/Shulker) with custom drops and escalating waves; ship repulsion, projectile absorption, explosion suppression; hold-RMB void deposit extraction with progress HUD; periodic aetheric pulse (knockback + shield damage); resource mining (Raw Aether Crystal, Resonance Fragment, Void Essence); fully configurable timers, sizes, and physics; admin commands for spawning/despawning/info
 - **Aetheric Compass** — handheld item that detects anomaly islands: slow spin (no anomaly), points toward island (>500 blocks), wild erratic spin (≤500 blocks — interference); animated 32-texture needle like a vanilla compass
@@ -194,7 +194,7 @@ A peripheral block (one per ship) that turns the energy shield into a physical w
 
 - Connect FE or Create rotation shaft (**1,000,000 FE** buffer, **500 FE/tick** while active)
 - Right-click to open GUI; enter an **ACCESS CODE** (up to 8 chars, case-sensitive), then Activate
-- While active: unauthorised entities are pushed back at the shield boundary; foreign ships receive an elastic repulsion impulse when approaching
+- While active: unauthorised entities are pushed back at the shield boundary; foreign ships are repelled by a force-based AABB collision system — ships feel a solid wall with no tumbling or rotation lock
 - Players carrying a **Frequency ID Card** with a matching code (inventory, offhand, or Curios Charm slot) pass through freely
 - A foreign ship whose generator holds a matching card in its **MASTER KEY** slot is also not repelled
 
@@ -289,6 +289,10 @@ All CBC shell types are intercepted at the shield boundary:
 | Flintlock | 15 HP |
 | Shotgun burst | 16 HP |
 
+### Create Radar
+
+Cloaked ships are fully hidden from Create Radar scans — they do not appear on radar displays and do not trigger RWR (Radar Warning Receiver) alerts. Implemented via Mixin into `RadarScanningBlockBehavior`.
+
 ### Alex's Caves
 
 Nuclear bomb and torpedo are fully intercepted (500 HP and 80 HP respectively).
@@ -318,7 +322,7 @@ All settings live in `config/vs_shields.json`. The file is auto-generated on fir
 Connect any FE-producing mod to a generator or battery input: Thermal Expansion, Mekanism, Flux Networks, or any mod implementing `IEnergyStorage`.
 
 ### Create (SU → FE)
-Place a Create **rotation shaft** adjacent to a Shield Generator, Battery Input, or Gravity Field Generator. Rotation is converted at **1 FE/tick per 1 RPM** from all 6 sides.
+Place a Create **rotation shaft** adjacent to a Shield Generator, Battery Input, Gravity Field Generator, Solid Projection Module, or Resonance Beacon. Rotation is converted at **1 FE/tick per 1 RPM** from all 6 sides.
 
 ---
 
@@ -554,6 +558,7 @@ All recipes use custom intermediate components. Components are organized in thre
 | **[Create: Gunsmithing](https://www.curseforge.com/minecraft/mc-mods/create-gunsmithing)** | Per-weapon damage for projectile and hitscan weapons |
 | **[Alex's Caves](https://modrinth.com/mod/alexs-caves)** | Nuclear bomb and torpedo intercepted |
 | **[Curios API](https://modrinth.com/mod/curios)** | Tactical Goggles in head slot, Frequency ID Card in charm slot |
+| **[Create Radar](https://modrinth.com/mod/create-radars)** | Cloaked ships hidden from radar scans and RWR alerts |
 | **[World Border (Serilum)](https://modrinth.com/mod/world-border)** | Anomaly islands respect custom world borders (auto-detected via reflection) |
 
 ---
@@ -566,4 +571,4 @@ All recipes use custom intermediate components. Components are organized in thre
 
 ## License
 
-All Rights Reserved
+[Custom License](https://github.com/LennyPane/vs-shields/blob/main/LICENSE)
