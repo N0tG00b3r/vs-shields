@@ -1,55 +1,103 @@
-# VS Shields License 2.0
+VS Shields License 2.0
 
-Copyright © 2026 LennyPane. All rights reserved.
+Copyright (c) 2026 LennyPane. All rights reserved.
 
-This license governs the use, distribution, and modification of VS Shields (the "Mod") — a Minecraft Forge 1.20.1 addon for Valkyrien Skies 2. By using, copying, or distributing the Mod, you agree to the terms below.
+This license governs the use, distribution, and modification of VS Shields
+(the "Mod") -- a Minecraft Forge 1.20.1 addon for Valkyrien Skies 2. By
+using, copying, or distributing the Mod, you agree to the terms below.
 
-## Definitions
 
-**"Mod"** means VS Shields in the form of source code, compiled JAR files, or any part thereof.
+DEFINITIONS
 
-**"Official JAR"** means a compiled binary published by the author on Modrinth or GitHub Releases.
+"Mod" means VS Shields in the form of source code, compiled JAR files, or
+any part thereof.
 
-**"Fork"** means any public or private copy of the Mod's repository, excluding automatic forks created by GitHub as part of a Pull Request workflow.
+"Official JAR" means a compiled binary published by the author on Modrinth
+or GitHub Releases.
 
-**"Derivative Work"** means any software that incorporates more than 15 consecutive lines of the Mod's source code, or any complete class or method from the Mod.
+"Fork" means any public or private copy of the Mod's repository, excluding
+automatic forks created by GitHub as part of a Pull Request workflow.
 
-**"Modpack"** means a collection of mods and configuration files distributed together for Minecraft.
+"Derivative Work" means any software that incorporates more than 15
+consecutive lines of the Mod's source code, or any complete class or method
+from the Mod.
 
-**"Written Permission"** means explicit written consent from the author, obtained via email or GitHub (Issues or Discussions).
+"Modpack" means a collection of mods and configuration files distributed
+together for Minecraft.
 
-**"Credit"** means a visible mention of the mod name "VS Shields", the author "LennyPane", and a link to the official GitHub repository.
+"Written Permission" means explicit written consent from the author,
+obtained via email or GitHub (Issues or Discussions).
 
-## Restrictions
+"Credit" means a visible mention of the mod name "VS Shields", the author
+"LennyPane", and a link to the official GitHub repository.
 
-**No Forking Without Permission.** You may not create, publish, or maintain a Fork of the Mod without Written Permission from the author.
 
-**No Modified Binaries.** You may not distribute, publish, or otherwise make available any modified version of the Mod's compiled JAR files.
+RESTRICTIONS
 
-**No Code Reuse.** You may not copy, incorporate, or adapt code from the Mod into other mods or software projects in a way that constitutes a Derivative Work, without Written Permission.
+No Forking Without Permission. You may not create, publish, or maintain a
+Fork of the Mod without Written Permission from the author.
 
-**No Commercial Use.** You may not sell, sublicense, or otherwise commercially exploit the Mod, its source code, or any Derivative Work. Monetization of Forks or modifications is prohibited.
+No Modified Binaries. You may not distribute, publish, or otherwise make
+available any modified version of the Mod's compiled JAR files.
 
-**No Removal of Attribution.** You may not remove, alter, or obscure any copyright notice or author attribution present in the source code or compiled files.
+No Code Reuse. You may not copy, incorporate, or adapt code from the Mod
+into other mods or software projects in a way that constitutes a Derivative
+Work, without Written Permission.
 
-## Permitted Uses
+No Commercial Use. You may not sell, sublicense, or otherwise commercially
+exploit the Mod, its source code, or any Derivative Work. Monetization of
+Forks or modifications is prohibited.
 
-**Modpack Inclusion.** You may include the Mod in any Modpack, including commercially monetized Modpacks, provided that: (a) only an unmodified Official JAR is used; (b) Credit is given in the Modpack's description, README, or equivalent listing; and (c) a link to the official GitHub repository is included.
+No Removal of Attribution. You may not remove, alter, or obscure any
+copyright notice or author attribution present in the source code or
+compiled files.
 
-**Server Use.** Any Minecraft server, including servers that accept donations, subscriptions, or other payments, may use the Mod without additional permission. Server monetization is not a violation of this license, so long as the Mod itself is not sold.
 
-**Viewing and Learning.** You may view, read, and study the Mod's source code on GitHub for educational and reference purposes.
+PERMITTED USES
 
-**Contributions.** Pull Requests to the official repository are welcome. By submitting a contribution, you grant the author a perpetual, irrevocable, worldwide license to use, modify, and distribute your contribution as part of the Mod under the terms of this license. You retain the right to reuse your own contributed code in other projects.
+Modpack Inclusion. You may include the Mod in any Modpack, including
+commercially monetized Modpacks, provided that: (a) only an unmodified
+Official JAR is used; (b) Credit is given in the Modpack's description,
+README, or equivalent listing; and (c) a link to the official GitHub
+repository is included.
 
-## Termination
+Server Use. Any Minecraft server, including servers that accept donations,
+subscriptions, or other payments, may use the Mod without additional
+permission. Server monetization is not a violation of this license, so long
+as the Mod itself is not sold.
 
-If you violate any term of this license, your rights under it terminate automatically. The author may notify you of the violation in writing. You have 14 calendar days from the date of such notice to fully cure the violation. If the violation is cured within that period, the author may, at their sole discretion, reinstate your rights under this license.
+Viewing and Learning. You may view, read, and study the Mod's source code
+on GitHub for educational and reference purposes.
 
-## Governing Law
+Contributions. Pull Requests to the official repository are welcome. By
+submitting a contribution, you grant the author a perpetual, irrevocable,
+worldwide license to use, modify, and distribute your contribution as part
+of the Mod under the terms of this license. You retain the right to reuse
+your own contributed code in other projects.
 
-This license is governed by the laws of the European Union, in particular Directive 2001/29/EC and Directive 2019/790, and by the national laws of Bulgaria. Any disputes arising under this license shall be submitted to the courts of Bulgaria.
 
-## Disclaimer of Warranty
+TERMINATION
 
-THE MOD IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE MOD OR THE USE OR OTHER DEALINGS IN THE MOD.
+If you violate any term of this license, your rights under it terminate
+automatically. The author may notify you of the violation in writing. You
+have 14 calendar days from the date of such notice to fully cure the
+violation. If the violation is cured within that period, the author may, at
+their sole discretion, reinstate your rights under this license.
+
+
+GOVERNING LAW
+
+This license is governed by the laws of the European Union, in particular
+Directive 2001/29/EC and Directive 2019/790, and by the national laws of
+Bulgaria. Any disputes arising under this license shall be submitted to the
+courts of Bulgaria.
+
+
+DISCLAIMER OF WARRANTY
+
+THE MOD IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL
+THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN
+CONNECTION WITH THE MOD OR THE USE OR OTHER DEALINGS IN THE MOD.
