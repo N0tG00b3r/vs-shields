@@ -14,7 +14,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
  */
 class GravityFieldHandler {
 
-    @SubscribeEvent
+    // NIKO EDIT: temporary removal of this entire function; will make an actual fix later
+    /*@SubscribeEvent
     fun onPlayerTick(event: TickEvent.PlayerTickEvent) {
         if (event.phase != TickEvent.Phase.END) return
         val player = event.player
@@ -36,7 +37,7 @@ class GravityFieldHandler {
                 player.onUpdateAbilities()
             }
         }
-    }
+    }*/
 
     @SubscribeEvent
     fun onLivingFall(event: LivingFallEvent) {
